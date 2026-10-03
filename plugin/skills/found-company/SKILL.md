@@ -1,6 +1,6 @@
 ---
 name: found-company
-description: 새 프로젝트 repo에 autelon 운영 구조를 세운다. 프로젝트에 필요한 role을 설계해 .claude/agents/에 만들고, 보드·PRD·결정 기록 등 상태 파일과 프로젝트 전용 Notion 페이지·DB를 만든다. "회사 설립", "프로젝트 설립", 아직 board/나 .claude/agents/가 없는 프로젝트에서 director를 시작할 때 사용.
+description: 새 프로젝트 repo에 autelon 운영 구조를 세운다. 프로젝트에 필요한 role을 설계해 .claude/agents/에 만들고, 보드·PRD·결정 기록 등 상태 파일과 프로젝트 전용 Notion 페이지·DB, GitHub 저장소를 만든다. "회사 설립", "프로젝트 설립", 아직 board/나 .claude/agents/가 없는 프로젝트에서 director를 시작할 때 사용.
 ---
 
 # 프로젝트 설립
@@ -20,6 +20,8 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 - 프로젝트 이름 (Notion 페이지 제목, CLAUDE.md 제목)
 - 한두 문장 요약: 무엇을 왜 만드는지
 - 알고 있는 제약: 플랫폼, 기술 스택 선호, 기한, 사업 목표가 이미 있는지
+- GitHub 저장소 이름과 공개 여부 (6단계에서 쓴다). public이어야 머지 큐를 쓸 수 있다.
+- PR 리뷰어: `director`(기본값) / `reviewer role` / `사람`. 각각의 뜻은 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`의 "PR 리뷰어" 절. `reviewer role`을 고르면 2단계 role 구성에 reviewer를 넣는다.
 
 ## 2. role 설계
 
@@ -44,6 +46,8 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 | `decisions.md`                  | `decisions/log.md`                                                                                                       |
 | `sprint.md`                     | `state/sprint.md`                                                                                                        |
 | `goals.md`                      | `docs/goals.md`                                                                                                          |
+| `git-rules.md`                  | `docs/git-rules.md` — 자리표시자는 6단계에서 채운다                                                                      |
+| `ci.yml`                        | `.github/workflows/ci.yml` — `{{GITHUB_ORG}}`를 채운다                                                                   |
 | `events.md`                     | `analytics/events.md` (da가 있을 때만)                                                                                   |
 | `CLAUDE.template.md`            | `CLAUDE.md` — `{{PROJECT_NAME}}`, `{{PROJECT_SUMMARY}}`를 채운다. 프로젝트 파일 표에서 없는 경로(예: analytics)는 지운다 |
 
@@ -54,17 +58,19 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 
 claude.ai Notion 커넥터 도구로 만든다.
 
-1. 루트 페이지 `${user_config.notion_root_page}` 아래에 프로젝트 이름으로 페이지를 만든다. 본문: "이 페이지는 `<repo 경로>`의 투영이다. 원본은 로컬 파일이고, 여기서 고친 내용은 로컬로 돌아가지 않는다."
-2. 그 페이지 아래에 DB 세 개를 만든다. 순서대로 만들고, 앞 DB의 data source ID로 relation을 건다.
+1. 루트 페이지를 정한다. 플러그인 설정값은 `${user_config.notion_root_page}`이다. 이 값이 비어 있거나 `${user_config`로 시작하는 글자 그대로 남아 있으면 설정되지 않은 것이다. 그때는 AskUserQuestion으로 루트 페이지 URL을 묻는다. 추정하거나 검색해서 고르지 않는다. 정한 URL은 `notion/config.json`의 `root_page`에 쓴다.
+2. 루트 페이지 아래에 프로젝트 이름으로 페이지를 만든다. 본문: "이 페이지는 `<repo 경로>`의 투영이다. 원본은 로컬 파일이고, 여기서 고친 내용은 로컬로 돌아가지 않는다."
+3. 그 페이지 아래에 DB 세 개를 만든다. 순서대로 만들고, 앞 DB의 data source ID로 relation을 건다.
    - Milestones: `CREATE TABLE ("Name" TITLE, "Local ID" RICH_TEXT, "Status" SELECT('planned':gray, 'active':blue, 'done':green), "Target date" DATE)`
    - PRDs: `CREATE TABLE ("Name" TITLE, "Local ID" RICH_TEXT, "Status" SELECT('draft':gray, 'approved':blue, 'in_dev':yellow, 'released':purple, 'measured':orange, 'closed':green), "Milestone" RELATION('<milestones ds>', DUAL 'PRDs'), "Owner role" SELECT(<프로젝트 role들>))`
      그다음 update-data-source로 `ADD COLUMN "Derived from" RELATION('<prds ds>', DUAL 'Follow-up PRDs' 'follow_up_prds')`
    - Tasks: `CREATE TABLE ("Name" TITLE, "Local ID" RICH_TEXT, "Status" SELECT('backlog':gray, 'ready':brown, 'in_progress':blue, 'review':yellow, 'awaiting_approval':orange, 'done':green, 'blocked':red, 'rejected':pink), "Role" SELECT(<프로젝트 role + finance, notion-sync>), "PRD" RELATION('<prds ds>', DUAL 'Tasks'), "Size" SELECT('small':gray, 'large':orange), "Handoff" RICH_TEXT, "Updated" DATE)`
-3. Tasks에 보드 뷰 두 개: `칸반` (`GROUP BY "Status"`), `role별` (`GROUP BY "Role"`).
-4. 페이지 URL, DB URL, data source ID, 뷰 ID를 `notion/config.json`에 쓴다. 형식:
+4. Tasks에 보드 뷰 두 개: `칸반` (`GROUP BY "Status"`), `role별` (`GROUP BY "Role"`).
+5. 루트 페이지 URL, 페이지 URL, DB URL, data source ID, 뷰 ID를 `notion/config.json`에 쓴다. 형식:
 
 ```json
 {
+  "root_page": "...",
   "project_page": "...",
   "data_sources": {
     "milestones": "collection://...",
@@ -78,8 +84,27 @@ claude.ai Notion 커넥터 도구로 만든다.
 
 Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지점과 오류를 `decisions/log.md`와 사람에게 알린다.
 
-## 5. 마무리
+## 5. 설립 커밋
 
 - `.claude/settings.json`이 이 플러그인을 켜고 있는지 확인한다 (이 스킬이 돌고 있다면 이미 켜져 있다).
-- 만든 것을 커밋한다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
-- 사람에게 보고한다: role 구성, 만든 파일, Notion 페이지 링크, 다음 단계(목표·지표 체계 수립 또는 first-run).
+- 만든 것을 로컬 `main`에 커밋한다. 아직 원격과 main 보호 규칙이 없어서 직접 커밋할 수 있는 마지막 때다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
+- worktree에서 설립하지 않는다. 설립 커밋이 main에 들어가야 한다.
+
+## 6. GitHub 저장소
+
+GitHub 조직은 `${user_config.github_org}`이다. 비어 있거나 글자 그대로 남아 있으면 사람에게 묻는다.
+`~/.claude/git-workflow.md`가 있으면 먼저 읽고 그 "새 프로젝트를 시작할 때" 절차를 따른다. 아래는 그 절차를 이 스킬에 맞춘 순서다.
+
+1. `gh auth status`로 로그인을 확인한다. 안 되어 있으면 멈추고 사람에게 알린다.
+2. 1단계에서 받은 이름·공개 여부로 저장소를 만들고 main을 올린다: `gh repo create <조직>/<이름> --<public|private> --source . --push`. 이미 원격이 있거나 같은 이름의 저장소가 있으면 멈추고 사람에게 묻는다.
+3. push로 `ci.yml`이 main에서 한 번 돈다. `gh run list --branch main`으로 `git-policy` 실행이 끝났는지 확인한다. 필수 검사는 그 이름의 검사가 한 번 돈 뒤에 걸어야 PR이 영원히 대기하지 않는다.
+4. 표준 적용 스크립트를 찾는다: `~/dev/<조직>/.github/scripts/setup-repo.sh`. 없으면 `gh repo clone <조직>/.github`로 받은 곳의 `scripts/setup-repo.sh`. 표준 값은 그 저장소의 `rulesets/main.json`과 스크립트가 원본이다.
+5. **적용 전에 사람의 승인을 받는다.** 스크립트와 `rulesets/main.json`을 읽고, 바뀔 값을 표로 보여 주고 AskUserQuestion으로 묻는다: 저장소 설정(병합 방식, auto-merge, Update branch, 브랜치 자동 삭제), main 규칙(삭제·force push 금지, PR 필수, 필수 검사 이름, 머지 큐 또는 up to date 필수). 필수 검사는 지금은 `git-policy / merge-commits` 하나다.
+6. 승인되면 `setup-repo.sh <조직>/<이름> "git-policy / merge-commits"`를 실행하고, `gh api repos/<조직>/<이름>`과 `gh api repos/<조직>/<이름>/rulesets/<id>`로 다시 읽어 실제 값을 확인한다.
+7. `docs/git-rules.md`의 자리표시자를 채운다. 최신화는 public이면 "머지 큐", private이면 "up to date 필수". 머지 명령은 머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`. main이 보호되었으므로 이 변경부터는 브랜치와 PR로 올린다. 이 첫 PR의 리뷰어도 `docs/git-rules.md`에 정한 리뷰어다.
+
+GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지점과 오류를 `decisions/log.md`와 사람에게 알린다.
+
+## 7. 보고
+
+사람에게 보고한다: role 구성, 만든 파일, Notion 페이지 링크, GitHub 저장소와 적용된 규칙, PR 리뷰어, 다음 단계(목표·지표 체계 수립 또는 first-run).

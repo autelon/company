@@ -21,3 +21,5 @@
 | `analytics/`                                | 이벤트 명세, 분석 쿼리 (da)      |
 | `state/`                                    | 사용량 스냅샷, 스프린트 인계     |
 | `notion/config.json`                        | 이 프로젝트의 Notion 페이지와 DB |
+| `docs/git-rules.md`                         | 저장소 설정, PR 리뷰어, PR 절차  |
+| `.github/workflows/ci.yml`                  | 필수 검사                        |

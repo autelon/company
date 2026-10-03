@@ -11,7 +11,7 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | ---------------------------------- | -------------------------------------------------------------------- |
 | `.claude-plugin/marketplace.json`  | 이 리포를 로컬 마켓플레이스로 등록할 때 쓰는 목록                    |
 | `plugin/`                          | 플러그인 본체                                                        |
-| `plugin/skills/found-company/`     | 프로젝트 설립: role 설계, 상태 파일, Notion 페이지·DB                |
+| `plugin/skills/found-company/`     | 프로젝트 설립: role 설계, 상태 파일, Notion 페이지·DB, GitHub 저장소 |
 | `plugin/skills/director/`          | director 운영 규칙 (프로젝트 CLAUDE.md가 세션 시작 시 부른다)        |
 | `plugin/agents/`                   | 모든 프로젝트가 같이 쓰는 공용 role: finance, notion-sync            |
 | `plugin/templates/roles/`          | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다 |

@@ -13,6 +13,11 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - directory 소스 플러그인이 프로젝트 settings만으로 설치되는지, 한 번 `/plugin install`이 필요한지, 등록 흔적이 `~/.claude`에 남는지 **[미확인]**
 - 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:notion-sync`, 템플릿, 재무 스크립트.
 - 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), 상태 파일 전부, `notion/config.json`, 코드.
+- 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`, 기본 `autelon`)에 만들고 `~/.claude/git-workflow.md`와 조직 `.github` 저장소의 `setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03)
+- PR 리뷰어는 프로젝트마다 정해 프로젝트 `docs/git-rules.md`에 적는다. `director`(기본값) / `reviewer role` / `사람`. 리뷰어가 머지 명령을 낸다. (사용자 결정 2026-10-03)
+- Notion 루트 페이지는 플러그인 기본값에 두지 않는다. 플러그인 리포가 public이라 URL이 공개되기 때문이다. 설정값이 없으면 found-company가 사람에게 묻고 프로젝트 `notion/config.json`에 쓴다. (사용자 결정 2026-10-03)
+  - userConfig에 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는지 **[미확인]** 문서에 없음. 그래서 빈 값과 치환되지 않은 글자 둘 다 "설정 안 됨"으로 본다.
+  - `pluginConfigs`(userConfig 값)는 사용자·관리 설정에서만 읽고 프로젝트 settings에서는 무시한다. **[확인]** settings-reference 문서
 - role 개선의 두 층
   - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`
   - 프로젝트를 넘는 개선: `plugin/templates/roles/`를 고쳐 커밋 → 다음에 설립하는 프로젝트부터 반영
