@@ -11,35 +11,39 @@ Design notes (Korean): `docs/design.md`.
 
 ## Use in a project
 
-Projects install the plugin from this GitHub repository (marketplace `autelon`, plugin `autelon`).
-Add to the project's `.claude/settings.json` and commit it:
+One-time setup per machine: register the marketplace and turn on auto-update in your user settings.
+
+```bash
+claude plugin marketplace add autelon/company
+```
+
+Then make the `autelon` entry in `~/.claude/settings.json` look like this. Keep `source` identical to what `marketplace add` recorded (adding `"ref"` makes Claude Code ignore the marketplace):
 
 ```json
 {
   "extraKnownMarketplaces": {
     "autelon": {
-      "source": { "source": "github", "repo": "autelon/company", "ref": "main" },
+      "source": { "source": "github", "repo": "autelon/company" },
       "autoUpdate": true
     }
-  },
+  }
+}
+```
+
+In each project, enable the plugin in the committed `.claude/settings.json`. Do not declare the marketplace there: a project entry with the same name replaces the user entry, including `autoUpdate`.
+
+```json
+{
   "enabledPlugins": { "autelon@autelon": true }
 }
 ```
 
-Open a Claude Code session in the project folder, accept the workspace trust prompt, and check that the plugin is installed (`claude plugin list`, or the Installed tab of `/plugin`).
-If it is not, install it from the project folder:
-
-```bash
-claude plugin marketplace add autelon/company
-claude plugin install autelon@autelon --scope project
-```
-
-Then run the `autelon:found-company` skill.
+Check with `claude plugin list` in the project folder. If the plugin is not installed, run `claude plugin install autelon@autelon --scope project` there. Then run the `autelon:found-company` skill.
 
 ## Updates
 
-`plugin.json` has no `version`, so its version is derived from the git commit SHA (see `docs/design.md`) and merges to `main` reach projects without a version bump.
-The project settings above turn on `autoUpdate` (third-party marketplaces default to off): in an interactive session Claude Code refreshes the marketplace in the background, up to ten minutes after the first message, and the new version loads in the next session or after `/reload-plugins`.
+`plugin.json` has no `version`, so the version is a git commit SHA and merges to `main` reach projects without a version bump.
+With `autoUpdate` on, Claude Code refreshes the marketplace in the background of an interactive session, up to ten minutes after the first message; the new version loads in the next session or after `/reload-plugins`.
 To update right away, run `claude plugin update autelon@autelon` and start a new session.
 
 ## Developing the plugin

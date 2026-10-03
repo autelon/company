@@ -1,10 +1,4 @@
 {
-  "extraKnownMarketplaces": {
-    "autelon": {
-      "source": { "source": "github", "repo": "autelon/company", "ref": "main" },
-      "autoUpdate": true
-    }
-  },
   "enabledPlugins": {
     "autelon@autelon": true
   }
