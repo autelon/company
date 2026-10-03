@@ -18,6 +18,6 @@ autelon으로 설립한 프로젝트에서 director가 처음 할 일. 지금까
 3. **finance 호출과 메모리**: `get_usage` → `state/quota.json` 저장 → 재무 판정 스크립트(경로는 director 스킬의 재무 규칙에 있다) → `autelon:finance`를 task `T-SMOKE-1`로 호출해 handoff를 쓰게 하고, 메모리에 한 줄 남기게 한다.
    - 확인: `handoffs/T-SMOKE-1.md`가 생겼는가, finance 메모리가 어디에 생겼는가 (프로젝트 `.claude/agent-memory/` 아래 어떤 이름의 폴더인지 그대로 적는다).
 4. **notion-sync가 Notion 커넥터를 쓰는가**: 마일스톤 하나(`M-00`, "스모크 테스트")를 `board/milestones.json`에 넣고 `autelon:notion-sync`를 task `T-SMOKE-2`로 호출한다.
-   - 확인: 프로젝트 Notion Milestones DB에 생겼는가, handoff에 notion_id 표가 있는가. 확인 후 Notion에서 사람이 지운다.
+   - 확인: 프로젝트 Notion Milestones DB에 생겼는가, `notion/ids.json`에 `M-00`의 페이지 URL이 생겼는가, handoff와 다른 커밋되는 파일에 URL이 없는가. 확인 후 Notion에서 사람이 지운다.
 5. **developer worktree**: 아직 코드가 없으므로 생략. 첫 구현 task 때 확인한다: handoff가 메인 checkout의 절대 경로에 생기는가, `.claude/agent-memory/developer/`가 어디에 생기는가.
 6. 결과를 프로젝트 `decisions/log.md`에 적는다. autelon/company 리포의 `docs/design.md` 7절 갱신은 사람에게 알려 autelon/company 쪽에서 한다. 스모크 handoff와 M-00은 지운다.

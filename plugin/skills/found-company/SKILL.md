@@ -59,7 +59,7 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 
 claude.ai Notion 커넥터 도구로 만든다.
 
-1. 루트 페이지를 정한다. 플러그인 설정값은 `${user_config.notion_root_page}`이다. 이 값이 비어 있거나 `${user_config`로 시작하는 글자 그대로 남아 있으면 설정되지 않은 것이다. 그때는 AskUserQuestion으로 루트 페이지 URL을 묻는다. 추정하거나 검색해서 고르지 않는다. 정한 URL은 `notion/config.json`의 `root_page`에 쓴다.
+1. 루트 페이지를 정한다. 플러그인 설정값은 `${user_config.notion_root_page}`이다. 이 값이 비어 있거나 `${user_config`로 시작하는 글자 그대로 남아 있으면 설정되지 않은 것이다. 그때는 AskUserQuestion으로 루트 페이지 URL을 묻는다. 추정하거나 검색해서 고르지 않는다. 다음부터 묻지 않게 하려면 사용자 설정 `~/.claude/settings.json`의 `pluginConfigs["autelon@autelon"].options.notion_root_page`에 넣으면 된다고 사람에게 알린다(넣는 것은 사람이 정한다). 정한 URL은 `notion/config.json`의 `root_page`에 쓴다.
 2. 루트 페이지 아래에 프로젝트 이름으로 페이지를 만든다. 본문: "이 페이지는 `<repo 경로>`의 투영이다. 원본은 로컬 파일이고, 여기서 고친 내용은 로컬로 돌아가지 않는다."
 3. 그 페이지 아래에 DB 세 개를 만든다. 순서대로 만들고, 앞 DB의 data source ID로 relation을 건다.
    - Milestones: `CREATE TABLE ("Name" TITLE, "Local ID" RICH_TEXT, "Status" SELECT('planned':gray, 'active':blue, 'done':green), "Target date" DATE)`
@@ -83,10 +83,13 @@ claude.ai Notion 커넥터 도구로 만든다.
 }
 ```
 
+`notion/config.json`과 `notion/ids.json`(항목별 페이지 URL, notion-sync가 쓴다)은 **커밋하지 않는다.** 프로젝트 `.gitignore`에 `notion/`을 넣는다. 저장소가 public이면 Notion 페이지·DB ID가 공개되기 때문이다. 커밋 메시지, PR, `decisions/log.md`, `CLAUDE.md` 같은 커밋되는 파일에도 Notion URL이나 ID를 적지 않는다.
+
 Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지점과 오류를 `decisions/log.md`와 사람에게 알린다.
 
 ## 5. 설립 커밋
 
+- 커밋 전에 `git status`로 `notion/`이 커밋 대상에 없는지, `git diff --cached | grep -n notion.com`이 비어 있는지 확인한다.
 - 만든 것을 로컬 `main`에 커밋한다. 아직 원격과 main 보호 규칙이 없어서 직접 커밋할 수 있는 마지막 때다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
 - worktree에서 설립하지 않는다. 설립 커밋이 main에 들어가야 한다.
 

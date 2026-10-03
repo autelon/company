@@ -30,7 +30,8 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 공유 파일 쓰기 규칙
 
-- `board/`, `decisions/`, `state/`, `prds/`, `docs/goals.md`, `notion/`은 **director만** 쓴다.
+- `board/`, `decisions/`, `state/`, `prds/`, `docs/goals.md`, `notion/`은 **director만** 쓴다. 예외: `notion/ids.json`은 notion-sync가 쓴다.
+- `notion/`은 커밋하지 않는다(Notion URL·ID가 public 저장소에 공개되지 않게). 다른 커밋되는 파일에도 Notion URL·ID를 적지 않는다.
 - role은 자기 handoff만 쓴다. 예외: developer는 코드, da는 `analytics/`.
 - PRD는 `${CLAUDE_PLUGIN_ROOT}/templates/prd.md`로 만든다. 섹션은 role이 handoff에 초안을 쓰고, director가 승인 후 PRD에 반영한다.
 
