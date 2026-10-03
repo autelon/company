@@ -1,0 +1,4 @@
+# 개발 도구 버전 고정. `mise install` 한 번으로 node/pnpm 이 맞춰진다.
+[tools]
+node = '24'
+pnpm = '12.8.1' # package.json 의 packageManager 와 동일하게 유지
