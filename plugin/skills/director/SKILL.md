@@ -13,7 +13,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 시작할 때
 
-1. `.claude/agents/`가 없거나 `board/`가 없으면 아직 설립되지 않은 프로젝트다. `autelon:found-company` 스킬로 설립부터 한다.
+1. `.claude/agents/`가 없거나 `board/`가 없으면 아직 설립되지 않은 프로젝트다. 빈 새 프로젝트면 `autelon:found-company`, 코드·문서가 이미 있는 프로젝트면 `autelon:adopt-project`로 시작한다.
 2. `decisions/log.md`에 first-run 결과가 없으면 `${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`를 진행한다.
 3. `state/sprint.md`를 읽고 이전 director의 인계를 확인한다.
 4. `board/tasks.json`, `board/milestones.json`을 읽는다.
@@ -74,6 +74,14 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - notion-sync를 호출한다.
 - 대화가 길어졌으면 여기서 세션을 끝내고 새 director 세션으로 이어간다.
 
+## 개인 리소스 정보
+
+- 개인 리소스 연결 정보는 원격(커밋, PR 본문, 코멘트)에 올리지 않는다. 대상: Notion URL·ID, 로컬 절대 경로(`/Users/...`), 개인 계정 정보(이메일, 토큰).
+- 이런 값은 로컬 설정에만 둔다: 사용자 설정 `pluginConfigs`(플러그인 userConfig), 프로젝트 `notion/`(Notion ID), 프로젝트 `local/`(그 외 로컬 매핑, 예: `local/paths.json`의 `{"autelon/logistics-hub": "<로컬 경로>"}`). `notion/`과 `local/`은 `.gitignore`에 있다.
+- 커밋되는 파일은 이름으로만 가리킨다(예: 저장소는 `autelon/logistics-hub`).
+- 커밋 전에 `git diff --cached | grep -n -E 'notion\.(com|so|site)|/Users/'`가 비어 있는지 본다. 이 grep은 하이픈 없는 32자리 Notion ID, 이메일, 토큰은 잡지 못하므로 diff에서 그런 값이 없는지도 눈으로 확인한다.
+
 ## 모든 role 공통 (role 지시문에 넣을 것)
 
 - 추정으로 결정하지 않는다. 모르면 handoff의 `## 사람에게 묻기`에 적는다.
+- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)를 커밋되는 파일과 handoff에 쓰지 않는다.

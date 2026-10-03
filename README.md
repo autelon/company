@@ -4,6 +4,8 @@ A Claude Code plugin for role-based multi-agent orchestration.
 Each project lives in its own repository with its own roles, state files, and Notion databases; this repository only holds the shared operating model.
 
 - `found-company` skill: sets up a project repo (designs roles, scaffolds board/PRD/decision files, creates the project's Notion page and databases).
+- `adopt-project` skill: brings an existing project (code, docs, repo already in place) under autelon without overwriting its docs; designs domain-expert roles from its domain docs and proposes how to reconcile its current workflow with the director rules.
+- Personal resource links (Notion URLs/IDs, local absolute paths, account details) never go into commits; they live in local config (`pluginConfigs`, the project's gitignored `notion/` and `local/`).
 - `director` skill: operating rules for the main session in a project.
 - Shared roles: `finance` (token budget) and `notion-sync`.
 

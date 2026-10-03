@@ -21,5 +21,6 @@
 | `analytics/`                                | 이벤트 명세, 분석 쿼리 (da)                                                                |
 | `state/`                                    | 사용량 스냅샷, 스프린트 인계                                                               |
 | `notion/`                                   | Notion 페이지·DB ID(`config.json`), 항목별 페이지 URL(`ids.json`). 커밋하지 않음, 로컬에만 |
+| `local/`                                    | 그 밖의 로컬 매핑(예: 다른 저장소의 로컬 경로). 커밋하지 않음                              |
 | `docs/git-rules.md`                         | 저장소 설정, PR 리뷰어, PR 절차                                                            |
 | `.github/workflows/ci.yml`                  | 필수 검사                                                                                  |
