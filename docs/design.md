@@ -38,6 +38,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - `pluginConfigs`(userConfig 값)는 사용자·관리 설정에서만 읽고 프로젝트 settings에서는 무시한다. **[확인]** settings-reference 문서
 - 기존 프로젝트는 `adopt-project` 스킬로 들인다. found-company는 CLAUDE.md·결정·목표 파일을 템플릿으로 만들어 기존 프로젝트에서는 덮어쓰거나 충돌한다. adopt-project는 기존 문서를 원본으로 두고 없는 autelon 파일만 더하며, 기존 작업 방식은 비교해 제안만 한다. (2026-10-04, logistics-hub 도입 요청에서)
 - 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)는 원격에 올리지 않고 로컬 설정(`pluginConfigs`, 프로젝트 `notion/`·`local/`, gitignore)에만 둔다. 커밋되는 파일은 이름으로 가리킨다. (사용자 결정 2026-10-04) 2026-10-04 점검: autelon 조직 저장소 3개(company, .github, logistics-hub)의 전체 히스토리·PR·코멘트에 Notion URL·개인 경로 없음. poker 로컬 히스토리의 절대 경로는 push 전에 `~/`로 바꿨다.
+- 보안 검토자(`security-reviewer`)는 공용 role로 플러그인에 둔다. 리뷰어 지정(director / reviewer role / 사람)과 상관없이 모든 PR에 들어가고, 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있어야 머지한다. 개인 경로, Notion 주소·ID, 비밀 값, 개인 정보, 위험한 CI·의존성 변경을 엄격하고 보수적으로 본다(확신이 없으면 수정 필요). 공용 role로 둔 이유: 프로젝트 role로 두면 프로젝트마다 기준이 달라지고, 플러그인 업데이트만으로 진행 중인 프로젝트(poker, logistics-hub)에도 같은 기준이 들어간다. (사용자 결정 2026-10-04)
 - role 개선의 두 층
   - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`
   - 프로젝트를 넘는 개선: `plugin/templates/roles/`를 고쳐 커밋 → 다음에 설립하는 프로젝트부터 반영

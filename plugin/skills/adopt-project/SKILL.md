@@ -41,6 +41,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 - 기존 문서가 이미 정한 결정은 role이 뒤집지 않는다. 바꿔야 한다고 보면 handoff의 `## 사람에게 묻기`로 올린다.
 - 구성안을 표로 보여 주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 근거가 된 문서, 모델.
 - 승인된 role을 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`.
+- 공용 role(`autelon:finance`, `autelon:notion-sync`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 4단계에서 어떤 작업 방식을 고르든 모든 PR에 보안 검토로 들어간다. 기존 git 규칙 문서에 이 내용을 더한다.
 
 ## 4. 작업 방식 비교 (바꾸지 않고 제안)
 
@@ -68,7 +69,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 
 - 프로젝트의 커밋 규칙과 검증 명령(0단계에서 찾은 것)을 따른다. 새로 만든 파일도 포맷 검사 대상이다.
 - 개인 리소스 정보 확인: director 스킬의 "개인 리소스 정보" 절의 grep이 비어 있어야 한다.
-- main이 보호되어 있으면 브랜치와 PR로 올린다. 리뷰어는 2단계에서 정한 대로 한다. 작업한 세션은 자기 PR을 머지하지 않는다.
+- 브랜치와 PR로 올린다. 리뷰어는 2단계에서 정한 대로 하고, 보안 검토는 `autelon:security-reviewer`가 한다. 작업한 세션은 자기 PR을 머지하지 않는다.
 
 ## 7. 보고
 

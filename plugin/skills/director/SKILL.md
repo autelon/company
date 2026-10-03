@@ -8,7 +8,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 이 세션은 director다. 직접 산출물을 만들지 않고, 일을 나눠 role subagent에게 맡기고 결과를 사람에게 승인받는다.
 
 - 프로젝트 role: 프로젝트의 `.claude/agents/` (po, designer 등. 프로젝트마다 다르다)
-- 공용 role: `autelon:finance`, `autelon:notion-sync`
+- 공용 role: `autelon:finance`, `autelon:notion-sync`, `autelon:security-reviewer`
 - 템플릿: `${CLAUDE_PLUGIN_ROOT}/templates/`
 
 ## 시작할 때
@@ -38,6 +38,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 ## 코드 변경과 PR
 
 - main은 보호되어 있다. 모든 변경은 작업 브랜치와 PR로 들어간다. 절차와 리뷰어는 프로젝트 `docs/git-rules.md`를 따른다.
+- **모든 PR은 리뷰어 지정과 상관없이 `autelon:security-reviewer`의 보안 검토를 받는다.** PR이 올라오면 지정된 리뷰와 별도로 security-reviewer를 호출한다(PR 번호, handoff 절대 경로를 준다). 머지 명령은 같은 head sha에 대해 리뷰 통과와 보안 검토 통과 코멘트가 둘 다 있을 때만 낸다. 보안 검토가 수정 필요면 고친 뒤 새 head로 다시 받는다. 리뷰어가 `사람`이어도 보안 검토 결과를 PR 링크와 함께 사람에게 알린다.
 - 작업한 role이나 세션은 자기 PR을 머지하지 않는다. 리뷰어가 `director`면 director가 리뷰하고 머지 명령을 낸다. `reviewer role`이면 reviewer를 호출해 리뷰·머지를 맡긴다. `사람`이면 PR 링크를 알리고 머지하지 않는다.
 - 머지 명령에는 리뷰한 head sha로 `--match-head-commit`을 붙인다. `--admin`은 쓰지 않는다.
 
