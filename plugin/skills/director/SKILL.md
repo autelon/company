@@ -1,6 +1,6 @@
 ---
 name: director
-description: agent-company로 운영하는 프로젝트에서 director(메인 세션)가 따르는 운영 규칙. 프로젝트 CLAUDE.md가 세션 시작 시 이 스킬을 부르라고 할 때, 또는 task 배정·승인·재무·Notion 동기화 방법을 확인할 때 사용.
+description: autelon으로 운영하는 프로젝트에서 director(메인 세션)가 따르는 운영 규칙. 프로젝트 CLAUDE.md가 세션 시작 시 이 스킬을 부르라고 할 때, 또는 task 배정·승인·재무·Notion 동기화 방법을 확인할 때 사용.
 ---
 
 # director 운영 규칙
@@ -8,12 +8,12 @@ description: agent-company로 운영하는 프로젝트에서 director(메인 �
 이 세션은 director다. 직접 산출물을 만들지 않고, 일을 나눠 role subagent에게 맡기고 결과를 사람에게 승인받는다.
 
 - 프로젝트 role: 프로젝트의 `.claude/agents/` (po, designer 등. 프로젝트마다 다르다)
-- 공용 role: `agent-company:finance`, `agent-company:notion-sync`
+- 공용 role: `autelon:finance`, `autelon:notion-sync`
 - 템플릿: `${CLAUDE_PLUGIN_ROOT}/templates/`
 
 ## 시작할 때
 
-1. `.claude/agents/`가 없거나 `board/`가 없으면 아직 설립되지 않은 프로젝트다. `agent-company:found-company` 스킬로 설립부터 한다.
+1. `.claude/agents/`가 없거나 `board/`가 없으면 아직 설립되지 않은 프로젝트다. `autelon:found-company` 스킬로 설립부터 한다.
 2. `decisions/log.md`에 first-run 결과가 없으면 `${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`를 진행한다.
 3. `state/sprint.md`를 읽고 이전 director의 인계를 확인한다.
 4. `board/tasks.json`, `board/milestones.json`을 읽는다.
@@ -52,13 +52,13 @@ description: agent-company로 운영하는 프로젝트에서 director(메인 �
 ## 재무 규칙
 
 - task를 새로 배정하기 전마다 `get_usage`를 호출하고, 결과의 `plan` 객체를 **가공하지 말고 그대로** `state/quota.json`에 저장한 뒤 `node "${CLAUDE_PLUGIN_ROOT}/scripts/finance-check.mjs"`를 프로젝트 루트에서 실행해 신호를 따른다.
-  - `signal`: `GO` 정상 / `CAUTION` 작은 task만 / `WRAP_UP` 새 task 금지, 진행 중 task 마무리, `agent-company:finance`에 재개 계획 요청
+  - `signal`: `GO` 정상 / `CAUTION` 작은 task만 / `WRAP_UP` 새 task 금지, 진행 중 task 마무리, `autelon:finance`에 재개 계획 요청
   - `weekly_low`가 true면 opus role은 판단 작업에만 쓰고 나머지는 sonnet/haiku role로 돌린다
 - `get_usage`를 쓸 수 없는 환경이면 사람에게 알리고 보수적으로(`CAUTION`) 진행한다.
 
 ## Notion 동기화
 
-- 체크포인트(handoff 승인, task 상태 변경 묶음, 스프린트 종료)에서 `agent-company:notion-sync`를 호출한다.
+- 체크포인트(handoff 승인, task 상태 변경 묶음, 스프린트 종료)에서 `autelon:notion-sync`를 호출한다.
 - director는 Notion을 직접 읽거나 쓰지 않는다. Notion을 보고 판단하지 않는다. Notion에서 고친 내용은 로컬로 가져오지 않는다.
 
 ## 끝낼 때 (스프린트 종료)

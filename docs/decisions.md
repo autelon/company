@@ -5,5 +5,5 @@
 | 2026-10-03 | Notion 역방향 | Notion에서 고친 내용을 로컬로 가져올까     | 가져오지 않음. 승인은 푸시로만                                                                                                            | design.md 5절 반영                               |
 | 2026-10-03 | 성공지표      | 성공지표·성과측정은 무엇인가               | 항상 비즈니스 관점, PRD마다 다름, 전체 목표에 연결. 정할 role과 분석 쿼리 쓸 da 필요                                                      | strategist·da role 추가                          |
 | 2026-10-03 | 스모크 테스트 | 설계 세션에서 role을 실제로 호출할 수 있나 | 못 함. 다른 폴더에서 시작한 세션은 이 리포 role을 인식하지 않음. `claude` CLI는 PATH에 없고, 앱 내장 바이너리는 단독 실행 시 로그인 안 됨 | first-run 플레이북으로 넘김                      |
-| 2026-10-03 | 배포 구조     | 여러 프로젝트에 어떻게 적용하나            | 프로젝트마다 role·데이터·문서·repo가 독립. agent-company는 플러그인으로 운영 방식만 담는다                                                | plugin/ 구조로 전환, found-company·director 스킬 |
+| 2026-10-03 | 배포 구조     | 여러 프로젝트에 어떻게 적용하나            | 프로젝트마다 role·데이터·문서·repo가 독립. autelon은 플러그인으로 운영 방식만 담는다                                                      | plugin/ 구조로 전환, found-company·director 스킬 |
 | 2026-10-03 | Notion 구조   | 공유 DB + Project 속성 vs 프로젝트별 DB    | 프로젝트별 독립 (루트 페이지 아래 프로젝트 페이지마다 DB 세 개)                                                                           | found-company가 생성                             |

@@ -1,6 +1,6 @@
 ---
 name: found-company
-description: 새 프로젝트 repo에 agent-company 운영 구조를 세운다. 프로젝트에 필요한 role을 설계해 .claude/agents/에 만들고, 보드·PRD·결정 기록 등 상태 파일과 프로젝트 전용 Notion 페이지·DB를 만든다. "회사 설립", "프로젝트 설립", 아직 board/나 .claude/agents/가 없는 프로젝트에서 director를 시작할 때 사용.
+description: 새 프로젝트 repo에 autelon 운영 구조를 세운다. 프로젝트에 필요한 role을 설계해 .claude/agents/에 만들고, 보드·PRD·결정 기록 등 상태 파일과 프로젝트 전용 Notion 페이지·DB를 만든다. "회사 설립", "프로젝트 설립", 아직 board/나 .claude/agents/가 없는 프로젝트에서 director를 시작할 때 사용.
 ---
 
 # 프로젝트 설립
@@ -31,7 +31,7 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
    - 모델은 판단이 무거운 role만 opus, 정해진 규칙대로 하는 role은 sonnet/haiku.
 3. 구성안을 표로 보여주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 모델, 기본 템플릿에서 바꾼 점.
 4. 승인된 role을 프로젝트 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`를 둔다. 첫 줄 주석 `(v0 페르소나 — role 설계 단계에서 개선 예정)`은 유지한다.
-5. 공용 role(`agent-company:finance`, `agent-company:notion-sync`)은 플러그인에 있으니 만들지 않는다.
+5. 공용 role(`autelon:finance`, `autelon:notion-sync`)은 플러그인에 있으니 만들지 않는다.
 
 ## 3. 상태 파일
 
@@ -81,5 +81,5 @@ Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지�
 ## 5. 마무리
 
 - `.claude/settings.json`이 이 플러그인을 켜고 있는지 확인한다 (이 스킬이 돌고 있다면 이미 켜져 있다).
-- 만든 것을 커밋한다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): agent-company 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
+- 만든 것을 커밋한다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
 - 사람에게 보고한다: role 구성, 만든 파일, Notion 페이지 링크, 다음 단계(목표·지표 체계 수립 또는 first-run).

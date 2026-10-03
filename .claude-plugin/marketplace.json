@@ -1,12 +1,12 @@
 {
-  "name": "agent-company",
+  "name": "autelon",
   "owner": {
     "name": "rojiwon123"
   },
-  "description": "agent-company 로컬 마켓플레이스",
+  "description": "autelon 로컬 마켓플레이스",
   "plugins": [
     {
-      "name": "agent-company",
+      "name": "autelon",
       "source": "./plugin",
       "description": "role 단위 멀티 에이전트 오케스트레이션: 프로젝트 설립, director 운영 규칙, 재무·Notion 동기화 role"
     }

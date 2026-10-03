@@ -1,4 +1,4 @@
-# agent-company 설계
+# autelon 설계
 
 role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션. Claude Code 공식 기능만으로 구성하고, 직접 만드는 코드는 최소로 둔다.
 
@@ -6,16 +6,17 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 
 ## 0. 배포 구조: 플러그인 + 프로젝트별 독립 repo
 
-- agent-company는 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다. (사용자 결정 2026-10-03)
+- 이름: 플러그인·마켓플레이스는 `autelon`, 이 리포는 GitHub `autelon/company`(로컬 `~/dev/autelon/company`). 처음 이름은 agent-company였고 2026-10-03에 바꿨다. (사용자 결정)
+- autelon은 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다. (사용자 결정 2026-10-03)
 - 그래서 이 리포는 Claude Code 플러그인(`plugin/`)이다. 프로젝트 repo의 `.claude/settings.json`이 `extraKnownMarketplaces`(directory 소스)와 `enabledPlugins`로 이 플러그인을 켠다. 전역 설정에는 켜지 않는다. **[확인]** settings-reference 문서
   - 프로젝트 settings의 마켓플레이스 등록은 그 폴더의 workspace trust를 수락한 뒤에만 적용된다. **[확인]** 문서
   - directory 소스 플러그인이 프로젝트 settings만으로 설치되는지, 한 번 `/plugin install`이 필요한지, 등록 흔적이 `~/.claude`에 남는지 **[미확인]**
-- 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `agent-company:finance`·`agent-company:notion-sync`, 템플릿, 재무 스크립트.
+- 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:notion-sync`, 템플릿, 재무 스크립트.
 - 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), 상태 파일 전부, `notion/config.json`, 코드.
 - role 개선의 두 층
   - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`
   - 프로젝트를 넘는 개선: `plugin/templates/roles/`를 고쳐 커밋 → 다음에 설립하는 프로젝트부터 반영
-- director 규칙은 플러그인 `settings.agent`(메인 대화를 director agent로 띄우기)로 넣지 않고 스킬로 둔다. 문서상 agent를 메인으로 쓰면 그 agent 프롬프트가 Claude Code 기본 시스템 프롬프트를 **통째로 대체**한다. **[확인]** sub-agents 문서. 기본 도구 사용 지침을 잃을 위험이 있어, 프로젝트 CLAUDE.md가 세션 시작 시 `agent-company:director` 스킬을 부르게 했다.
+- director 규칙은 플러그인 `settings.agent`(메인 대화를 director agent로 띄우기)로 넣지 않고 스킬로 둔다. 문서상 agent를 메인으로 쓰면 그 agent 프롬프트가 Claude Code 기본 시스템 프롬프트를 **통째로 대체**한다. **[확인]** sub-agents 문서. 기본 도구 사용 지침을 잃을 위험이 있어, 프로젝트 CLAUDE.md가 세션 시작 시 `autelon:director` 스킬을 부르게 했다.
 - 플러그인 agent는 `permissionMode`, `hooks`, `mcpServers`를 무시하고 `memory`, `isolation`, `tools`, `model`, `skills`, `omitClaudeMd`는 지원한다. **[확인]** plugins/components 문서
 
 ## 1. 구조 (B안: director + role subagent)

@@ -1,10 +1,10 @@
 {
   "extraKnownMarketplaces": {
-    "agent-company": {
-      "source": { "source": "directory", "path": "{{AGENT_COMPANY_PATH}}" }
+    "autelon": {
+      "source": { "source": "directory", "path": "{{AUTELON_PATH}}" }
     }
   },
   "enabledPlugins": {
-    "agent-company@agent-company": true
+    "autelon@autelon": true
   }
 }

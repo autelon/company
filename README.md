@@ -1,4 +1,4 @@
-# agent-company
+# autelon
 
 A Claude Code plugin for role-based multi-agent orchestration.
 Each project lives in its own repository with its own roles, state files, and Notion databases; this repository only holds the shared operating model.
@@ -16,9 +16,9 @@ Add to the project's `.claude/settings.json`:
 ```json
 {
   "extraKnownMarketplaces": {
-    "agent-company": { "source": { "source": "directory", "path": "/path/to/agent-company" } }
+    "autelon": { "source": { "source": "directory", "path": "/path/to/autelon/company" } }
   },
-  "enabledPlugins": { "agent-company@agent-company": true }
+  "enabledPlugins": { "autelon@autelon": true }
 }
 ```
 

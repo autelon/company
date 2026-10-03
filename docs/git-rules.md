@@ -21,9 +21,9 @@ Refs: docs/design.md
 
 - 형식은 `type(scope): 요약`, 72자 이내. `commit-msg` 훅이 검사한다.
 - **type**: `feat` 동작 추가 · `fix` 잘못된 동작 수정 · `refactor` 동작 변화 없는 구조 변경 · `perf` · `test` · `docs` · `build` 의존성·빌드·도구 · `ci` · `chore` 그 외
-- **scope**: 바뀐 영역 — `agents`(`.claude/agents/`) `director`(`CLAUDE.md`) `board` `prds` `templates` `scripts` `notion` `docs`. 리포 전역 설정은 `repo`. 여러 개면 쉼표로 (`agents,templates`).
+- **scope**: 바뀐 영역 — `skills`(`plugin/skills/`) `agents`(`plugin/agents/`, 공용 role) `templates`(`plugin/templates/`) `playbooks`(`plugin/playbooks/`) `scripts`(`plugin/scripts/`) `plugin`(`plugin/.claude-plugin/`, `.claude-plugin/` 매니페스트) `docs` `ci`(`.github/`). 리포 전역 설정은 `repo`. 여러 개면 쉼표로 (`skills,templates`).
 - 요약은 **동작이나 결과**로 쓴다. "units.service 수정"이 아니라 "배송 완료 이벤트에 출고 때의 주문 참조를 이어 붙임".
-- 파일 형식(board, handoff, PRD frontmatter)을 호환되지 않게 바꾸면 `!` 를 붙이고, 본문에 `BREAKING:` 으로 무엇을 고쳐야 하는지 적는다.
+- 파일 형식(board, handoff, PRD frontmatter)이나 프로젝트가 부르는 이름(플러그인·스킬·role 이름)을 호환되지 않게 바꾸면 `!` 를 붙이고, 본문에 `BREAKING:` 으로 무엇을 고쳐야 하는지 적는다.
 
 ### 본문
 
@@ -75,6 +75,6 @@ git 은 작성자(author)와 커밋한 사람(committer)을 따로 기록한다.
 | 이 줄이 왜 이렇게 됐나           | `git blame -L <시작>,<끝> <파일>` → `git show <커밋>` |
 | 이 함수가 어떻게 변해 왔나       | `git log -L :<함수명>:<파일>`                         |
 | 이 식별자가 언제 생기고 사라졌나 | `git log -S '<문자열>' --oneline`                     |
-| 한 role 정의의 변경 이력         | `git log --oneline -- .claude/agents/po.md`           |
+| 한 role 정의의 변경 이력         | `git log --oneline -- plugin/templates/roles/po.md`   |
 | 형식을 깬 변경                   | `git log --grep='BREAKING:'`                          |
 | 특정 종류의 변경                 | `git log --grep='^feat(agents)'`                      |

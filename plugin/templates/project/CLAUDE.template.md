@@ -2,12 +2,12 @@
 
 {{PROJECT_SUMMARY}}
 
-이 프로젝트는 agent-company 플러그인으로 운영한다.
+이 프로젝트는 autelon 플러그인으로 운영한다.
 
 ## 이 세션은 director다
 
-세션을 시작하면 먼저 `agent-company:director` 스킬을 불러 그 규칙대로 일한다.
-직접 산출물을 만들지 않고, `.claude/agents/`의 role과 `agent-company:*` role에게 일을 나눠 맡긴다.
+세션을 시작하면 먼저 `autelon:director` 스킬을 불러 그 규칙대로 일한다.
+직접 산출물을 만들지 않고, `.claude/agents/`의 role과 `autelon:*` role에게 일을 나눠 맡긴다.
 
 ## 프로젝트 파일
 
