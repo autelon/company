@@ -1,23 +1,29 @@
 # 첫 실행 확인
 
-autelon으로 설립한 프로젝트에서 director가 처음 할 일. 지금까지 확인하지 못한 동작을 실제로 돌려 보고 결과를 `decisions/log.md`에 남긴다.
-이 리포는 자동 테스트를 두지 않는 부분을 플레이북으로 확인한다. 결과에는 **실제로 본 것**만 적는다.
+autelon으로 설립하거나 도입한 프로젝트에서 director가 처음 할 일. 플러그인 자체의 동작(로드, 메모리 위치, 푸시 등)은 autelon/poker에서 확인을 끝냈다(`docs/design.md` 0절·7절). 여기서는 **이 프로젝트에서 연결이 제대로 됐는지**만 짧게 본다.
+결과에는 **실제로 본 것**만 적는다. role에게 경로를 적게 할 때는 프로젝트 루트 기준 상대 경로로 받는다(handoff 포함). 절대 경로가 handoff에 적힌 적이 있다. 결과는 프로젝트 `docs/first-run.md`에 몇 줄로 남긴다. `decisions/log.md`에는 쓰지 않는다. 그 파일은 사람의 결정(질문과 답)만 담는다.
 
 ## 준비
 
-- Desktop 앱에서 프로젝트 repo 폴더로 Code 세션을 연다. 프로젝트 `.claude/settings.json`이 `enabledPlugins`로 autelon 플러그인을 켜고, 사용자 설정에 GitHub 마켓플레이스(`autelon/company`)가 등록되고 플러그인이 user scope로 설치되어 있어야 한다. (다른 폴더에서 시작한 세션은 그 폴더의 role을 인식하지 못한다. 2026-10-03 확인)
-- 플러그인이 설치됐는지 본다: `claude plugin list`에 `autelon@autelon`이 있고 켜져 있는가. 없으면 결과를 그대로 기록하고 사람에게 알린다. 설치는 사용자 설정(`~/.claude/plugins/`)을 바꾸므로 사람이 정한다. 방법은 플러그인 리포 README의 "Use in a project".
-- `/remote-control`을 켠다. 아래 2단계의 폰 푸시는 Remote Control이 켜져 있어야 온다.
-- `/config`에서 **Push when actions required**를 켠다. 폰에 Claude 앱이 같은 계정으로 로그인돼 있어야 한다.
+- 프로젝트 repo 폴더에서 Code 세션을 연다(다른 폴더에서 시작한 세션은 그 폴더의 role을 인식하지 못한다).
+- 이 세션에서 프로젝트 role(`.claude/agents/`)을 방금 만들었으면 사람에게 `/reload-plugins`를 입력해 달라고 요청한다. 내장 명령이라 Claude가 실행할 수 없다. reload 전에는 `Agent type '<role>' not found`가 난다.
 
-## 단계
+## 확인
 
-1. **role 인식**: 프로젝트 `.claude/agents/`의 role과 공용 role(`autelon:finance`, `autelon:notion-sync`)을 subagent로 호출할 수 있는지, `autelon:director`·`autelon:found-company` 스킬이 보이는지 확인한다.
-2. **승인 루프 (핵심)**: director가 AskUserQuestion으로 아무 질문 하나를 한다 (예: "first-run 승인 루프 테스트: 계속할까요?"). 사람이 폰 푸시를 받아 폰에서 답한다.
-   - 확인: 폰에 푸시가 왔는가, 폰에서 고른 답이 세션에 들어왔는가.
-3. **finance 호출과 메모리**: `get_usage` → `state/quota.json` 저장 → 재무 판정 스크립트(경로는 director 스킬의 재무 규칙에 있다) → `autelon:finance`를 task `T-SMOKE-1`로 호출해 handoff를 쓰게 하고, 메모리에 한 줄 남기게 한다.
-   - 확인: `handoffs/T-SMOKE-1.md`가 생겼는가, finance 메모리가 어디에 생겼는가 (프로젝트 `.claude/agent-memory/` 아래 어떤 이름의 폴더인지 그대로 적는다).
-4. **notion-sync가 Notion 커넥터를 쓰는가**: 마일스톤 하나(`M-00`, "스모크 테스트")를 `board/milestones.json`에 넣고 `autelon:notion-sync`를 task `T-SMOKE-2`로 호출한다.
-   - 확인: 프로젝트 Notion Milestones DB에 생겼는가, `notion/ids.json`에 `M-00`의 페이지 URL이 생겼는가, handoff와 다른 커밋되는 파일에 URL이 없는가. 확인 후 Notion에서 사람이 지운다.
-5. **developer worktree**: 아직 코드가 없으므로 생략. 첫 구현 task 때 확인한다: handoff가 메인 checkout의 절대 경로에 생기는가, `.claude/agent-memory/developer/`가 어디에 생기는가.
-6. 결과를 프로젝트 `decisions/log.md`에 적는다. autelon/company 리포의 `docs/design.md` 7절 갱신은 사람에게 알려 autelon/company 쪽에서 한다. 스모크 handoff와 M-00은 지운다.
+1. **플러그인과 role**: 프로젝트 `.claude/settings.json`의 `enabledPlugins`에 `autelon@autelon`이 켜져 있는지, 스킬·agent 목록에 autelon 스킬(`autelon:director`, `autelon:found-company`, `autelon:adopt-project`)과 프로젝트 role, 공용 role이 보이는지 본다. `claude plugin list`를 기본 확인으로 쓰지 않는다(Desktop 세션의 셸 PATH에 `claude`가 없을 수 있다). CLI가 꼭 필요하면 앱에 들어 있는 `claude` 바이너리의 전체 경로를 쓴다. 사용자는 CLI를 직접 입력하지 않는다.
+2. **Notion** (프로젝트가 Notion을 쓸 때만): `autelon:notion-sync`가 이 프로젝트 DB에 테스트 항목 하나를 쓰게 한다. 항목의 페이지 URL은 `notion/ids.json`에만 남기고 handoff 등 커밋되는 파일에는 쓰지 않는다. 확인한 뒤 테스트 항목은 사람이 Notion에서 지운다.
+3. **보안 검토**: 첫 PR이 생기면 `autelon:security-reviewer`를 그 PR에 호출할 수 있는지 본다. PR 코멘트가 기록이다.
+4. **developer worktree**: 첫 구현 task 때 확인한다. handoff가 메인 checkout의 절대 경로에 생기는가, `.claude/agent-memory/developer/`가 어디에 생기는가.
+
+## 폰 푸시가 안 올 때 (선택)
+
+데스크톱 Code 탭의 `/config`는 `key=value` 형식만 받는다.
+
+- `/config inputNeededNotifEnabled=true`: Push when actions required
+- `/config agentPushNotifEnabled=true`: Push when Claude decides
+
+질문 전에 사람이 Desktop 앱을 벗어나 있어야 한다. 앱을 보고 있으면 푸시가 나가지 않는다(PushNotification이 "터미널이 활성 상태라 중복"으로 거절됨, logistics-hub 관찰). 앱을 벗어난 뒤에는 푸시가 오고 폰에서 고른 답이 세션에 들어왔다. 푸시는 데스크톱보다 늦게 올 수 있다. 오지 않으면 위 명령을 다시 실행하고, 폰 앱에서 그 세션을 한 번 연다. 폰에는 같은 계정으로 로그인한 Claude 앱과 켜진 Remote Control이 필요하다. 원인은 확인하지 못했다(`docs/design.md` 7절).
+
+## 결과 기록
+
+프로젝트 `docs/first-run.md`에 날짜와 함께 위 확인 항목마다 본 것을 몇 줄로 적는다. 확인하지 못한 항목은 "미확인"으로 적는다. 테스트 항목과 임시 handoff는 지운다. 플러그인 쪽에서 고칠 점이 나오면 autelon/company에 이슈로 올린다.

@@ -1,6 +1,6 @@
 # Git 규칙
 
-이 프로젝트는 `~/.claude/git-workflow.md`(전역 Git·저장소 표준)를 따른다. 여기에는 이 프로젝트에서 정한 값만 적는다.
+이 프로젝트는 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`(Git·저장소 표준)를 따른다. 여기에는 이 프로젝트에서 정한 값만 적는다.
 
 ## 저장소
 
