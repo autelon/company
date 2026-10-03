@@ -84,6 +84,11 @@ Notion     = 사람이 보는 투영(projection)
 - subagent는 AskUserQuestion을 못 쓴다. 사람에게 묻는 건 director만 한다. **[확인]**
 - 권한 요청·질문은 Remote Control + "Push when actions required"로 폰에 온다. 답할 때까지 열려 있다. **[확인]**
 - director도 오래 쓰지 않는다. 스프린트가 끝나면 상태를 파일에 남기고 종료하고, 다음 director가 파일을 읽고 이어간다.
+- 세션 구조는 세 단계다. (사용자 결정 2026-10-04)
+  - **루트(조율) 세션**: 프로젝트 폴더들의 상위 폴더에서 연다. 사람의 요청을 받아 프로젝트·작업 단위로 나누고, 작업 세션을 `mcp__ccd_session__spawn_task` 칩(대화 없이 혼자 진행할 수 있는 prompt)으로 연다. 작업 세션의 기록을 읽어(`list_events`) 정리하고, 필요하면 메시지(`send_message`)로 지시한다. 플러그인 리포 변경과 프로젝트 공통 일을 맡는다. 직접 프로젝트 코드를 고치지 않는다.
+  - **작업(director) 세션**: 프로젝트 폴더에서 작업 단위 하나를 맡고, 끝나면 `state/sprint.md`에 인계를 쓰고 끝난다.
+  - **role task**: director 세션 안의 subagent.
+  - 근거: 플러그인은 세션 시작 때 불러온다 **[확인]**(plugins/loading 문서). Desktop의 `/reload-plugins`는 사람이 직접 친 입력으로만 실행된다 **[확인]**(commands 문서). 이 계정에서 세션은 사람이 칩을 눌러야 생긴다(`start_session`은 서버 기능 플래그로 꺼짐) **[확인]**. 그래서 role task마다 세션을 만들면 클릭만 늘고, 한 세션을 오래 쓰면 reload가 잦아진다.
 
 ## 2. 파일 규칙 (모두 프로젝트 repo 안)
 
