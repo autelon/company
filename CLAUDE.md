@@ -8,6 +8,8 @@ role 단위 멀티 에이전트 오케스트레이션 프로젝트. 설계는 `d
 
 ### 시작할 때
 
+0. 처음 실행하는 director라면 `docs/playbooks/first-run.md`부터 진행한다 (`decisions/log.md`에 first-run 결과가 없으면 처음이다).
+
 1. `state/sprint.md`를 읽고 이전 director의 인계 내용을 확인한다.
 2. `board/tasks.json`, `board/milestones.json`을 읽는다.
 3. 사용량을 확인한다 (아래 재무 규칙).

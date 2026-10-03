@@ -80,45 +80,48 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
 - 로컬 파일이 원본, Notion은 투영. **role/director는 Notion을 읽고 판단하지 않는다.** (양방향 충돌 해결을 만들지 않기 위해)
 - 동기화는 체크포인트에서만: task 상태 변경 묶음, handoff 승인, 스프린트 종료.
 - 동기화는 `notion-sync` subagent(haiku)만 한다. Notion MCP 도구를 director와 다른 role의 context에 두지 않기 위해서다. 그래서 다른 role은 `tools:`를 명시해 MCP 도구를 상속하지 않게 한다.
-- **[미확인]** Notion MCP가 DB 생성, relation 속성, 보드 뷰 생성까지 되는지. 인증 후 도구 목록을 보고 스키마를 확정한다.
-- **[미확인]** subagent `mcpServers`에 이미 설치된 플러그인 MCP를 이름으로 참조할 수 있는지. 확인 전까지 notion-sync 정의에 넣지 않음.
+- **[확인]** claude.ai Notion 커넥터로 DB 생성(SQL DDL), 양방향 relation, 자기 참조 relation, 보드 뷰 생성까지 된다. 2026-10-03 실제로 만들었다. 위치와 ID는 `notion/config.json`.
+- Tasks DB에 보드 뷰 두 개: `칸반`(Status별), `role별`(Role별). role별 보드가 후순위로 미룬 "role 단위 보기"의 최소판이다.
+- **[미확인]** subagent(notion-sync)가 claude.ai 커넥터 도구를 상속받아 쓸 수 있는지. notion-sync는 `tools:`를 지정하지 않아 모든 도구를 상속하게 했다. `docs/playbooks/first-run.md` 3단계에서 확인.
 - Notion → 로컬 역방향은 없다. 승인은 AskUserQuestion·푸시로만 받는다. (사용자 결정 2026-10-03)
 
-DB 스키마 (초안)
+DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 
 **Milestones**
 
-| 속성        | 타입                         | 로컬                    |
-| ----------- | ---------------------------- | ----------------------- |
-| Name        | title                        | milestones.json `title` |
-| Status      | select (planned/active/done) | `status`                |
-| Target date | date                         | `target`                |
-| PRDs        | relation → PRDs              | 역산                    |
-| Local ID    | text                         | `id` (M-01)             |
+| 속성        | 타입                                  | 로컬                    |
+| ----------- | ------------------------------------- | ----------------------- |
+| Name        | title                                 | milestones.json `title` |
+| Local ID    | text                                  | `id` (M-01)             |
+| Status      | select (planned/active/done)          | `status`                |
+| Target date | date                                  | `target`                |
+| PRDs        | relation ↔ PRDs.Milestone (자동 생성) | 역산                    |
 
 **PRDs** (feature 단위, 페이지 본문 = PRD 섹션)
 
-| 속성         | 타입                                                    | 로컬                |
-| ------------ | ------------------------------------------------------- | ------------------- |
-| Name         | title                                                   | frontmatter `title` |
-| ID           | text                                                    | `id` (PRD-001)      |
-| Status       | select (draft/approved/in_dev/released/measured/closed) | `status`            |
-| Milestone    | relation → Milestones                                   | `milestone`         |
-| Derived from | relation → PRDs                                         | `derived_from`      |
-| Tasks        | relation → Tasks                                        | 역산                |
-| Owner role   | select                                                  | `owner`             |
+| 속성           | 타입                                                    | 로컬                |
+| -------------- | ------------------------------------------------------- | ------------------- |
+| Name           | title                                                   | frontmatter `title` |
+| Local ID       | text                                                    | `id` (PRD-001)      |
+| Status         | select (draft/approved/in_dev/released/measured/closed) | `status`            |
+| Milestone      | relation ↔ Milestones                                   | `milestone`         |
+| Derived from   | relation ↔ PRDs.Follow-up PRDs (자기 참조)              | `derived_from`      |
+| Follow-up PRDs | relation (Derived from의 짝, 자동)                      | 역산                |
+| Tasks          | relation ↔ Tasks.PRD (자동 생성)                        | 역산                |
+| Owner role     | select                                                  | `owner`             |
 
-**Tasks** (보드 뷰 = 칸반, Status 기준 그룹)
+**Tasks** (뷰: `칸반` Status별 보드, `role별` Role별 보드)
 
-| 속성    | 타입                      | 로컬               |
-| ------- | ------------------------- | ------------------ |
-| Name    | title                     | tasks.json `title` |
-| ID      | text                      | `id` (T-0001)      |
-| Status  | select (task 상태 그대로) | `status`           |
-| Role    | select                    | `role`             |
-| PRD     | relation → PRDs           | `prd`              |
-| Handoff | url/text                  | `handoff` 경로     |
-| Updated | date                      | `updated_at`       |
+| 속성     | 타입                      | 로컬               |
+| -------- | ------------------------- | ------------------ |
+| Name     | title                     | tasks.json `title` |
+| Local ID | text                      | `id` (T-0001)      |
+| Status   | select (task 상태 그대로) | `status`           |
+| Role     | select (role 8개)         | `role`             |
+| PRD      | relation ↔ PRDs           | `prd`              |
+| Size     | select (small/large)      | `size`             |
+| Handoff  | text                      | `handoff` 경로     |
+| Updated  | date                      | `updated_at`       |
 
 로컬 각 항목은 `notion_id`, `last_synced`를 가진다. notion-sync는 `updated_at > last_synced`인 것만 반영한다.
 
@@ -138,8 +141,9 @@ DB 스키마 (초안)
 
 ## 7. 남은 확인 항목
 
-- [ ] Notion MCP 인증 후 도구 목록 확인 → 스키마 확정
-- [ ] subagent `mcpServers`로 플러그인 MCP 참조 가능 여부
+- [x] Notion 커넥터 기능 확인, DB·뷰 생성 (2026-10-03)
+- [ ] role 실제 호출 확인 → `docs/playbooks/first-run.md`
+- [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 3단계)
 - [ ] 재개 예약 방식 (scheduled-tasks / CronCreate)
 - [ ] Desktop Code 탭에서 statusline 동작 여부 (필요해질 때)
 - [x] 성공지표·성과측정 = 비즈니스 관점, PRD마다 다름, 전체 목표에 연결 (사용자 결정 2026-10-03)
@@ -147,4 +151,4 @@ DB 스키마 (초안)
 - [ ] subagent에 전역 CLAUDE.md가 로드되는지 (지금은 문제 아님)
 - [x] `isolation: worktree`일 때 worktree 생성 위치: `.claude/worktrees/` (logistics-hub에서 실제로 생긴 위치로 확인)
 - [ ] worktree 안에서 `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지
-- [ ] worktree를 쓰려면 첫 커밋이 있어야 함
+- [x] worktree를 쓰려면 첫 커밋이 있어야 함 (2026-10-03 첫 커밋 완료)

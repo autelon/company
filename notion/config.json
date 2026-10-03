@@ -1,0 +1,17 @@
+{
+  "root_page": "https://app.notion.com/p/<redacted>",
+  "data_sources": {
+    "milestones": "collection://<redacted>",
+    "prds": "collection://<redacted>",
+    "tasks": "collection://<redacted>"
+  },
+  "databases": {
+    "milestones": "https://app.notion.com/p/<redacted>",
+    "prds": "https://app.notion.com/p/<redacted>",
+    "tasks": "https://app.notion.com/p/<redacted>"
+  },
+  "views": {
+    "tasks_kanban": "view://<redacted>",
+    "tasks_by_role": "view://<redacted>"
+  }
+}
