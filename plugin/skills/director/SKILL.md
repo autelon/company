@@ -39,7 +39,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 코드 변경과 PR
 
-- 원격이 있으면 모든 변경은 main 보호 여부와 상관없이 작업 브랜치와 PR로 들어간다. 절차와 리뷰어는 프로젝트 `docs/git-rules.md`를 따른다.
+- 원격이 있으면 모든 변경은 main 보호 여부와 상관없이 작업 브랜치와 PR로 들어간다. 절차와 리뷰어는 프로젝트 `docs/git-rules.md`와 그 문서가 가리키는 조직 `.github` 저장소의 `git-workflow.md`를 따른다.
 - **모든 PR은 리뷰어 지정과 상관없이 `autelon:security-reviewer`의 보안 검토를 받는다.** PR이 올라오면 지정된 리뷰와 별도로 security-reviewer를 호출한다(PR 번호, handoff 절대 경로를 준다). 머지 명령은 같은 head sha에 대해 리뷰 통과와 보안 검토 통과 코멘트가 둘 다 있을 때만 낸다. 보안 검토가 수정 필요면 고친 뒤 새 head로 다시 받는다. 리뷰어가 `사람`이어도 보안 검토 결과를 PR 링크와 함께 사람에게 알린다.
 - 작업한 role이나 세션은 자기 PR을 머지하지 않는다. 리뷰어가 `director`면 director가 리뷰하고 머지 명령을 낸다. `reviewer role`이면 reviewer를 호출해 리뷰·머지를 맡긴다. `사람`이면 PR 링크를 알리고 머지하지 않는다.
 - 머지 명령에는 리뷰한 head sha로 `--match-head-commit`을 붙인다. `--admin`은 쓰지 않는다.
@@ -80,14 +80,21 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 개인 리소스 정보
 
-- 개인 리소스 연결 정보는 원격(커밋, PR 본문, 코멘트)에 올리지 않는다. 대상: Notion URL·ID, 로컬 절대 경로(`/Users/...`), 개인 계정 정보(이메일, 토큰).
+- 개인 리소스 연결 정보는 원격(커밋, PR 본문, 코멘트)에 올리지 않는다. 대상: Notion URL·ID, 로컬 절대 경로(`/Users/...`), 로컬 임시 폴더·scratchpad 경로, 개인 계정 정보(이메일, 토큰).
+- 로컬 임시 폴더 경로는 사용자 이름, uid, 세션 UUID가 드러난다. 형태는 `/private/tmp/claude-<uid>/-Users-<이름>-dev/<세션 UUID>/scratchpad/...`다. `-Users-` 꼴이라 `/Users/` 검색에 걸리지 않으므로 아래 패턴을 따로 둔다.
+- 개인 이메일 주소(`@gmail.` 같은 개인 메일 도메인)도 올리지 않는다. 커밋의 author·committer, 메시지 끝의 `Co-Authored-By:` 줄까지 포함한다. 허용: GitHub noreply(`@users.noreply.github.com`, `noreply@github.com`)와 `noreply@anthropic.com`.
 - 이런 값은 로컬 설정에만 둔다: 사용자 설정 `pluginConfigs`(플러그인 userConfig), 프로젝트 `notion/`(Notion ID), 프로젝트 `local/`(그 외 로컬 매핑, 예: `local/paths.json`의 `{"autelon/logistics-hub": "<로컬 경로>"}`). `notion/`과 `local/`은 `.gitignore`에 있다.
 - 커밋되는 파일은 이름으로만 가리킨다(예: 저장소는 `autelon/logistics-hub`). 경로는 repo 루트 기준 상대 경로로 쓰고, repo 밖의 것은 저장소나 문서 이름으로 가리킨다. 홈 기준 경로(`~/...`)도 쓰지 않는다.
 - 의심스러운 것은 push 전에 막는다. 한 번 push하면 브랜치를 다시 써도 지워지지 않는다. PR 타임라인이 이전 head의 SHA를 붙잡고 있어 SHA로 계속 조회된다.
-- 커밋 전에 `git diff --cached | grep -n -E 'notion\.(com|so|site)|/Users/'`가 비어 있는지 본다. 이 grep은 하이픈 없는 32자리 Notion ID, 이메일, 토큰은 잡지 못하므로 diff에서 그런 값이 없는지도 눈으로 확인한다.
+- **이 절의 검사가 기준 명령이다.** found-company·adopt-project·security-reviewer는 여기를 가리키고 패턴을 따로 복사하지 않는다. 패턴을 바꿀 때는 이 절과 `autelon:security-reviewer`의 자동 검색 줄을 함께 고친다.
+- 커밋 전에 다음 둘이 비어 있어야 한다.
+  1. 내용: `git diff --cached | grep -n -i -E 'notion\.(com|so|site)|/Users/|-Users-|/private/tmp/|/var/folders/|claude-[0-9]+/|scratchpad|@(gmail|naver|kakao|daum|hotmail|outlook|icloud|yahoo)\.'`
+  2. 작성자와 공동 작성자(push할 범위 `<base>..HEAD`, 첫 push면 `HEAD`): `git log --format='%ae%n%ce%n%B' <범위> | grep -o -i -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u | grep -v -i -E '@users\.noreply\.github\.com$|^noreply@github\.com$|^noreply@anthropic\.com$'` (주소를 하나씩 뽑은 뒤 허용 주소만 지운다. 출력이 남으면 위반. author와 committer를 한 줄에 찍으면 허용 주소가 섞인 줄이 통째로 지워져 committer의 개인 주소를 놓친다)
+- 이 grep은 하이픈 없는 32자리 Notion ID, 개인 도메인이 아닌 이메일, 토큰은 잡지 못하므로 diff에서 그런 값이 없는지도 눈으로 확인한다. `scratchpad`는 일반 단어로도 쓰이므로 걸린 것이 경로로 쓰였는지 하나씩 본다. 이 규칙 문서처럼 패턴을 설명하는 글은 걸려도 위반이 아니다.
 
 ## 모든 role 공통 (role 지시문에 넣을 것)
 
 - 추정으로 결정하지 않는다. 모르면 handoff의 `## 사람에게 묻기`에 적는다.
 - 경로는 프로젝트 루트 기준 상대 경로로 적는다(handoff 포함).
-- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)를 커밋되는 파일과 handoff에 쓰지 않는다.
+- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 임시 폴더 경로, 계정 정보)를 커밋되는 파일과 handoff에 쓰지 않는다.
+- scratchpad·임시 파일·로컬 추출본의 경로를 커밋되는 문서에 출처로 적지 않는다. 출처는 원문 URL이나 저장소 상대 경로로 적는다. 로컬에만 있는 자료는 "로컬 추출본(커밋하지 않음)"이라고만 적는다.

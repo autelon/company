@@ -20,8 +20,8 @@ claude plugin marketplace add autelon/company
 claude plugin install autelon@autelon --scope user
 ```
 
-The plugin sets `defaultEnabled: false`, so the user-scope install records `"autelon@autelon": false` in `~/.claude/settings.json`: installed everywhere, enabled nowhere.
-Then make `~/.claude/settings.json` look like this. Keep `source` identical to what `marketplace add` recorded (adding `"ref"` makes Claude Code ignore the marketplace):
+The plugin sets `defaultEnabled: false`, so the user-scope install records `"autelon@autelon": false` in your user settings (`settings.json` in your Claude Code configuration directory): installed everywhere, enabled nowhere.
+Then make that user settings file look like this. Keep `source` identical to what `marketplace add` recorded (adding `"ref"` makes Claude Code ignore the marketplace):
 
 ```json
 {

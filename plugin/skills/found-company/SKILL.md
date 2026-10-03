@@ -22,7 +22,11 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 - 한두 문장 요약: 무엇을 왜 만드는지
 - 알고 있는 제약: 플랫폼, 기술 스택 선호, 기한, 사업 목표가 이미 있는지
 - GitHub 저장소 이름과 공개 여부 (6단계에서 쓴다). public이어야 머지 큐를 쓸 수 있다.
-- PR 리뷰어: `director`(기본값) / `reviewer role` / `사람`. 각각의 뜻은 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`의 "PR 리뷰어" 절. `reviewer role`을 고르면 2단계 role 구성에 reviewer를 넣는다.
+- PR 리뷰어: 하나를 고른다. `reviewer role`을 고르면 2단계 role 구성에 reviewer를 넣는다.
+  - `director`(기본값): director(메인 세션)가 리뷰하고 머지 명령을 낸다.
+  - `reviewer role`: director가 `reviewer` role에 리뷰를 맡긴다. reviewer가 통과로 판정하면 그 판정을 PR 코멘트로 남기고, 같은 head sha에 보안 검토 통과가 있으면 머지 명령을 낸다.
+  - `사람`: 에이전트는 PR만 올리고 머지 명령을 내지 않는다. director가 사람에게 PR 링크를 알린다.
+  - 고른 값과 그 뜻(위 항목의 설명)은 6단계에서 `docs/git-rules.md`의 "PR 리뷰어"에 적는다(`{{REVIEWER}}`, `{{REVIEWER_MEANING}}`). 바꿀 때는 그 절을 고치고 `decisions/log.md`에 남긴다. 보안 검토는 어느 쪽을 골라도 항상 한다.
 
 ## 2. role 설계
 
@@ -92,7 +96,7 @@ Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지�
 
 ## 5. 설립 커밋
 
-- 커밋 전에 `git status`로 `notion/`·`local/`·`state/quota.json`·`.claude/agent-memory/`가 커밋 대상에 없는지, director 스킬의 "개인 리소스 정보" 절의 확인(grep과 눈으로 확인)을 한다. role 페르소나나 결정 기록에서 다른 저장소를 가리킬 때도 로컬 경로가 아니라 저장소 이름으로 쓴다.
+- 커밋 전에 `git status`로 `notion/`·`local/`·`state/quota.json`·`.claude/agent-memory/`가 커밋 대상에 없는지, director 스킬의 "개인 리소스 정보" 절의 확인(내용 grep, 작성자 확인, 눈으로 확인)을 한다. role 페르소나나 결정 기록에서 다른 저장소를 가리킬 때도 로컬 경로가 아니라 저장소 이름으로 쓴다.
 - 만든 것을 로컬 `main`에 커밋한다. 아직 원격과 main 보호 규칙이 없어서 직접 커밋할 수 있는 마지막 때다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
 - worktree에서 설립하지 않는다. 설립 커밋이 main에 들어가야 한다.
 
@@ -102,13 +106,14 @@ GitHub 조직은 `${user_config.github_org}`이다. 비어 있거나 글자 그�
 표준 문서는 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`다. 먼저 읽고 그 "새 프로젝트를 시작할 때" 절차를 따른다. 로컬에 클론이 없으면 `gh repo clone <조직>/.github`로 임시 폴더에 받는다. 아래는 그 절차를 이 스킬에 맞춘 순서다.
 
 1. `gh auth status`로 로그인을 확인한다. 안 되어 있으면 멈추고 사람에게 알린다.
-2. **push 전에 보안 검토를 받는다.** 첫 push는 PR이 아니라서 검토를 거치지 않으므로, `autelon:security-reviewer`에게 로컬 `main`의 전체 히스토리(`git log -p`의 모든 커밋과 커밋 메시지)를 검토시킨다. "통과"가 나오기 전에는 push하지 않는다. 수정 필요면 push 전이므로 히스토리를 고친 뒤 다시 검토받는다. push한 뒤에는 브랜치를 다시 써도 지워지지 않는다.
-3. 1단계에서 받은 이름·공개 여부로 저장소를 만들고 main을 올린다: `gh repo create <조직>/<이름> --<public|private> --source . --push`. 이미 원격이 있거나 같은 이름의 저장소가 있으면 멈추고 사람에게 묻는다.
-4. push로 `ci.yml`이 main에서 한 번 돈다. `gh run list --branch main`으로 `git-policy` 실행이 끝났는지 확인한다. 필수 검사는 그 이름의 검사가 한 번 돈 뒤에 걸어야 PR이 영원히 대기하지 않는다.
-5. 표준 적용 스크립트는 조직 `.github` 저장소의 `scripts/setup-repo.sh`다(위에서 받은 클론). 표준 값은 그 저장소의 `rulesets/main.json`과 스크립트가 원본이다.
-6. **적용 전에 사람의 승인을 받는다.** 스크립트와 `rulesets/main.json`을 읽고, 바뀔 값을 표로 보여 주고 AskUserQuestion으로 묻는다: 저장소 설정(병합 방식, auto-merge, Update branch, 브랜치 자동 삭제), main 규칙(삭제·force push 금지, PR 필수, 필수 검사 이름, 머지 큐 또는 up to date 필수). 필수 검사는 지금은 `git-policy / merge-commits` 하나다.
-7. 승인되면 `setup-repo.sh <조직>/<이름> "git-policy / merge-commits"`를 실행하고, `gh api repos/<조직>/<이름>`과 `gh api repos/<조직>/<이름>/rulesets/<id>`로 다시 읽어 실제 값을 확인한다.
-8. `docs/git-rules.md`의 자리표시자를 채운다. 최신화는 public이면 "머지 큐", private이면 "up to date 필수". 머지 명령은 머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`. main이 보호되었으므로 이 변경부터는 브랜치와 PR로 올린다. 이 첫 PR의 리뷰어도 `docs/git-rules.md`에 정한 리뷰어다. 머지 명령은 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있을 때만 낸다.
+2. **push 전에 작성자 정보를 점검한다.** `git config user.email`이 개인 메일(`@gmail.` 등)이 아닌지 본다. 로컬 `main` 모든 커밋의 author·committer와 `Co-Authored-By:` 줄을 director 스킬 "개인 리소스 정보" 절의 작성자 확인 명령(범위는 `HEAD`)으로 본다. 허용 주소(GitHub noreply, `noreply@anthropic.com`) 밖의 이메일이 나오면 push하지 않고 사람에게 알린다. 공동 작성자 줄은 GitHub noreply 주소(`<id>+<계정>@users.noreply.github.com`)로 쓴다. 이미 커밋에 개인 주소가 들어갔으면 push 전이므로, 사람의 확인을 받아 git 설정을 바꾸고 히스토리를 다시 쓴다.
+3. **push 전에 보안 검토를 받는다.** 첫 push는 PR이 아니라서 검토를 거치지 않으므로, `autelon:security-reviewer`에게 로컬 `main`의 전체 히스토리(`git log -p`의 모든 커밋과 커밋 메시지)를 검토시킨다. "통과"가 나오기 전에는 push하지 않는다. 수정 필요면 push 전이므로 히스토리를 고친 뒤 다시 검토받는다. push한 뒤에는 브랜치를 다시 써도 지워지지 않는다.
+4. 1단계에서 받은 이름·공개 여부로 저장소를 만들고 main을 올린다: `gh repo create <조직>/<이름> --<public|private> --source . --push`. 이미 원격이 있거나 같은 이름의 저장소가 있으면 멈추고 사람에게 묻는다.
+5. push로 `ci.yml`이 main에서 한 번 돈다. `gh run list --branch main`으로 `git-policy` 실행이 끝났는지 확인한다. 필수 검사는 그 이름의 검사가 한 번 돈 뒤에 걸어야 PR이 영원히 대기하지 않는다.
+6. 표준 적용 스크립트는 조직 `.github` 저장소의 `scripts/setup-repo.sh`다(위에서 받은 클론). 표준 값은 그 저장소의 `rulesets/main.json`과 스크립트가 원본이다.
+7. **적용 전에 사람의 승인을 받는다.** 스크립트와 `rulesets/main.json`을 읽고, 바뀔 값을 표로 보여 주고 AskUserQuestion으로 묻는다: 저장소 설정(병합 방식, auto-merge, Update branch, 브랜치 자동 삭제), main 규칙(삭제·force push 금지, PR 필수, 필수 검사 이름, 머지 큐 또는 up to date 필수). 필수 검사는 지금은 `git-policy / merge-commits` 하나다.
+8. 승인되면 `setup-repo.sh <조직>/<이름> "git-policy / merge-commits"`를 실행하고, `gh api repos/<조직>/<이름>`과 `gh api repos/<조직>/<이름>/rulesets/<id>`로 다시 읽어 실제 값을 확인한다.
+9. `docs/git-rules.md`의 자리표시자를 채운다. 최신화는 public이면 "머지 큐", private이면 "up to date 필수". `{{MERGE_COMMAND}}`는 머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`(백틱 없이 명령만). main이 보호되었으므로 이 변경부터는 브랜치와 PR로 올린다. 이 첫 PR의 리뷰어도 `docs/git-rules.md`에 정한 리뷰어다. 머지 명령은 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있을 때만 낸다.
 
 GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지점과 오류를 사람에게 알린다(`decisions/log.md`에는 사람의 결정만 쓴다).
 
