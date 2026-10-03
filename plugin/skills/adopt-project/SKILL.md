@@ -32,7 +32,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 
 - 기존 결정 기록·목표 문서와 autelon 파일의 관계. director는 `decisions/log.md`와 `docs/goals.md`를 고정 경로로 읽고 쓰므로 두 파일은 **항상 만든다.** 정할 것은 내용이다: `decisions/log.md`는 첫 줄에 기존 결정 문서(예: `docs/04-decisions.md`)를 가리키고 이후 autelon 운영 중의 결정을 쌓는다. `docs/goals.md`는 기존 개념·로드맵 문서(예: `docs/01-concept.md`, `docs/05-roadmap.md`)의 목표와 지표를 요약하고 원문을 가리킨다. 요약 초안을 보여 주고 승인받는다. 그래야 director가 목표 체계를 새로 만들게 하지 않는다.
 - 도입 PR의 리뷰어: 도입 PR이 머지되기 전에는 프로젝트 role이 없으므로 reviewer role이 도입 PR을 리뷰할 수 없다. 도입 PR의 리뷰어는 사람 또는 메인 에이전트(작업 세션이 아닌 쪽)로 한다. 작업 세션은 자기 PR을 머지하지 않는다.
-- PR 리뷰어(운영 중): `director`(기본값) / `reviewer role` / `사람` (`${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`의 "PR 리뷰어" 절). 기존 git 규칙 문서가 리뷰어를 정하고 있으면 그것을 보여 주고 유지할지 묻는다.
+- PR 리뷰어(운영 중): `director`(기본값) / `reviewer role` / `사람`. 각각의 뜻은 `${CLAUDE_PLUGIN_ROOT}/skills/found-company/SKILL.md`의 1단계. 기존 git 규칙 문서가 리뷰어를 정하고 있으면 그것을 보여 주고 유지할지 묻는다.
 - Notion을 쓸지. 쓰면 found-company 4단계와 같은 방식으로 만든다(루트 URL은 `${user_config.notion_root_page}`, 비어 있거나 글자 그대로면 묻는다. relation에는 data source UUID만 넣고, 페이지 본문은 저장소를 `<조직>/<이름>`으로 가리킨다). 도입 때 Notion 페이지와 DB는 이 스킬이 직접 만든다(director 규칙의 예외). 만드는 시점은 **도입 PR이 머지된 뒤**다(main의 `.gitignore`에 `notion/`이 들어간 뒤). 그 전에는 `notion/config.json`이 추적되지 않은 파일로 보인다. 머지 전에 꼭 만들어야 하면 `.git/info/exclude`에 `notion/`을 임시로 넣고 머지 뒤에 뺀다.
 
 ## 3. role 설계
@@ -62,7 +62,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
   - 기존 방식을 유지하기로 했으면: director 스킬을 부르지 않고 기존 작업 방식 문서를 따른다고 적는다. role·board를 어떻게 쓰는지는 4단계에서 정한 대로 적는다.
   - 단계적 전환이면: 지금 단계와 다음 단계로 넘어가는 조건을 적는다.
   - 공통: autelon 파일 표(board, prds, handoffs, state, notion, local)와 기존 문서와의 관계.
-- `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절만 확인·추가한다. 없으면 템플릿을 쓴다.
+- `docs/git-rules.md`가 이미 있으면 "리뷰와 머지" 절(리뷰어, 보안 검토, 머지 조건·명령)만 확인·추가한다. 없으면 템플릿을 쓴다. 공통 규칙은 `autelon/.github`의 `git-workflow.md`에 있으니 프로젝트 문서에 옮겨 적지 않는다.
 - CI·저장소 설정은 이미 있으면 바꾸지 않는다. 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`와 다르면 차이를 보고만 한다. 로컬에 클론이 없으면 `gh repo clone <조직>/.github`로 임시 폴더에 받는다. 설정 스크립트는 같은 저장소의 `scripts/setup-repo.sh`다.
 - `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다(없는 줄만 더한다). `notion/`, `local/`, `.env*`, `state/quota.json`, role 메모리(`.claude/agent-memory/`) 등이 들어 있다.
 

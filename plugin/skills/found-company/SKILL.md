@@ -22,7 +22,10 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 - 한두 문장 요약: 무엇을 왜 만드는지
 - 알고 있는 제약: 플랫폼, 기술 스택 선호, 기한, 사업 목표가 이미 있는지
 - GitHub 저장소 이름과 공개 여부 (6단계에서 쓴다). public이어야 머지 큐를 쓸 수 있다.
-- PR 리뷰어: `director`(기본값) / `reviewer role` / `사람`. 각각의 뜻은 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`의 "PR 리뷰어" 절. `reviewer role`을 고르면 2단계 role 구성에 reviewer를 넣는다.
+- PR 리뷰어: `director`(기본값) / `reviewer role` / `사람`. 고른 것과 그 뜻 한 줄을 6단계에서 `docs/git-rules.md`에 적는다. `reviewer role`을 고르면 2단계 role 구성에 reviewer를 넣는다.
+  - `director`: director(메인 세션)가 리뷰하고 머지 명령을 낸다.
+  - `reviewer role`: director가 `reviewer` role에 리뷰를 맡긴다. reviewer가 판정을 PR 코멘트로 남기고, 같은 head sha에 보안 검토 통과가 있으면 머지 명령을 낸다.
+  - `사람`: 에이전트는 PR만 올리고 머지 명령을 내지 않는다. director가 사람에게 PR 링크를 알린다.
 
 ## 2. role 설계
 
@@ -108,7 +111,7 @@ GitHub 조직은 `${user_config.github_org}`이다. 비어 있거나 글자 그�
 5. 표준 적용 스크립트는 조직 `.github` 저장소의 `scripts/setup-repo.sh`다(위에서 받은 클론). 표준 값은 그 저장소의 `rulesets/main.json`과 스크립트가 원본이다.
 6. **적용 전에 사람의 승인을 받는다.** 스크립트와 `rulesets/main.json`을 읽고, 바뀔 값을 표로 보여 주고 AskUserQuestion으로 묻는다: 저장소 설정(병합 방식, auto-merge, Update branch, 브랜치 자동 삭제), main 규칙(삭제·force push 금지, PR 필수, 필수 검사 이름, 머지 큐 또는 up to date 필수). 필수 검사는 지금은 `git-policy / merge-commits` 하나다.
 7. 승인되면 `setup-repo.sh <조직>/<이름> "git-policy / merge-commits"`를 실행하고, `gh api repos/<조직>/<이름>`과 `gh api repos/<조직>/<이름>/rulesets/<id>`로 다시 읽어 실제 값을 확인한다.
-8. `docs/git-rules.md`의 자리표시자를 채운다. 최신화는 public이면 "머지 큐", private이면 "up to date 필수". 머지 명령은 머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`. main이 보호되었으므로 이 변경부터는 브랜치와 PR로 올린다. 이 첫 PR의 리뷰어도 `docs/git-rules.md`에 정한 리뷰어다. 머지 명령은 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있을 때만 낸다.
+8. `docs/git-rules.md`의 자리표시자를 채운다. 리뷰어는 1단계에서 고른 것과 그 뜻 한 줄(`{{REVIEWER}}`, `{{REVIEWER_MEANING}}`). 최신화는 public이면 "머지 큐", private이면 "up to date 필수". 머지 명령은 머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`. main이 보호되었으므로 이 변경부터는 브랜치와 PR로 올린다. 이 첫 PR의 리뷰어도 `docs/git-rules.md`에 정한 리뷰어다. 머지 명령은 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있을 때만 낸다.
 
 GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지점과 오류를 사람에게 알린다(`decisions/log.md`에는 사람의 결정만 쓴다).
 
