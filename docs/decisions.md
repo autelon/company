@@ -17,3 +17,4 @@
 | 2026-10-03 | 옛 Notion DB           | 루트 페이지 아래 agent-company 시절 DB 세 개 | 사용자가 직접 지운다                                                                                                                      | 루트 페이지 본문 갱신                            |
 | 2026-10-04 | 플러그인 자동 업데이트 | main 머지를 프로젝트가 어떻게 받나           | 프로젝트 settings 마켓플레이스 항목에 `autoUpdate: true`                                                                                  | settings 템플릿, poker settings                  |
 | 2026-10-04 | 설정 위치              | 마켓플레이스·자동 업데이트를 어디에 두나     | 사용자 설정(`~/.claude/settings.json`)에 두고 새 프로젝트도 따르게 한다. 프로젝트 settings에는 `enabledPlugins`만                         | settings 템플릿, README, found-company           |
+| 2026-10-04 | 설치 범위              | 플러그인을 어디에 설치하고 어디서 켜나       | user scope로 한 번 설치하고 전역은 꺼 둔다(`false`). 쓰는 프로젝트의 settings에서만 `true`                                                | README, design.md 0절                            |

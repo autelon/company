@@ -10,16 +10,19 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 - autelon은 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다. (사용자 결정 2026-10-03)
 - 그래서 이 리포는 Claude Code 플러그인(`plugin/`)이다. 프로젝트는 GitHub 원격 저장소 `autelon/company`의 main에서 설치한다. 로컬 경로(directory 소스)를 가리키지 않는다. (사용자 결정 2026-10-03)
 - 설정은 두 층으로 나눈다. (사용자 결정 2026-10-04)
-  - **사용자 설정 `~/.claude/settings.json`**: 마켓플레이스 등록과 자동 업데이트. `"extraKnownMarketplaces": {"autelon": {"source": {"source": "github", "repo": "autelon/company"}, "autoUpdate": true}}`. 새 프로젝트도 따로 설정하지 않고 같은 마켓플레이스·업데이트를 쓴다.
-  - **프로젝트 `.claude/settings.json`**: `"enabledPlugins": {"autelon@autelon": true}`만. 켜는 것은 프로젝트마다 정한다. 전역으로 켜면 다른 프로젝트(logistics-hub 등)에도 스킬이 로드된다.
+  - **사용자 설정 `~/.claude/settings.json`**: 마켓플레이스 등록, 자동 업데이트, 플러그인 설치(user scope). `"extraKnownMarketplaces": {"autelon": {"source": {"source": "github", "repo": "autelon/company"}, "autoUpdate": true}}`, `"enabledPlugins": {"autelon@autelon": false}`. 설치는 한 번, 기본은 꺼짐.
+  - **프로젝트 `.claude/settings.json`**: `"enabledPlugins": {"autelon@autelon": true}`만. `enabledPlugins`는 같은 id에 대해 우선순위가 가장 높은 파일의 값이 쓰이고 project가 user보다 높아서, 이 파일이 있는 프로젝트에서만 켜진다. **[확인]** plugins/loading 문서. 전역으로 켜면 다른 프로젝트(logistics-hub 등)에도 스킬이 로드된다.
   - 프로젝트 settings에 `extraKnownMarketplaces.autelon`을 두지 않는다. 같은 이름의 항목은 우선순위가 높은 파일의 것이 통째로 쓰여서 전역의 `autoUpdate`가 무시된다. **[확인]** settings-reference 문서
   - 사용자 설정의 `source`는 `claude plugin marketplace add autelon/company`가 기록한 소스와 같아야 한다. `"ref": "main"`을 더했더니 "Marketplace autelon is added but ignored. Its network source differs from the one declared for it in settings"로 플러그인이 로드되지 않았다. **[확인]** 2026-10-04 실행
-  - 확인한 상태(2026-10-04, CLI 2.1.286): poker에서 `claude plugin list` → `autelon@autelon` enabled, 다른 폴더에서 → disabled. **[확인]**
+  - `claude plugin install autelon@autelon --scope user`는 `defaultEnabled: false` 때문에 사용자 settings에 `"autelon@autelon": false`를 직접 기록하고 "This plugin is disabled by default"라고 알렸다. **[확인]** 2026-10-04 실행
+  - 확인한 상태(2026-10-04, CLI 2.1.286): 설치 기록은 user scope 하나(`installed_plugins.json`). poker에서 `claude plugin list` → enabled, 다른 폴더 → disabled. **[확인]**
+  - Desktop Code 세션의 + → Plugins 토글이 어느 settings 파일에 기록하는지 **[미확인]**. 그래서 프로젝트에서 켤 때는 그 프로젝트 `.claude/settings.json`에 직접 적는다.
+  - Desktop 설정/Customize의 플러그인 화면은 claude.ai 계정으로 동기화되는 구성이고 CLI의 `~/.claude`와 별개라서 autelon이 보이지 않는다. **[확인]** desktop 문서 ("syncs through your claude.ai account, not from the CLI's `~/.claude` directory")
 - 처음 설치 기록
   - directory 소스 + 프로젝트 settings만으로는 Desktop Code 세션에 플러그인이 로드되지 않았다(`claude plugin marketplace list` → "No marketplaces configured", `claude plugin list` → "No plugins installed"). **[확인]** 2026-10-03 poker 관찰. 원인 **[미확인]**.
-  - 그 뒤 CLI로 설치했다: `claude plugin marketplace add autelon/company` → poker에서 `claude plugin install autelon@autelon --scope project`. 마켓플레이스 add는 사용자 settings의 `extraKnownMarketplaces`에도 기록된다. **[확인]** 2026-10-04 실행, plugins/loading 문서
+  - 그 뒤 CLI로 설치했다: `claude plugin marketplace add autelon/company` → poker에서 `claude plugin install autelon@autelon --scope project` → 사용자 범위로 바꿈(위). 마켓플레이스 add는 사용자 settings의 `extraKnownMarketplaces`에도 기록된다. **[확인]** 2026-10-04 실행, plugins/loading 문서
+  - `claude plugin uninstall autelon@autelon --scope project`는 설치 기록뿐 아니라 그 프로젝트 `.claude/settings.json`의 `enabledPlugins` 항목도 지웠다(`{}`가 됨). **[확인]** 2026-10-04 실행
   - 설치할 때 "2 userConfig options not yet set — run /plugin configure autelon@autelon"이 나왔다. 기본값이 있는 `github_org`도 미설정으로 셌다. **[확인]**
-  - 새 프로젝트에서 `enabledPlugins`만으로 로드되는지(설치 기록 없이)는 **[미확인]**. 문서상 상대 경로 플러그인은 "needs no install record because it loads from the marketplace itself".
 - 업데이트: `plugin.json`에 `version`을 두지 않는다. (사용자 결정 2026-10-03) 설치된 버전은 `bb0599b8e999`로, `plugin/`을 마지막으로 바꾼 커밋(`44ad66d`)이 아니라 **main 최신 커밋**이었다. **[확인]** 2026-10-04. 그래서 문서만 바뀐 머지도 새 버전이 될 가능성이 높다(업데이트 때도 같은지는 **[미확인]**).
   - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. 바로 받으려면 `claude plugin update autelon@autelon`. Desktop 세션에서도 도는지는 **[미확인]**.
   - 버전 관리 대안: semver를 직접 올리거나(B), 프로젝트별로 `ref`를 릴리스 태그로 고정(C). 프로젝트마다 반영 시점을 따로 정해야 할 때 검토한다.
@@ -183,9 +186,9 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 - [ ] role 실제 호출 확인 → `plugin/playbooks/first-run.md` (설립한 프로젝트에서)
 - [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 4단계)
 - [x] directory 소스 + 프로젝트 settings만으로 Desktop Code 세션에 로드되는가 → 안 됨 (2026-10-03 poker 관찰). GitHub 소스로 바꿈 (0절)
-- [ ] GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker). 문서상 프로젝트 settings에만 켜진 외부 소스 플러그인은 받지 않지만 상대 경로 소스는 예외다("A relative-path plugin needs no install record because it loads from the marketplace itself", plugins/loading). autelon은 상대 경로라 자동 설치를 기대할 근거가 있다
-- [ ] 사용자 설정의 `autoUpdate: true`로 main 머지가 프로젝트에 실제로 반영되는가 (poker)
-- [ ] 새 프로젝트에서 `enabledPlugins`만으로(설치 기록 없이) 로드되는가
+- [ ] (user scope 설치로 바꿔 지금은 필요 없음) GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker). 문서상 프로젝트 settings에만 켜진 외부 소스 플러그인은 받지 않지만 상대 경로 소스는 예외다("A relative-path plugin needs no install record because it loads from the marketplace itself", plugins/loading). autelon은 상대 경로라 자동 설치를 기대할 근거가 있다
+- [ ] 사용자 설정의 `autoUpdate: true`로 main 머지가 실제로 반영되는가. 수동 `claude plugin update`는 확인함(버전이 매번 main 최신 커밋으로 바뀜, 2026-10-04)
+- [ ] Desktop Code 세션에 플러그인이 실제로 로드되고 + → Plugins와 `/`에 스킬이 보이는가 (poker 설립 세션)
 - [x] `defaultEnabled: false`를 프로젝트 settings의 `enabledPlugins: true`가 이기는가 → 이긴다 (2026-10-04)
 - [ ] userConfig 설정 창이 언제 뜨는가(설치 때 / 켤 때), 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는가 (poker)
 - [x] 새 세션에 작업을 넘기는 방법: `mcp__ccd_session__spawn_task`. 칩이 뜨고 사람이 눌러야 세션이 생기며, `prompt`가 첫 메시지가 된다. `cwd`로 다른 프로젝트 폴더를 줄 수 있다 (2026-10-03 사용자 안내, poker 칩으로 확인)
