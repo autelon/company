@@ -1,6 +1,6 @@
 ---
 name: found-company
-description: 새 프로젝트 repo에 autelon 운영 구조를 세운다. 프로젝트에 필요한 role을 설계해 .claude/agents/에 만들고, 보드·PRD·결정 기록 등 상태 파일과 프로젝트 전용 Notion 페이지·DB, GitHub 저장소를 만든다. "회사 설립", "프로젝트 설립", 아직 board/나 .claude/agents/가 없는 프로젝트에서 director를 시작할 때 사용.
+description: 빈 새 프로젝트 repo에 autelon 운영 구조를 세운다. 프로젝트에 필요한 role을 설계해 .claude/agents/에 만들고, 보드·PRD·결정 기록 등 상태 파일과 프로젝트 전용 Notion 페이지·DB, GitHub 저장소를 만든다. "회사 설립", "프로젝트 설립", 아직 board/나 .claude/agents/가 없는 프로젝트에서 director를 시작할 때 사용.
 ---
 
 # 프로젝트 설립
@@ -83,13 +83,13 @@ claude.ai Notion 커넥터 도구로 만든다.
 }
 ```
 
-`notion/config.json`과 `notion/ids.json`(항목별 페이지 URL, notion-sync가 쓴다)은 **커밋하지 않는다.** 프로젝트 `.gitignore`에 `notion/`을 넣는다. 저장소가 public이면 Notion 페이지·DB ID가 공개되기 때문이다. 커밋 메시지, PR, `decisions/log.md`, `CLAUDE.md` 같은 커밋되는 파일에도 Notion URL이나 ID를 적지 않는다.
+`notion/config.json`과 `notion/ids.json`(항목별 페이지 URL, notion-sync가 쓴다)은 **커밋하지 않는다.** 프로젝트 `.gitignore`에 `notion/`과 `local/`을 넣는다(director 스킬의 "개인 리소스 정보" 절). 저장소가 public이면 Notion 페이지·DB ID가 공개되기 때문이다. 커밋 메시지, PR, `decisions/log.md`, `CLAUDE.md` 같은 커밋되는 파일에도 Notion URL이나 ID를 적지 않는다.
 
 Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지점과 오류를 `decisions/log.md`와 사람에게 알린다.
 
 ## 5. 설립 커밋
 
-- 커밋 전에 `git status`로 `notion/`이 커밋 대상에 없는지, `git diff --cached | grep -n notion.com`이 비어 있는지 확인한다.
+- 커밋 전에 `git status`로 `notion/`·`local/`이 커밋 대상에 없는지, `git diff --cached | grep -n -E 'notion\.(com|so)|/Users/'`가 비어 있는지 확인한다. role 페르소나나 결정 기록에서 다른 저장소를 가리킬 때도 로컬 경로가 아니라 저장소 이름으로 쓴다.
 - 만든 것을 로컬 `main`에 커밋한다. 아직 원격과 main 보호 규칙이 없어서 직접 커밋할 수 있는 마지막 때다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
 - worktree에서 설립하지 않는다. 설립 커밋이 main에 들어가야 한다.
 
