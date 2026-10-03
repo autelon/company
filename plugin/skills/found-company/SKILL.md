@@ -12,6 +12,7 @@ description: 새 프로젝트 repo에 autelon 운영 구조를 세운다. 프로
 
 - 작업 폴더가 git repo인지 확인한다. 아니면 사람에게 `git init` 해도 되는지 묻는다.
 - 이미 `board/`나 `.claude/agents/`가 있으면 멈추고 사람에게 알린다. 덮어쓰지 않는다.
+- `.claude/settings.json`의 `extraKnownMarketplaces.autelon`이 `${CLAUDE_PLUGIN_ROOT}/templates/project/settings.json`처럼 GitHub 소스(`autelon/company`)인지 본다. `directory` 소스 등 다른 값이면 사람에게 알리고 템플릿 값으로 바꿀지 묻는다. 이 파일은 설립 커밋에 들어간다.
 
 ## 1. 프로젝트 정의 받기
 
@@ -86,7 +87,6 @@ Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지�
 
 ## 5. 설립 커밋
 
-- `.claude/settings.json`이 이 플러그인을 켜고 있는지 확인한다 (이 스킬이 돌고 있다면 이미 켜져 있다).
 - 만든 것을 로컬 `main`에 커밋한다. 아직 원격과 main 보호 규칙이 없어서 직접 커밋할 수 있는 마지막 때다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
 - worktree에서 설립하지 않는다. 설립 커밋이 main에 들어가야 한다.
 

@@ -1,7 +1,7 @@
 {
   "extraKnownMarketplaces": {
     "autelon": {
-      "source": { "source": "directory", "path": "{{AUTELON_PATH}}" }
+      "source": { "source": "github", "repo": "autelon/company", "ref": "main" }
     }
   },
   "enabledPlugins": {

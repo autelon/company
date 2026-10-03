@@ -8,9 +8,14 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 
 - 이름: 플러그인·마켓플레이스는 `autelon`, 이 리포는 GitHub `autelon/company`(로컬 `~/dev/autelon/company`). 처음 이름은 agent-company였고 2026-10-03에 바꿨다. (사용자 결정)
 - autelon은 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다. (사용자 결정 2026-10-03)
-- 그래서 이 리포는 Claude Code 플러그인(`plugin/`)이다. 프로젝트 repo의 `.claude/settings.json`이 `extraKnownMarketplaces`(directory 소스)와 `enabledPlugins`로 이 플러그인을 켠다. 전역 설정에는 켜지 않는다. **[확인]** settings-reference 문서
-  - 프로젝트 settings의 마켓플레이스 등록은 그 폴더의 workspace trust를 수락한 뒤에만 적용된다. **[확인]** 문서
-  - directory 소스 플러그인이 프로젝트 settings만으로 설치되는지, 한 번 `/plugin install`이 필요한지, 등록 흔적이 `~/.claude`에 남는지 **[미확인]**
+- 그래서 이 리포는 Claude Code 플러그인(`plugin/`)이다. 프로젝트 repo의 `.claude/settings.json`이 `extraKnownMarketplaces`와 `enabledPlugins`로 이 플러그인을 켠다. 전역 설정에는 켜지 않는다. **[확인]** settings-reference 문서
+- 프로젝트는 플러그인을 **GitHub 원격 저장소에서 설치한다**: 마켓플레이스 소스 `{"source": "github", "repo": "autelon/company", "ref": "main"}`. 로컬 경로(directory 소스)를 가리키지 않는다. (사용자 결정 2026-10-03)
+  - 처음에는 directory 소스였다. poker에서 directory 소스 + 프로젝트 settings만으로는 Desktop Code 세션에 플러그인이 로드되지 않았다(`claude plugin marketplace list` → "No marketplaces configured", `claude plugin list` → "No plugins installed"). **[확인]** 2026-10-03 poker 세션 관찰. 원인은 **[미확인]**.
+  - 문서: settings가 선언했지만 `known_marketplaces.json`에 없는 마켓플레이스는 "clones it, then reloads plugins and downloads enabled plugins that aren't cached yet". 프로젝트 scope 플러그인은 workspace trust 확인 뒤에만 로드된다. **[확인]** plugins/loading 문서. Desktop Code 탭에서 이 자동 설치가 일어나는지는 **[미확인]** 문서에 없음.
+  - 자동 설치가 안 되면 프로젝트 폴더에서 `claude plugin marketplace add autelon/company` → `claude plugin install autelon@autelon --scope project`. **[확인]** plugins/install 문서. 사용자 설정(`~/.claude/plugins/`)이 바뀌므로 사람이 정한다.
+- 업데이트: `plugin.json`에 `version`을 두지 않는다. 그러면 커밋마다 버전이 바뀌어 main 커밋이 새 버전이 된다. **[확인]** plugins/loading 문서 (사용자 결정 2026-10-03). 공식이 아닌 마켓플레이스는 자동 업데이트가 기본으로 꺼져 있어서 프로젝트에서 `claude plugin update autelon@autelon`으로 받는다. **[확인]** 문서
+- 플러그인 개발: 고친 내용은 main에 머지되고 프로젝트에서 업데이트해야 반영된다. 머지 전 확인은 이 리포에서 `--plugin-dir ./plugin`. **[확인]** plugins/install 문서
+- `plugin.json`의 `defaultEnabled: false`는 `enabledPlugins`에 값이 없을 때 꺼진 채로 시작한다는 뜻이다. **[확인]** manifest-reference 문서. 프로젝트 settings의 `true`가 이것을 이기는지는 문서에 명시되지 않음 **[미확인]**.
 - 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:notion-sync`, 템플릿, 재무 스크립트.
 - 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), 상태 파일 전부, `notion/config.json`, 코드.
 - 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`, 기본 `autelon`)에 만들고 `~/.claude/git-workflow.md`와 조직 `.github` 저장소의 `setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03)
@@ -168,7 +173,14 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 - [x] Notion 커넥터 기능 확인, DB·뷰 생성 (2026-10-03)
 - [ ] role 실제 호출 확인 → `plugin/playbooks/first-run.md` (설립한 프로젝트에서)
 - [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 4단계)
-- [ ] directory 소스 플러그인이 프로젝트 settings만으로 로드되는지, `/plugin install`이 필요한지
+- [x] directory 소스 + 프로젝트 settings만으로 Desktop Code 세션에 로드되는가 → 안 됨 (2026-10-03 poker 관찰). GitHub 소스로 바꿈 (0절)
+- [ ] GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker)
+- [ ] `defaultEnabled: false`를 프로젝트 settings의 `enabledPlugins: true`가 이기는가 (poker)
+- [ ] userConfig 설정 창이 언제 뜨는가(설치 때 / 켤 때), 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는가 (poker)
+- [x] 새 세션에 작업을 넘기는 방법: `mcp__ccd_session__spawn_task`. 칩이 뜨고 사람이 눌러야 세션이 생기며, `prompt`가 첫 메시지가 된다. `cwd`로 다른 프로젝트 폴더를 줄 수 있다 (2026-10-03 사용자 안내, poker 칩으로 확인)
+  - 도구 설명은 "gets a fresh worktree"라고 하지만, poker 세션은 메인 checkout(main)에서 열렸다. 칩을 누를 때 worktree 선택이 있었는지는 **[미확인]**
+  - `start_session`·`hand_off_to_session`(사람 클릭 없이 세션 시작)은 Desktop 2.19675.0 코드에 있지만 서버 기능 플래그 `sideSessions`가 꺼져 있어 등록되지 않는다. 앱 캐시 `fcache`의 값은 `on:false, source:defaultValue`. 사용자 설정이나 settings.json으로 켤 수 없다 (2026-10-03 앱 코드 확인). 요청 이슈 anthropics/claude-code#89783 (열려 있음)
+  - `claude://code/new?folder=…&q=…` 딥링크도 새 세션을 연다. 글은 입력창에 채워질 뿐 자동 전송되지 않고, 폴더는 매번 확인 창이 뜬다 (support.claude.com 문서)
 - [ ] `found-company` 스킬이 role 설계·상태 파일·Notion 생성을 끝까지 해내는지
 - [ ] 재개 예약 방식 (scheduled-tasks / CronCreate)
 - [ ] Desktop Code 탭에서 statusline 동작 여부 (필요해질 때)
