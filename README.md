@@ -17,7 +17,10 @@ Add to the project's `.claude/settings.json` and commit it:
 ```json
 {
   "extraKnownMarketplaces": {
-    "autelon": { "source": { "source": "github", "repo": "autelon/company", "ref": "main" } }
+    "autelon": {
+      "source": { "source": "github", "repo": "autelon/company", "ref": "main" },
+      "autoUpdate": true
+    }
   },
   "enabledPlugins": { "autelon@autelon": true }
 }
@@ -35,8 +38,9 @@ Then run the `autelon:found-company` skill.
 
 ## Updates
 
-`plugin.json` has no `version`, so every commit on `main` is a new version.
-Auto-update is off by default for third-party marketplaces; pull changes into a project with `claude plugin update autelon@autelon` (or `/plugin`).
+`plugin.json` has no `version`, so its version is derived from the git commit SHA (see `docs/design.md`) and merges to `main` reach projects without a version bump.
+The project settings above turn on `autoUpdate` (third-party marketplaces default to off): in an interactive session Claude Code refreshes the marketplace in the background, up to ten minutes after the first message, and the new version loads in the next session or after `/reload-plugins`.
+To update right away, run `claude plugin update autelon@autelon` and start a new session.
 
 ## Developing the plugin
 
