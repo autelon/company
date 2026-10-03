@@ -18,13 +18,15 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/templates/project/`        | 프로젝트 상태 파일 템플릿                                            |
 | `plugin/scripts/finance-check.mjs` | 재무 신호 판정                                                       |
 | `plugin/playbooks/first-run.md`    | 설립한 프로젝트에서 처음 확인할 것                                   |
+| `.github/workflows/ci.yml`         | 필수 검사 `check`(커밋 메시지·Prettier)와 조직 `git-policy`          |
+| `scripts/check-commits.sh`         | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                     |
 
 ## 고칠 때 주의
 
 - 스킬·agent 본문의 `${CLAUDE_PLUGIN_ROOT}`, `${user_config.*}`는 로드될 때 치환된다. 스킬이 읽으라고 넘기는 일반 md 파일(playbook, 템플릿) 안에서는 치환되지 않는다.
 - 플러그인 agent에서 `permissionMode`, `hooks`, `mcpServers`는 무시된다.
 - 플러그인 루트의 CLAUDE.md는 로드되지 않는다. 프로젝트 CLAUDE.md 템플릿은 `CLAUDE.template.md`라는 이름으로 둔다 (이 리포에서 작업할 때 중첩 CLAUDE.md로 로드되지 않게).
-- 프로젝트에서 이 플러그인은 로컬 디렉터리 마켓플레이스로 로드된다. 여기서 고친 내용이 바로 반영된다.
+- 프로젝트는 이 플러그인을 GitHub `autelon/company`의 main에서 설치한다(마켓플레이스 소스 `github`). 여기서 고친 내용은 main에 머지되고 프로젝트에서 `claude plugin update autelon@autelon`을 해야 반영된다. `plugin.json`에 `version`을 두지 않아 main 커밋마다 새 버전이 된다. 머지 전에 확인하려면 이 리포에서 `--plugin-dir ./plugin`으로 띄운다.
 
 ## Git
 
