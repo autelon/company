@@ -86,6 +86,8 @@ git 은 작성자(author)와 커밋한 사람(committer)을 따로 기록한다.
 
 ### 머지 명령
 
+머지 조건: 같은 head sha에 리뷰 통과 코멘트와 `보안 검토: 통과 (<sha>)` 코멘트가 둘 다 있어야 한다. 하나라도 없으면 머지 명령을 내지 않는다.
+
 ```
 gh pr merge <PR> --match-head-commit <리뷰한 head sha>
 ```
