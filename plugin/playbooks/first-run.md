@@ -26,4 +26,4 @@ autelon으로 설립하거나 도입한 프로젝트에서 director가 처음 �
 
 ## 결과 기록
 
-프로젝트 `docs/first-run.md`에 날짜와 함께 위 확인 항목마다 본 것을 몇 줄로 적는다. 확인하지 못한 항목은 "미확인"으로 적는다. 테스트 항목과 임시 handoff는 지운다. 플러그인 쪽에서 고칠 점이 나오면 autelon/company에 이슈로 올린다.
+프로젝트 `docs/first-run.md`에 날짜와 함께 위 확인 항목마다 본 것을 몇 줄로 적는다. 확인하지 못한 항목은 "미확인"으로 적는다. 미확인 항목(첫 PR의 보안 검토, 첫 구현 task의 developer worktree)은 그 시점에 director가 확인하고 이 파일을 갱신한다(director 스킬 "시작할 때" 2번). 테스트 항목과 임시 handoff는 지운다. 플러그인 쪽에서 고칠 점이 나오면 autelon/company에 이슈로 올린다.

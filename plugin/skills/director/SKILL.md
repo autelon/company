@@ -14,7 +14,8 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 ## 시작할 때
 
 1. `.claude/agents/`가 없거나 `board/`가 없으면 아직 설립되지 않은 프로젝트다. 빈 새 프로젝트면 `autelon:found-company`, 코드·문서가 이미 있는 프로젝트면 `autelon:adopt-project`로 시작한다.
-2. `docs/first-run.md`가 없으면 first-run이다. `${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`를 진행하고 결과를 `docs/first-run.md`에 쓴다. `decisions/log.md`에는 쓰지 않는다.
+2. `docs/first-run.md`가 없으면 first-run이다. `${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`를 진행하고 결과를 `docs/first-run.md`에 쓴다. `decisions/log.md`에는 쓰지 않는다. 이 규칙이 생기기 전에 설립한 프로젝트(결과가 decisions에만 있는 프로젝트)도 파일이 없으면 짧은 점검을 한 번 한다.
+   - `docs/first-run.md`에 "미확인"으로 남은 항목은 그 시점이 오면 확인하고 파일을 갱신한다: 보안 검토는 첫 PR을 올릴 때, developer worktree는 developer에게 첫 구현 task를 맡길 때. 그 task를 배정하기 전에 `docs/first-run.md`를 다시 본다.
 3. `state/sprint.md`를 읽고 이전 director의 인계를 확인한다.
 4. `board/tasks.json`, `board/milestones.json`을 읽는다.
 5. 사용량을 확인한다 (재무 규칙).
@@ -31,7 +32,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 공유 파일 쓰기 규칙
 
-- `board/`, `decisions/`, `state/`, `prds/`, `docs/goals.md`, `notion/`은 **director만** 쓴다. 예외: `notion/ids.json`은 notion-sync가 쓴다.
+- `board/`, `decisions/`, `state/`, `prds/`, `docs/goals.md`, `docs/first-run.md`, `notion/`은 **director만** 쓴다. 예외: `notion/ids.json`은 notion-sync가 쓴다.
 - `notion/`, `local/`, `state/quota.json`, role 메모리(`.claude/agent-memory/`)는 커밋하지 않는다(`.gitignore`에 있다). public 저장소에 Notion ID, 로컬 매핑, 계정 사용량, role이 남긴 기록이 공개되지 않게. 다른 커밋되는 파일에도 Notion URL·ID를 적지 않는다.
 - role은 자기 handoff만 쓴다. 예외: developer는 코드, da는 `analytics/`.
 - PRD는 `${CLAUDE_PLUGIN_ROOT}/templates/prd.md`로 만든다. 섹션은 role이 handoff에 초안을 쓰고, director가 승인 후 PRD에 반영한다.
