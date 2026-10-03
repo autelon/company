@@ -89,7 +89,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - **이 절의 검사가 기준 명령이다.** found-company·adopt-project·security-reviewer는 여기를 가리키고 패턴을 따로 복사하지 않는다. 패턴을 바꿀 때는 이 절과 `autelon:security-reviewer`의 자동 검색 줄을 함께 고친다.
 - 커밋 전에 다음 둘이 비어 있어야 한다.
   1. 내용: `git diff --cached | grep -n -i -E 'notion\.(com|so|site)|/Users/|-Users-|/private/tmp/|/var/folders/|claude-[0-9]+/|scratchpad|@(gmail|naver|kakao|daum|hotmail|outlook|icloud|yahoo)\.'`
-  2. 작성자와 공동 작성자(push할 범위 `<base>..HEAD`, 첫 push면 `HEAD`): `git log --format='%ae %ce%n%B' <범위> | grep -i -E '@|Co-Authored-By' | grep -v -i -E '@users\.noreply\.github\.com|noreply@github\.com|noreply@anthropic\.com'` (허용 주소 외의 이메일이 남으면 위반)
+  2. 작성자와 공동 작성자(push할 범위 `<base>..HEAD`, 첫 push면 `HEAD`): `git log --format='%ae%n%ce%n%B' <범위> | grep -o -i -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u | grep -v -i -E '@users\.noreply\.github\.com$|^noreply@github\.com$|^noreply@anthropic\.com$'` (주소를 하나씩 뽑은 뒤 허용 주소만 지운다. 출력이 남으면 위반. author와 committer를 한 줄에 찍으면 허용 주소가 섞인 줄이 통째로 지워져 committer의 개인 주소를 놓친다)
 - 이 grep은 하이픈 없는 32자리 Notion ID, 개인 도메인이 아닌 이메일, 토큰은 잡지 못하므로 diff에서 그런 값이 없는지도 눈으로 확인한다. `scratchpad`는 일반 단어로도 쓰이므로 걸린 것이 경로로 쓰였는지 하나씩 본다. 이 규칙 문서처럼 패턴을 설명하는 글은 걸려도 위반이 아니다.
 
 ## 모든 role 공통 (role 지시문에 넣을 것)

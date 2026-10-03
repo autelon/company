@@ -21,7 +21,7 @@ PR 하나를 받으면 다음을 모두 본다. 최종 diff만 보지 않는다.
 - `git fetch origin` 후 `git log -p <base>..<head>` (커밋별 diff 전부)와 커밋 메시지 전부
 - PR 제목·본문, PR 코멘트(`gh pr view <PR> --comments`)
 - 새로 추가되거나 이름이 바뀐 파일의 전체 내용(바이너리면 종류와 크기)
-- 작성자 정보: `git log --format='%h %an <%ae> / %cn <%ce>' <base>..<head>`와 메시지 끝의 `Co-Authored-By:` 줄. 허용 주소 외의 이메일이 있으면 수정 필요
+- 작성자 정보: author·committer·`Co-Authored-By:` 줄의 이메일. director 스킬 "개인 리소스 정보"의 작성자 확인 명령(주소를 하나씩 뽑아 허용 주소만 지움)을 `<base>..<head>`에 돌린다. 출력이 남으면 수정 필요
 
 ## 보는 것 (하나라도 있으면 수정 필요)
 

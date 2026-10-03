@@ -65,7 +65,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
   - 기존 방식을 유지하기로 했으면: director 스킬을 부르지 않고 기존 작업 방식 문서를 따른다고 적는다. role·board를 어떻게 쓰는지는 4단계에서 정한 대로 적는다.
   - 단계적 전환이면: 지금 단계와 다음 단계로 넘어가는 조건을 적는다.
   - 공통: autelon 파일 표(board, prds, handoffs, state, notion, local)와 기존 문서와의 관계.
-- `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절만 확인·추가한다. 없으면 템플릿을 쓴다.
+- `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절과 보안 검토·머지 조건만 확인·추가한다. 없으면 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`를 쓰고 자리표시자를 모두 채운다: `{{REVIEWER}}`와 `{{REVIEWER_MEANING}}`(2단계에서 고른 리뷰어와 그 뜻), `{{MERGE_COMMAND}}`(머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`), 저장소 표의 값.
 - CI·저장소 설정은 이미 있으면 바꾸지 않는다. 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`와 다르면 차이를 보고만 한다. 로컬에 클론이 없으면 `gh repo clone <조직>/.github`로 임시 폴더에 받는다. 설정 스크립트는 같은 저장소의 `scripts/setup-repo.sh`다.
 - `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다(없는 줄만 더한다). `notion/`, `local/`, `.env*`, `state/quota.json`, role 메모리(`.claude/agent-memory/`) 등이 들어 있다.
 
