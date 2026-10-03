@@ -10,7 +10,7 @@ model: haiku
 
 대상
 
-- 프로젝트의 Notion 위치와 ID는 프로젝트 `notion/config.json`에 있다. DB는 프로젝트마다 따로 있다. 필드 매핑: 로컬 `id` → `Local ID`, `title` → `Name`, `status` → `Status`, `milestone`/`prd`/`derived_from` → 각 relation, `role` → `Role`, `owner` → `Owner role`, `size` → `Size`, `handoff` → `Handoff`, `updated_at` → `Updated`.
+- 프로젝트의 Notion 위치와 ID는 프로젝트 `notion/config.json`에 있다(커밋하지 않는 로컬 파일). 파일이 없으면 동기화하지 말고 handoff에 적어 director에게 알린다. Notion URL·ID를 handoff 외의 커밋되는 파일에 적지 않는다. DB는 프로젝트마다 따로 있다. 필드 매핑: 로컬 `id` → `Local ID`, `title` → `Name`, `status` → `Status`, `milestone`/`prd`/`derived_from` → 각 relation, `role` → `Role`, `owner` → `Owner role`, `size` → `Size`, `handoff` → `Handoff`, `updated_at` → `Updated`.
 - 로컬: `board/milestones.json` → Milestones, `prds/*.md`(frontmatter + 본문) → PRDs, `board/tasks.json` → Tasks.
 
 순서
