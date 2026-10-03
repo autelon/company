@@ -33,7 +33,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 - 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`, 기본 `autelon`)에 만들고 `~/.claude/git-workflow.md`와 조직 `.github` 저장소의 `setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03)
 - PR 리뷰어는 프로젝트마다 정해 프로젝트 `docs/git-rules.md`에 적는다. `director`(기본값) / `reviewer role` / `사람`. 리뷰어가 머지 명령을 낸다. (사용자 결정 2026-10-03)
 - Notion 루트 페이지는 플러그인 기본값에 두지 않는다. 플러그인 리포가 public이라 URL이 공개되기 때문이다. 루트 URL은 사용자 설정 `pluginConfigs["autelon@autelon"].options.notion_root_page`에 둔다(로컬, 저장소에 안 올라감). 값이 없으면 found-company가 사람에게 묻는다. (사용자 결정 2026-10-03, 2026-10-04)
-  - 프로젝트 `notion/config.json`(루트·프로젝트 페이지·DB·뷰 ID)은 커밋하지 않고 `.gitignore`에 넣는다. 프로젝트 저장소가 public이면 ID가 공개되기 때문이다. 다른 기기에서는 이 파일을 다시 만들거나 옮겨야 한다. (사용자 결정 2026-10-04)
+  - 프로젝트 `notion/`(루트·프로젝트 페이지·DB·뷰 ID의 `config.json`, 항목별 페이지 URL의 `ids.json`)은 커밋하지 않고 `.gitignore`에 넣는다. 처음에는 항목 URL을 board·PRD의 `notion_id`와 notion-sync handoff에 두었는데, 모두 커밋되는 파일이라 옮겼다. 프로젝트 저장소가 public이면 ID가 공개되기 때문이다. 다른 기기에서는 이 파일을 다시 만들거나 옮겨야 한다. (사용자 결정 2026-10-04)
   - userConfig에 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는지 **[미확인]** 문서에 없음. 그래서 빈 값과 치환되지 않은 글자 둘 다 "설정 안 됨"으로 본다.
   - `pluginConfigs`(userConfig 값)는 사용자·관리 설정에서만 읽고 프로젝트 settings에서는 무시한다. **[확인]** settings-reference 문서
 - role 개선의 두 층
@@ -165,7 +165,7 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 | Handoff  | text                      | `handoff` 경로     |
 | Updated  | date                      | `updated_at`       |
 
-로컬 각 항목은 `notion_id`, `last_synced`를 가진다. notion-sync는 `updated_at > last_synced`인 것만 반영한다.
+로컬 각 항목은 `last_synced`를 가진다. 항목별 Notion 페이지 URL은 `notion/ids.json`(커밋 안 함)에 두고 notion-sync가 쓴다. notion-sync는 `updated_at > last_synced`인 것만 반영한다. (2026-10-04 사용자 결정: 커밋되는 board·PRD·handoff에 Notion URL을 두지 않는다)
 
 ## 6. PRD 템플릿
 

@@ -11,15 +11,15 @@
 
 ## 프로젝트 파일
 
-| 경로                                        | 내용                                                       |
-| ------------------------------------------- | ---------------------------------------------------------- |
-| `board/tasks.json`, `board/milestones.json` | task 보드, 마일스톤                                        |
-| `prds/`                                     | feature 단위 PRD                                           |
-| `handoffs/`                                 | role 작업 결과                                             |
-| `decisions/log.md`                          | 사람의 결정 기록                                           |
-| `docs/goals.md`                             | 프로젝트 목표와 지표 체계                                  |
-| `analytics/`                                | 이벤트 명세, 분석 쿼리 (da)                                |
-| `state/`                                    | 사용량 스냅샷, 스프린트 인계                               |
-| `notion/config.json`                        | 이 프로젝트의 Notion 페이지와 DB (커밋하지 않음, 로컬에만) |
-| `docs/git-rules.md`                         | 저장소 설정, PR 리뷰어, PR 절차                            |
-| `.github/workflows/ci.yml`                  | 필수 검사                                                  |
+| 경로                                        | 내용                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `board/tasks.json`, `board/milestones.json` | task 보드, 마일스톤                                                                        |
+| `prds/`                                     | feature 단위 PRD                                                                           |
+| `handoffs/`                                 | role 작업 결과                                                                             |
+| `decisions/log.md`                          | 사람의 결정 기록                                                                           |
+| `docs/goals.md`                             | 프로젝트 목표와 지표 체계                                                                  |
+| `analytics/`                                | 이벤트 명세, 분석 쿼리 (da)                                                                |
+| `state/`                                    | 사용량 스냅샷, 스프린트 인계                                                               |
+| `notion/`                                   | Notion 페이지·DB ID(`config.json`), 항목별 페이지 URL(`ids.json`). 커밋하지 않음, 로컬에만 |
+| `docs/git-rules.md`                         | 저장소 설정, PR 리뷰어, PR 절차                                                            |
+| `.github/workflows/ci.yml`                  | 필수 검사                                                                                  |

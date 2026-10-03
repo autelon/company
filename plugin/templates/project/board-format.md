@@ -14,7 +14,6 @@
   "size": "small",
   "handoff": "handoffs/T-0001.md",
   "updated_at": "2026-10-03T12:00:00Z",
-  "notion_id": null,
   "last_synced": null
 }
 ```
@@ -31,7 +30,8 @@
   "status": "active",
   "target": null,
   "updated_at": "...",
-  "notion_id": null,
   "last_synced": null
 }
 ```
+
+각 항목의 Notion 페이지 URL은 여기에 두지 않는다. `notion/ids.json`(커밋하지 않는 로컬 파일)에 `{"<로컬 id>": "<Notion 페이지 URL>"}`로 둔다. 저장소가 public이면 커밋된 URL로 Notion 페이지 ID가 공개되기 때문이다.

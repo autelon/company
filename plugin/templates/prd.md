@@ -6,7 +6,6 @@ milestone: # M-01
 owner: po
 derived_from: # PRD-xxx (후속 액션에서 생긴 경우)
 updated_at:
-notion_id:
 last_synced:
 ---
 
