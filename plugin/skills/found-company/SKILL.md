@@ -12,7 +12,7 @@ description: 새 프로젝트 repo에 autelon 운영 구조를 세운다. 프로
 
 - 작업 폴더가 git repo인지 확인한다. 아니면 사람에게 `git init` 해도 되는지 묻는다.
 - 이미 `board/`나 `.claude/agents/`가 있으면 멈추고 사람에게 알린다. 덮어쓰지 않는다.
-- `.claude/settings.json`의 `extraKnownMarketplaces.autelon`이 `${CLAUDE_PLUGIN_ROOT}/templates/project/settings.json`처럼 GitHub 소스(`autelon/company`)인지 본다. `directory` 소스 등 다른 값이면 사람에게 알리고 템플릿 값으로 바꿀지 묻는다. 이 파일은 설립 커밋에 들어간다.
+- `.claude/settings.json`이 `${CLAUDE_PLUGIN_ROOT}/templates/project/settings.json`처럼 `enabledPlugins`로 `autelon@autelon`을 켜는지 본다. 이 파일에 `extraKnownMarketplaces.autelon`이 있으면 사용자 설정의 마켓플레이스 항목(자동 업데이트 포함)을 덮어쓰므로, 사람에게 알리고 지울지 묻는다. 이 파일은 설립 커밋에 들어간다.
 
 ## 1. 프로젝트 정의 받기
 
