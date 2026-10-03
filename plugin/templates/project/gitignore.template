@@ -1,0 +1,20 @@
+# autelon 기본 무시 항목. 프로젝트 .gitignore 에 합친다(이미 있는 줄은 두고 없는 줄만 더한다).
+# 저장소가 public 일 수 있으므로 개인 리소스 정보와 계정 사용량은 커밋하지 않는다.
+
+# 개인 리소스 연결 정보: Notion ID(config.json, ids.json), 그 밖의 로컬 매핑
+notion/
+local/
+
+# 비밀 값
+.env*
+
+# 재무 판정 입력(플랜 이름, 사용률, 리셋 시각)
+state/quota.json
+
+# role 메모리: 무엇이 기록될지 미리 알 수 없다(finance 메모리에는 사용량이 들어간다)
+.claude/agent-memory/
+.claude/agent-memory-local/
+
+# 개인 설정, worktree
+.claude/settings.local.json
+.claude/worktrees/

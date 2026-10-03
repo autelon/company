@@ -31,7 +31,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 ## 공유 파일 쓰기 규칙
 
 - `board/`, `decisions/`, `state/`, `prds/`, `docs/goals.md`, `notion/`은 **director만** 쓴다. 예외: `notion/ids.json`은 notion-sync가 쓴다.
-- `notion/`은 커밋하지 않는다(Notion URL·ID가 public 저장소에 공개되지 않게). 다른 커밋되는 파일에도 Notion URL·ID를 적지 않는다.
+- `notion/`, `local/`, `state/quota.json`, role 메모리(`.claude/agent-memory/`)는 커밋하지 않는다(`.gitignore`에 있다). public 저장소에 Notion ID, 로컬 매핑, 계정 사용량, role이 남긴 기록이 공개되지 않게. 다른 커밋되는 파일에도 Notion URL·ID를 적지 않는다.
 - role은 자기 handoff만 쓴다. 예외: developer는 코드, da는 `analytics/`.
 - PRD는 `${CLAUDE_PLUGIN_ROOT}/templates/prd.md`로 만든다. 섹션은 role이 handoff에 초안을 쓰고, director가 승인 후 PRD에 반영한다.
 
@@ -59,7 +59,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 재무 규칙
 
-- task를 새로 배정하기 전마다 `get_usage`를 호출하고, 결과의 `plan` 객체를 **가공하지 말고 그대로** `state/quota.json`에 저장한 뒤 `node "${CLAUDE_PLUGIN_ROOT}/scripts/finance-check.mjs"`를 프로젝트 루트에서 실행해 신호를 따른다.
+- task를 새로 배정하기 전마다 `get_usage`를 호출하고, 결과의 `plan` 객체를 **가공하지 말고 그대로** `state/quota.json`에 저장한 뒤(이 파일은 커밋하지 않는다) `node "${CLAUDE_PLUGIN_ROOT}/scripts/finance-check.mjs"`를 프로젝트 루트에서 실행해 신호를 따른다.
   - `signal`: `GO` 정상 / `CAUTION` 작은 task만 / `WRAP_UP` 새 task 금지, 진행 중 task 마무리, `autelon:finance`에 재개 계획 요청
   - `weekly_low`가 true면 opus role은 판단 작업에만 쓰고 나머지는 sonnet/haiku role로 돌린다
 - `get_usage`를 쓸 수 없는 환경이면 사람에게 알리고 보수적으로(`CAUTION`) 진행한다.

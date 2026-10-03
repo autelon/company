@@ -53,7 +53,9 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 | `CLAUDE.template.md`            | `CLAUDE.md` — `{{PROJECT_NAME}}`, `{{PROJECT_SUMMARY}}`를 채운다. 프로젝트 파일 표에서 없는 경로(예: analytics)는 지운다 |
 
 빈 폴더 `prds/`, `handoffs/`, `analytics/queries/`(da가 있을 때)에는 `.gitkeep`을 둔다.
-`state/quota.json`은 만들지 않는다 (director가 처음 사용량을 확인할 때 생긴다).
+`state/quota.json`은 만들지 않는다 (director가 처음 사용량을 확인할 때 생기며, 커밋하지 않는다).
+
+프로젝트 `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다. 파일이 없으면 만들고, 있으면 없는 줄만 더한다. 항목: `notion/`, `local/`, `.env*`, `state/quota.json`, `.claude/agent-memory/`, `.claude/agent-memory-local/`, `.claude/settings.local.json`, `.claude/worktrees/`. 저장소가 public이면 이것들이 그대로 공개되기 때문이다. role 메모리(`memory: project`)는 프로젝트 `.claude/agent-memory/<role>/`에 생기지만 커밋하지 않는다.
 
 ## 4. Notion
 
@@ -83,13 +85,13 @@ claude.ai Notion 커넥터 도구로 만든다.
 }
 ```
 
-`notion/config.json`과 `notion/ids.json`(항목별 페이지 URL, notion-sync가 쓴다)은 **커밋하지 않는다.** 프로젝트 `.gitignore`에 `notion/`과 `local/`을 넣는다(director 스킬의 "개인 리소스 정보" 절). 저장소가 public이면 Notion 페이지·DB ID가 공개되기 때문이다. 커밋 메시지, PR, `decisions/log.md`, `CLAUDE.md` 같은 커밋되는 파일에도 Notion URL이나 ID를 적지 않는다.
+`notion/config.json`과 `notion/ids.json`(항목별 페이지 URL, notion-sync가 쓴다)은 **커밋하지 않는다.** 프로젝트 `.gitignore`에는 3단계에서 기본 무시 항목(`notion/`, `local/` 포함)을 넣었다(director 스킬의 "개인 리소스 정보" 절). 저장소가 public이면 Notion 페이지·DB ID가 공개되기 때문이다. 커밋 메시지, PR, `decisions/log.md`, `CLAUDE.md` 같은 커밋되는 파일에도 Notion URL이나 ID를 적지 않는다.
 
 Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지점과 오류를 `decisions/log.md`와 사람에게 알린다.
 
 ## 5. 설립 커밋
 
-- 커밋 전에 `git status`로 `notion/`·`local/`이 커밋 대상에 없는지, director 스킬의 "개인 리소스 정보" 절의 확인(grep과 눈으로 확인)을 한다. role 페르소나나 결정 기록에서 다른 저장소를 가리킬 때도 로컬 경로가 아니라 저장소 이름으로 쓴다.
+- 커밋 전에 `git status`로 `notion/`·`local/`·`state/quota.json`·`.claude/agent-memory/`가 커밋 대상에 없는지, director 스킬의 "개인 리소스 정보" 절의 확인(grep과 눈으로 확인)을 한다. role 페르소나나 결정 기록에서 다른 저장소를 가리킬 때도 로컬 경로가 아니라 저장소 이름으로 쓴다.
 - 만든 것을 로컬 `main`에 커밋한다. 아직 원격과 main 보호 규칙이 없어서 직접 커밋할 수 있는 마지막 때다. 프로젝트에 커밋 규칙이 없으면 `chore(repo): autelon 운영 구조 설립` 형식으로 쓰고, 본문에 role 구성과 이유를 적는다.
 - worktree에서 설립하지 않는다. 설립 커밋이 main에 들어가야 한다.
 

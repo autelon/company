@@ -63,7 +63,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
   - 공통: autelon 파일 표(board, prds, handoffs, state, notion, local)와 기존 문서와의 관계.
 - `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절만 확인·추가한다. 없으면 템플릿을 쓴다.
 - CI·저장소 설정은 이미 있으면 바꾸지 않는다. `~/.claude/git-workflow.md`와 다르면 차이를 보고만 한다.
-- `.gitignore`에 `notion/`과 `local/`을 넣는다.
+- `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다(없는 줄만 더한다). `notion/`, `local/`, `.env*`, `state/quota.json`, role 메모리(`.claude/agent-memory/`) 등이 들어 있다.
 
 ## 6. 커밋과 PR
 

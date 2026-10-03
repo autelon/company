@@ -27,7 +27,7 @@ PR 하나를 받으면 다음을 모두 본다. 최종 diff만 보지 않는다.
 3. **비밀 값**: API key, 토큰, 비밀번호, private key, 인증서, 연결 문자열 속 자격 증명. 예: `sk-`, `sk-ant-`, `ghp_`, `gho_`, `github_pat_`, `xox[abp]-`, `AKIA`, `AIza`, `-----BEGIN .*PRIVATE KEY-----`, `password=`, `://user:pass@`, `.env` 파일, `*.pem`, `*.p12`, `id_rsa`. 테스트용이라고 적혀 있어도 실제 서비스 형식이면 수정 필요로 본다.
 4. **개인 정보**: 개인 이메일, 전화번호, 주소, 실명과 계정의 연결. GitHub noreply 주소와 `noreply@anthropic.com`은 괜찮다.
 5. **내부 접근 정보**: 사설 IP, 내부 호스트명, 접속 URL에 들어간 토큰 쿼리, 웹훅 URL.
-6. **보호 장치 약화**: `.gitignore`에서 `notion/`, `local/`, `.env*` 같은 항목 제거, 비밀 값 검사·포맷·커밋 규칙 훅 비활성화.
+6. **보호 장치 약화와 로컬 전용 파일**: `notion/`, `local/`, `.env*`, `state/quota.json`(계정 사용량), `.claude/agent-memory/`·`.claude/agent-memory-local/`(role 메모리), `.claude/settings.local.json` 아래 파일이 PR에 들어옴. `.gitignore`에서 이런 항목 제거, 비밀 값 검사·포맷·커밋 규칙 훅 비활성화.
 7. **위험한 CI·자동화 변경**: `pull_request_target`, 워크플로 `permissions` 확대(`write-all`, `contents: write` 등), 외부 액션을 태그·SHA 없이 사용, 비밀 값을 로그로 출력할 수 있는 단계, 외부에서 받은 스크립트를 파이프로 실행(`curl ... | sh`).
 8. **의존성 변경**: 새 의존성, lockfile의 레지스트리·URL 변경, 설치 스크립트(postinstall) 허용 추가. 출처와 필요성이 PR에 설명돼 있지 않으면 수정 필요.
 9. **권한·설정 파일**: `.claude/settings*.json`의 권한 허용 확대, 프로젝트 settings에 `extraKnownMarketplaces` 추가, `pluginConfigs` 같은 사용자 전용 값.
