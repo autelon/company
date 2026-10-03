@@ -26,7 +26,7 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 - 스킬·agent 본문의 `${CLAUDE_PLUGIN_ROOT}`, `${user_config.*}`는 로드될 때 치환된다. 스킬이 읽으라고 넘기는 일반 md 파일(playbook, 템플릿) 안에서는 치환되지 않는다.
 - 플러그인 agent에서 `permissionMode`, `hooks`, `mcpServers`는 무시된다.
 - 플러그인 루트의 CLAUDE.md는 로드되지 않는다. 프로젝트 CLAUDE.md 템플릿은 `CLAUDE.template.md`라는 이름으로 둔다 (이 리포에서 작업할 때 중첩 CLAUDE.md로 로드되지 않게).
-- 프로젝트는 이 플러그인을 GitHub `autelon/company`의 main에서 설치한다(마켓플레이스 소스 `github`). 여기서 고친 내용은 main에 머지되고 프로젝트에서 `claude plugin update autelon@autelon`을 해야 반영된다. `plugin.json`에 `version`을 두지 않아 main 커밋마다 새 버전이 된다. 머지 전에 확인하려면 이 리포에서 `--plugin-dir ./plugin`으로 띄운다.
+- 프로젝트는 이 플러그인을 GitHub `autelon/company`의 main에서 설치한다(마켓플레이스 소스 `github`). 여기서 고친 내용은 main에 머지되면 프로젝트 settings의 `autoUpdate: true`로 백그라운드에서 받아지고, 다음 세션(또는 `/reload-plugins`)부터 반영된다. 바로 받으려면 `claude plugin update autelon@autelon`. `plugin.json`에 `version`을 두지 않아 main 커밋마다 새 버전이 된다. 머지 전에 확인하려면 이 리포에서 `--plugin-dir ./plugin`으로 띄운다.
 
 ## Git
 

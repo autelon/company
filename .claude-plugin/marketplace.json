@@ -3,7 +3,7 @@
   "owner": {
     "name": "rojiwon123"
   },
-  "description": "autelon 로컬 마켓플레이스",
+  "description": "autelon 플러그인 마켓플레이스 (GitHub autelon/company)",
   "plugins": [
     {
       "name": "autelon",

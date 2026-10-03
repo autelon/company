@@ -1,7 +1,8 @@
 {
   "extraKnownMarketplaces": {
     "autelon": {
-      "source": { "source": "github", "repo": "autelon/company", "ref": "main" }
+      "source": { "source": "github", "repo": "autelon/company", "ref": "main" },
+      "autoUpdate": true
     }
   },
   "enabledPlugins": {

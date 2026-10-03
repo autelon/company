@@ -13,7 +13,10 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - 처음에는 directory 소스였다. poker에서 directory 소스 + 프로젝트 settings만으로는 Desktop Code 세션에 플러그인이 로드되지 않았다(`claude plugin marketplace list` → "No marketplaces configured", `claude plugin list` → "No plugins installed"). **[확인]** 2026-10-03 poker 세션 관찰. 원인은 **[미확인]**.
   - 문서: settings가 선언했지만 `known_marketplaces.json`에 없는 마켓플레이스는 "clones it, then reloads plugins and downloads enabled plugins that aren't cached yet". 프로젝트 scope 플러그인은 workspace trust 확인 뒤에만 로드된다. **[확인]** plugins/loading 문서. Desktop Code 탭에서 이 자동 설치가 일어나는지는 **[미확인]** 문서에 없음.
   - 자동 설치가 안 되면 프로젝트 폴더에서 `claude plugin marketplace add autelon/company` → `claude plugin install autelon@autelon --scope project`. **[확인]** plugins/install 문서. 사용자 설정(`~/.claude/plugins/`)이 바뀌므로 사람이 정한다.
-- 업데이트: `plugin.json`에 `version`을 두지 않는다. 그러면 커밋마다 버전이 바뀌어 main 커밋이 새 버전이 된다. **[확인]** plugins/loading 문서 (사용자 결정 2026-10-03). 공식이 아닌 마켓플레이스는 자동 업데이트가 기본으로 꺼져 있어서 프로젝트에서 `claude plugin update autelon@autelon`으로 받는다. **[확인]** 문서
+- 업데이트: `plugin.json`에 `version`을 두지 않는다. 그러면 커밋마다 버전이 바뀌어 main 커밋이 새 버전이 된다. **[확인]** plugins/loading 문서 (사용자 결정 2026-10-03). 공식이 아닌 마켓플레이스는 자동 업데이트가 기본으로 꺼져 있어서, 프로젝트 settings의 마켓플레이스 항목에 `"autoUpdate": true`를 둔다(`source`와 나란히). **[확인]** settings-reference 문서 (사용자 결정 2026-10-03)
+  - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. 바로 받으려면 `claude plugin update autelon@autelon`.
+  - 버전 계산: `version`이 없고 GitHub 마켓플레이스 안의 상대 경로(`./plugin`)라서 "the commit SHA of the installed directory"가 버전이다. **[확인]** plugins/loading 문서. 리포 전체 커밋인지 `plugin/`을 바꾼 마지막 커밋인지는 **[미확인]**.
+  - 버전 관리 대안: semver를 직접 올리거나(B), 프로젝트 settings의 `ref`를 릴리스 태그로 고정(C). 프로젝트별로 반영 시점을 따로 정해야 할 때 검토한다.
 - 플러그인 개발: 고친 내용은 main에 머지되고 프로젝트에서 업데이트해야 반영된다. 머지 전 확인은 이 리포에서 `--plugin-dir ./plugin`. **[확인]** plugins/install 문서
 - `plugin.json`의 `defaultEnabled: false`는 `enabledPlugins`에 값이 없을 때 꺼진 채로 시작한다는 뜻이다. **[확인]** manifest-reference 문서. 프로젝트 settings의 `true`가 이것을 이기는지는 문서에 명시되지 않음 **[미확인]**.
 - 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:notion-sync`, 템플릿, 재무 스크립트.
@@ -174,7 +177,8 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 - [ ] role 실제 호출 확인 → `plugin/playbooks/first-run.md` (설립한 프로젝트에서)
 - [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 4단계)
 - [x] directory 소스 + 프로젝트 settings만으로 Desktop Code 세션에 로드되는가 → 안 됨 (2026-10-03 poker 관찰). GitHub 소스로 바꿈 (0절)
-- [ ] GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker)
+- [ ] GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker). 문서상 프로젝트 settings에만 켜진 외부 소스 플러그인은 받지 않지만 상대 경로 소스는 예외다("A relative-path plugin needs no install record because it loads from the marketplace itself", plugins/loading). autelon은 상대 경로라 자동 설치를 기대할 근거가 있다
+- [ ] `autoUpdate: true`로 main 머지가 프로젝트에 실제로 반영되는가 (poker)
 - [ ] `defaultEnabled: false`를 프로젝트 settings의 `enabledPlugins: true`가 이기는가 (poker)
 - [ ] userConfig 설정 창이 언제 뜨는가(설치 때 / 켤 때), 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는가 (poker)
 - [x] 새 세션에 작업을 넘기는 방법: `mcp__ccd_session__spawn_task`. 칩이 뜨고 사람이 눌러야 세션이 생기며, `prompt`가 첫 메시지가 된다. `cwd`로 다른 프로젝트 폴더를 줄 수 있다 (2026-10-03 사용자 안내, poker 칩으로 확인)
