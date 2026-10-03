@@ -32,7 +32,10 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 
 - 기존 결정 기록·목표 문서와 autelon 파일의 관계. director는 `decisions/log.md`와 `docs/goals.md`를 고정 경로로 읽고 쓰므로 두 파일은 **항상 만든다.** 정할 것은 내용이다: `decisions/log.md`는 첫 줄에 기존 결정 문서(예: `docs/04-decisions.md`)를 가리키고 이후 autelon 운영 중의 결정을 쌓는다. `docs/goals.md`는 기존 개념·로드맵 문서(예: `docs/01-concept.md`, `docs/05-roadmap.md`)의 목표와 지표를 요약하고 원문을 가리킨다. 요약 초안을 보여 주고 승인받는다. 그래야 director가 목표 체계를 새로 만들게 하지 않는다.
 - 도입 PR의 리뷰어: 도입 PR이 머지되기 전에는 프로젝트 role이 없으므로 reviewer role이 도입 PR을 리뷰할 수 없다. 도입 PR의 리뷰어는 사람 또는 메인 에이전트(작업 세션이 아닌 쪽)로 한다. 작업 세션은 자기 PR을 머지하지 않는다.
-- PR 리뷰어(운영 중): `director`(기본값) / `reviewer role` / `사람` (`${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`의 "PR 리뷰어" 절). 기존 git 규칙 문서가 리뷰어를 정하고 있으면 그것을 보여 주고 유지할지 묻는다.
+- PR 리뷰어(운영 중): 하나를 고른다. 기존 git 규칙 문서가 리뷰어를 정하고 있으면 그것을 보여 주고 유지할지 묻는다.
+  - `director`(기본값): director(메인 세션)가 리뷰하고 머지 명령을 낸다.
+  - `reviewer role`: director가 `reviewer` role에 리뷰를 맡긴다. reviewer가 통과로 판정하면 그 판정을 PR 코멘트로 남기고, 같은 head sha에 보안 검토 통과가 있으면 머지 명령을 낸다.
+  - `사람`: 에이전트는 PR만 올리고 머지 명령을 내지 않는다. director가 사람에게 PR 링크를 알린다.
 - Notion을 쓸지. 쓰면 found-company 4단계와 같은 방식으로 만든다(루트 URL은 `${user_config.notion_root_page}`, 비어 있거나 글자 그대로면 묻는다. relation에는 data source UUID만 넣고, 페이지 본문은 저장소를 `<조직>/<이름>`으로 가리킨다). 도입 때 Notion 페이지와 DB는 이 스킬이 직접 만든다(director 규칙의 예외). 만드는 시점은 **도입 PR이 머지된 뒤**다(main의 `.gitignore`에 `notion/`이 들어간 뒤). 그 전에는 `notion/config.json`이 추적되지 않은 파일로 보인다. 머지 전에 꼭 만들어야 하면 `.git/info/exclude`에 `notion/`을 임시로 넣고 머지 뒤에 뺀다.
 
 ## 3. role 설계
@@ -69,7 +72,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 ## 6. 커밋과 PR
 
 - 프로젝트의 커밋 규칙과 검증 명령(0단계에서 찾은 것)을 따른다. 새로 만든 파일도 포맷 검사 대상이다.
-- 개인 리소스 정보 확인: director 스킬의 "개인 리소스 정보" 절의 grep이 비어 있어야 한다.
+- 개인 리소스 정보 확인: director 스킬의 "개인 리소스 정보" 절의 확인(내용 grep, 작성자·`Co-Authored-By` 확인)이 비어 있어야 한다. 도입 PR의 push 범위 커밋과 `git config user.email`도 본다.
 - 브랜치와 PR로 올린다. 리뷰어는 2단계에서 정한 대로 하고, 보안 검토는 `autelon:security-reviewer`가 한다. 작업한 세션은 자기 PR을 머지하지 않는다.
 
 ## 7. 보고
