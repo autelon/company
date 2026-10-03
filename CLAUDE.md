@@ -28,7 +28,7 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 
 ## Git
 
-커밋 전에 `docs/git-rules.md`를 읽는다. `commit-msg` 훅이 형식을 검사하고, `pre-commit` 훅이 Prettier로 스테이징 파일을 맞춘다.
+커밋 전에 `docs/git-rules.md`를 읽는다. main 에는 PR 로만 들어가고, 리뷰어와 머지 절차도 그 문서에 있다. `commit-msg` 훅이 형식을 검사하고, `pre-commit` 훅이 Prettier로 스테이징 파일을 맞춘다.
 파일을 고친 뒤 `pnpm check`(Prettier 검사)를 돌린다. 도구 버전은 mise가 고정한다 (`mise exec --`).
 
 `README.md`만 사람이 읽는 문서라 영어로 쓴다. 나머지 문서·주석·커밋은 한국어다.

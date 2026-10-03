@@ -63,8 +63,35 @@ git 은 작성자(author)와 커밋한 사람(committer)을 따로 기록한다.
 
 ## 원격과 PR
 
-- 지금은 원격 저장소가 없어 로컬 `main` 에 직접 커밋한다.
-- GitHub 원격을 만들면 logistics-hub 와 같은 규칙으로 바꾼다: main 은 PR 로만, merge commit 병합, CI `check` 통과 필수. 그때 이 절을 고친다.
+이 리포는 `~/.claude/git-workflow.md`(전역 Git·저장소 표준)를 따른다. 여기에는 이 리포에서 정한 값만 적는다.
+
+| 항목      | 값                                                                      |
+| --------- | ----------------------------------------------------------------------- |
+| GitHub    | `autelon/company` (public)                                              |
+| 최신화    | 머지 큐                                                                 |
+| 병합 방식 | merge commit                                                            |
+| 필수 검사 | `check`, `git-policy / merge-commits` (`.github/workflows/ci.yml`)      |
+| 설정 확인 | `gh api repos/autelon/company`, `gh api repos/autelon/company/rulesets` |
+
+- main 에는 PR 로만 들어간다. 작업 브랜치에서 커밋하고 PR 을 올린다. main 을 작업 브랜치로 merge 하지 않고 rebase 만 쓴다.
+- 저장소 설정과 main 규칙은 조직 `.github` 저장소의 `scripts/setup-repo.sh` 로 적용한다. 바꿀 때는 바뀔 값을 사용자에게 보여 주고 승인받는다.
+
+### 리뷰어
+
+- **기본 리뷰어는 메인 에이전트다.** 서브에이전트나 다른 세션이 작업해 PR 을 올리면, 메인 에이전트가 리뷰하고 머지 명령을 낸다.
+- **메인 에이전트가 직접 작업한 PR 은 별도 리뷰어 에이전트에게 맡긴다.** 작업자와 리뷰어가 같으면 안 된다. 메인 에이전트가 판단해 다른 PR 도 리뷰어 에이전트에게 맡길 수 있다. 그때는 리뷰어 에이전트가 머지 명령을 낸다.
+- 사용자가 "이 PR 은 내가 리뷰한다"고 하면 리뷰어는 사용자다. 에이전트는 그 PR 의 머지 명령을 내지 않는다.
+- 리뷰 결과는 PR 코멘트로 남긴다. 계정이 하나라 GitHub 승인(approve)은 쓰지 않는다.
+
+### 머지 명령
+
+```
+gh pr merge <PR> --match-head-commit <리뷰한 head sha>
+```
+
+- 필수 검사가 진행 중이면 auto-merge 가 켜지고, 통과했으면 머지 큐에 들어간다. `--match-head-commit` 때문에 리뷰 뒤에 브랜치가 바뀌었으면 머지되지 않는다.
+- `--admin` 은 쓰지 않는다.
+- main 보다 뒤처져 막히거나 충돌이 나면 `git fetch origin && git rebase origin/main && git push --force-with-lease` 로 다시 올린다. `--force` 는 쓰지 않는다.
 
 ## 히스토리 조사
 
