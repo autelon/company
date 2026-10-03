@@ -24,7 +24,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - `claude plugin uninstall autelon@autelon --scope project`는 설치 기록뿐 아니라 그 프로젝트 `.claude/settings.json`의 `enabledPlugins` 항목도 지웠다(`{}`가 됨). **[확인]** 2026-10-04 실행
   - 설치할 때 "2 userConfig options not yet set — run /plugin configure autelon@autelon"이 나왔다. 기본값이 있는 `github_org`도 미설정으로 셌다. **[확인]**
 - 업데이트: `plugin.json`에 `version`을 두지 않는다. (사용자 결정 2026-10-03) 설치된 버전은 `bb0599b8e999`로, `plugin/`을 마지막으로 바꾼 커밋(`44ad66d`)이 아니라 **main 최신 커밋**이었다. **[확인]** 2026-10-04. 설치할 때와 업데이트할 때마다 설치된 버전은 autelon/company main HEAD SHA의 앞 12자와 같았다. **[확인]** 2026-10-04 poker, 이 기기. 그래서 문서만 바뀐 머지도 새 버전이 될 가능성이 높다(문서만 바꾼 머지가 새 버전을 만드는지는 **[미확인]**).
-  - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. `/reload-plugins`가 실행 중인 세션에 플러그인 업데이트를 적용하는 것은 직접 확인했다. **[확인]** 2026-10-04 바로 받으려면 `claude plugin update autelon@autelon`. Desktop 세션에서도 도는지는 **[미확인]**.
+  - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. `/reload-plugins`가 실행 중인 세션에 플러그인 업데이트를 적용하는 것은 직접 확인했다. **[확인]** 2026-10-04 바로 받으려면 `claude plugin update autelon@autelon`. `/reload-plugins`는 Desktop 세션에서도 실행된다. **[확인]** 2026-10-04 poker Desktop 세션에서 사용자가 입력한 `/reload-plugins`로 새 role이 로드됨(아래 관찰), commands 문서(1절). 자동 업데이트가 Desktop 세션에서도 백그라운드로 도는지는 **[미확인]**(7절).
   - 버전 관리 대안: semver를 직접 올리거나(B), 프로젝트별로 `ref`를 릴리스 태그로 고정(C). 프로젝트마다 반영 시점을 따로 정해야 할 때 검토한다.
 - 플러그인 개발: 고친 내용은 main에 머지되어야 프로젝트에 간다. 머지 전 확인은 이 리포에서 `--plugin-dir ./plugin`. **[확인]** plugins/install 문서
 - 관찰 (2026-10-04, poker와 이 기기, 모두 **[확인]**)
