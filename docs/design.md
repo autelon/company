@@ -173,7 +173,14 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 - [x] Notion 커넥터 기능 확인, DB·뷰 생성 (2026-10-03)
 - [ ] role 실제 호출 확인 → `plugin/playbooks/first-run.md` (설립한 프로젝트에서)
 - [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 4단계)
-- [ ] directory 소스 플러그인이 프로젝트 settings만으로 로드되는지, `/plugin install`이 필요한지
+- [x] directory 소스 + 프로젝트 settings만으로 Desktop Code 세션에 로드되는가 → 안 됨 (2026-10-03 poker 관찰). GitHub 소스로 바꿈 (0절)
+- [ ] GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker)
+- [ ] `defaultEnabled: false`를 프로젝트 settings의 `enabledPlugins: true`가 이기는가 (poker)
+- [ ] userConfig 설정 창이 언제 뜨는가(설치 때 / 켤 때), 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는가 (poker)
+- [x] 새 세션에 작업을 넘기는 방법: `mcp__ccd_session__spawn_task`. 칩이 뜨고 사람이 눌러야 세션이 생기며, `prompt`가 첫 메시지가 된다. `cwd`로 다른 프로젝트 폴더를 줄 수 있다 (2026-10-03 사용자 안내, poker 칩으로 확인)
+  - 도구 설명은 "gets a fresh worktree"라고 하지만, poker 세션은 메인 checkout(main)에서 열렸다. 칩을 누를 때 worktree 선택이 있었는지는 **[미확인]**
+  - `start_session`·`hand_off_to_session`(사람 클릭 없이 세션 시작)은 Desktop 2.19675.0 코드에 있지만 서버 기능 플래그 `sideSessions`가 꺼져 있어 등록되지 않는다. 앱 캐시 `fcache`의 값은 `on:false, source:defaultValue`. 사용자 설정이나 settings.json으로 켤 수 없다 (2026-10-03 앱 코드 확인). 요청 이슈 anthropics/claude-code#89783 (열려 있음)
+  - `claude://code/new?folder=…&q=…` 딥링크도 새 세션을 연다. 글은 입력창에 채워질 뿐 자동 전송되지 않고, 폴더는 매번 확인 창이 뜬다 (support.claude.com 문서)
 - [ ] `found-company` 스킬이 role 설계·상태 파일·Notion 생성을 끝까지 해내는지
 - [ ] 재개 예약 방식 (scheduled-tasks / CronCreate)
 - [ ] Desktop Code 탭에서 statusline 동작 여부 (필요해질 때)
