@@ -20,7 +20,9 @@
 - `reviewer role`: director가 `reviewer` role에 리뷰를 맡긴다. reviewer가 통과로 판정하면 그 판정을 PR 코멘트로 남기고 머지 명령을 낸다.
 - `사람`: 에이전트는 PR만 올리고 머지 명령을 내지 않는다. director가 사람에게 PR 링크를 알린다.
 
-리뷰어를 바꾸려면 이 절을 고치고 `decisions/log.md`에 남긴다.
+**보안 검토(항상):** 리뷰어가 누구든 모든 PR은 `autelon:security-reviewer`가 보안 검토를 한다(개인 경로, Notion 주소·ID, 비밀 값, 개인 정보, 위험한 CI·의존성 변경). 머지는 같은 head sha에 대해 리뷰 통과와 보안 검토 통과가 둘 다 있을 때만 한다.
+
+리뷰어를 바꾸려면 이 절을 고치고 `decisions/log.md`에 남긴다. 보안 검토는 바꾸지 않는다.
 
 ## PR 절차
 

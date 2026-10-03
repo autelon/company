@@ -7,20 +7,20 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 
 ## 구조
 
-| 경로                               | 내용                                                                   |
-| ---------------------------------- | ---------------------------------------------------------------------- |
-| `.claude-plugin/marketplace.json`  | 이 리포를 로컬 마켓플레이스로 등록할 때 쓰는 목록                      |
-| `plugin/`                          | 플러그인 본체                                                          |
-| `plugin/skills/found-company/`     | 프로젝트 설립: role 설계, 상태 파일, Notion 페이지·DB, GitHub 저장소   |
-| `plugin/skills/adopt-project/`     | 기존 프로젝트 도입: 기존 문서 유지, 도메인 전문가 role, 작업 방식 비교 |
-| `plugin/skills/director/`          | director 운영 규칙 (프로젝트 CLAUDE.md가 세션 시작 시 부른다)          |
-| `plugin/agents/`                   | 모든 프로젝트가 같이 쓰는 공용 role: finance, notion-sync              |
-| `plugin/templates/roles/`          | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다   |
-| `plugin/templates/project/`        | 프로젝트 상태 파일 템플릿                                              |
-| `plugin/scripts/finance-check.mjs` | 재무 신호 판정                                                         |
-| `plugin/playbooks/first-run.md`    | 설립한 프로젝트에서 처음 확인할 것                                     |
-| `.github/workflows/ci.yml`         | 필수 검사 `check`(커밋 메시지·Prettier)와 조직 `git-policy`            |
-| `scripts/check-commits.sh`         | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                       |
+| 경로                               | 내용                                                                                            |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `.claude-plugin/marketplace.json`  | 이 리포를 로컬 마켓플레이스로 등록할 때 쓰는 목록                                               |
+| `plugin/`                          | 플러그인 본체                                                                                   |
+| `plugin/skills/found-company/`     | 프로젝트 설립: role 설계, 상태 파일, Notion 페이지·DB, GitHub 저장소                            |
+| `plugin/skills/adopt-project/`     | 기존 프로젝트 도입: 기존 문서 유지, 도메인 전문가 role, 작업 방식 비교                          |
+| `plugin/skills/director/`          | director 운영 규칙 (프로젝트 CLAUDE.md가 세션 시작 시 부른다)                                   |
+| `plugin/agents/`                   | 모든 프로젝트가 같이 쓰는 공용 role: finance, notion-sync, security-reviewer(모든 PR 보안 검토) |
+| `plugin/templates/roles/`          | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다                            |
+| `plugin/templates/project/`        | 프로젝트 상태 파일 템플릿                                                                       |
+| `plugin/scripts/finance-check.mjs` | 재무 신호 판정                                                                                  |
+| `plugin/playbooks/first-run.md`    | 설립한 프로젝트에서 처음 확인할 것                                                              |
+| `.github/workflows/ci.yml`         | 필수 검사 `check`(커밋 메시지·Prettier)와 조직 `git-policy`                                     |
+| `scripts/check-commits.sh`         | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                                                |
 
 ## 고칠 때 주의
 

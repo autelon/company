@@ -34,7 +34,7 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
    - 모델은 판단이 무거운 role만 opus, 정해진 규칙대로 하는 role은 sonnet/haiku.
 3. 구성안을 표로 보여주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 모델, 기본 템플릿에서 바꾼 점.
 4. 승인된 role을 프로젝트 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`를 둔다. 첫 줄 주석 `(v0 페르소나 — role 설계 단계에서 개선 예정)`은 유지한다.
-5. 공용 role(`autelon:finance`, `autelon:notion-sync`)은 플러그인에 있으니 만들지 않는다.
+5. 공용 role(`autelon:finance`, `autelon:notion-sync`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 모든 PR에 항상 들어간다(director 스킬의 "코드 변경과 PR").
 
 ## 3. 상태 파일
 

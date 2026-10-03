@@ -7,7 +7,7 @@ Each project lives in its own repository with its own roles, state files, and No
 - `adopt-project` skill: brings an existing project (code, docs, repo already in place) under autelon without overwriting its docs; designs domain-expert roles from its domain docs and proposes how to reconcile its current workflow with the director rules.
 - Personal resource links (Notion URLs/IDs, local absolute paths, account details) never go into commits; they live in local config (`pluginConfigs`, the project's gitignored `notion/` and `local/`).
 - `director` skill: operating rules for the main session in a project.
-- Shared roles: `finance` (token budget) and `notion-sync`.
+- Shared roles: `finance` (token budget), `notion-sync`, and `security-reviewer`, which reviews every PR regardless of who the assigned reviewer is (personal paths, Notion URLs/IDs, secrets, personal data, risky CI or dependency changes) and blocks the merge until it passes.
 
 Design notes (Korean): `docs/design.md`.
 
