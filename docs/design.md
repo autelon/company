@@ -6,11 +6,11 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 
 ## 0. 배포 구조: 플러그인 + 프로젝트별 독립 repo
 
-- 이름: 플러그인·마켓플레이스는 `autelon`, 이 리포는 GitHub `autelon/company`(로컬 `~/dev/autelon/company`). 처음 이름은 agent-company였고 2026-10-03에 바꿨다. (사용자 결정)
+- 이름: 플러그인·마켓플레이스는 `autelon`, 이 리포는 GitHub `autelon/company`. 처음 이름은 agent-company였고 2026-10-03에 바꿨다. (사용자 결정)
 - autelon은 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다. (사용자 결정 2026-10-03)
 - 그래서 이 리포는 Claude Code 플러그인(`plugin/`)이다. 프로젝트는 GitHub 원격 저장소 `autelon/company`의 main에서 설치한다. 로컬 경로(directory 소스)를 가리키지 않는다. (사용자 결정 2026-10-03)
 - 설정은 두 층으로 나눈다. (사용자 결정 2026-10-04)
-  - **사용자 설정 `~/.claude/settings.json`**: 마켓플레이스 등록, 자동 업데이트, 플러그인 설치(user scope). `"extraKnownMarketplaces": {"autelon": {"source": {"source": "github", "repo": "autelon/company"}, "autoUpdate": true}}`, `"enabledPlugins": {"autelon@autelon": false}`. 설치는 한 번, 기본은 꺼짐.
+  - **사용자 설정(user settings)**: 마켓플레이스 등록, 자동 업데이트, 플러그인 설치(user scope). `"extraKnownMarketplaces": {"autelon": {"source": {"source": "github", "repo": "autelon/company"}, "autoUpdate": true}}`, `"enabledPlugins": {"autelon@autelon": false}`. 설치는 한 번, 기본은 꺼짐.
   - **프로젝트 `.claude/settings.json`**: `"enabledPlugins": {"autelon@autelon": true}`만. `enabledPlugins`는 같은 id에 대해 우선순위가 가장 높은 파일의 값이 쓰이고 project가 user보다 높아서, 이 파일이 있는 프로젝트에서만 켜진다. **[확인]** plugins/loading 문서. 전역으로 켜면 다른 프로젝트(logistics-hub 등)에도 스킬이 로드된다.
   - 프로젝트 settings에 `extraKnownMarketplaces.autelon`을 두지 않는다. 같은 이름의 항목은 우선순위가 높은 파일의 것이 통째로 쓰여서 전역의 `autoUpdate`가 무시된다. **[확인]** settings-reference 문서
   - 사용자 설정의 `source`는 `claude plugin marketplace add autelon/company`가 기록한 소스와 같아야 한다. `"ref": "main"`을 더했더니 "Marketplace autelon is added but ignored. Its network source differs from the one declared for it in settings"로 플러그인이 로드되지 않았다. **[확인]** 2026-10-04 실행
@@ -23,25 +23,37 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - 그 뒤 CLI로 설치했다: `claude plugin marketplace add autelon/company` → poker에서 `claude plugin install autelon@autelon --scope project` → 사용자 범위로 바꿈(위). 마켓플레이스 add는 사용자 settings의 `extraKnownMarketplaces`에도 기록된다. **[확인]** 2026-10-04 실행, plugins/loading 문서
   - `claude plugin uninstall autelon@autelon --scope project`는 설치 기록뿐 아니라 그 프로젝트 `.claude/settings.json`의 `enabledPlugins` 항목도 지웠다(`{}`가 됨). **[확인]** 2026-10-04 실행
   - 설치할 때 "2 userConfig options not yet set — run /plugin configure autelon@autelon"이 나왔다. 기본값이 있는 `github_org`도 미설정으로 셌다. **[확인]**
-- 업데이트: `plugin.json`에 `version`을 두지 않는다. (사용자 결정 2026-10-03) 설치된 버전은 `bb0599b8e999`로, `plugin/`을 마지막으로 바꾼 커밋(`44ad66d`)이 아니라 **main 최신 커밋**이었다. **[확인]** 2026-10-04. 그래서 문서만 바뀐 머지도 새 버전이 될 가능성이 높다(업데이트 때도 같은지는 **[미확인]**).
-  - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. 바로 받으려면 `claude plugin update autelon@autelon`. Desktop 세션에서도 도는지는 **[미확인]**.
+- 업데이트: `plugin.json`에 `version`을 두지 않는다. (사용자 결정 2026-10-03) 설치된 버전은 `bb0599b8e999`로, `plugin/`을 마지막으로 바꾼 커밋(`44ad66d`)이 아니라 **main 최신 커밋**이었다. **[확인]** 2026-10-04. 설치할 때와 업데이트할 때마다 설치된 버전은 autelon/company main HEAD SHA의 앞 12자와 같았다. **[확인]** 2026-10-04 poker, 이 기기. 그래서 문서만 바뀐 머지도 새 버전이 될 가능성이 높다(문서만 바꾼 머지가 새 버전을 만드는지는 **[미확인]**).
+  - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. `/reload-plugins`가 실행 중인 세션에 플러그인 업데이트를 적용하는 것은 직접 확인했다. **[확인]** 2026-10-04 바로 받으려면 `claude plugin update autelon@autelon`. Desktop 세션에서도 도는지는 **[미확인]**.
   - 버전 관리 대안: semver를 직접 올리거나(B), 프로젝트별로 `ref`를 릴리스 태그로 고정(C). 프로젝트마다 반영 시점을 따로 정해야 할 때 검토한다.
 - 플러그인 개발: 고친 내용은 main에 머지되어야 프로젝트에 간다. 머지 전 확인은 이 리포에서 `--plugin-dir ./plugin`. **[확인]** plugins/install 문서
+- 관찰 (2026-10-04, poker와 이 기기, 모두 **[확인]**)
+  - 사용자 scope 설치와 프로젝트 `enabledPlugins`로 Desktop 세션에서 플러그인이 로드된다. `defaultEnabled: false`는 프로젝트의 `true`가 이긴다.
+  - 설립 중에 만든 프로젝트 role은 같은 세션에서 부를 수 없고(`Agent type 'reviewer' not found`), 사용자가 `/reload-plugins`를 입력한 뒤에 그 role과 `autelon:security-reviewer`를 부를 수 있었다.
+  - logistics-hub 도입·first-run(autelon/logistics-hub#36, #37, 2026-10-04): 프로젝트 폴더에서 연 Desktop 세션에서 프로젝트 role 14개와 공용 role이 subagent로, director·found-company가 스킬로 보였다. 다른 폴더에서 시작한 세션에서는 프로젝트 role이 보이지 않았다. notion-sync가 커넥터로 M-00을 만들었고 handoff에 URL이 없었다. finance 메모리는 프로젝트 루트 `.claude/agent-memory/autelon-finance/`.
+  - 세션 작업 폴더가 worktree(`.claude/worktrees/<이름>`)였을 때 `autelon:security-reviewer`의 메모리는 그 worktree의 `.claude/agent-memory/`에 생겼다. `isolation: worktree`인 developer는 **[미확인]**.
+  - 사람이 Desktop 앱을 보고 있으면 폰 푸시가 나가지 않는다(PushNotification이 "터미널이 활성 상태라 중복"으로 거절). 앱을 벗어난 뒤에는 PushNotification과 AskUserQuestion 푸시가 둘 다 폰에 왔고 폰에서 고른 답이 세션에 들어왔다.
+  - Desktop 세션 셸 PATH에 `claude`가 없었다.
+  - Desktop의 "+ → Plugins" 메뉴에는 autelon이 나오지 않았지만 스킬 자동완성에는 `autelon:*`가 보였다. 원인은 **[미확인]**.
+  - 사용자는 CLI 명령을 직접 입력하지 않는다. 에이전트가 앱에 들어 있는 `claude` 바이너리로 실행하고, 사용자는 `/reload-plugins` 같은 세션 명령만 입력한다. (사용자 결정 2026-10-04)
 - `plugin.json`의 `defaultEnabled: false`는 `enabledPlugins`에 값이 없을 때 꺼진 채로 시작한다는 뜻이다. **[확인]** manifest-reference 문서. 프로젝트 settings의 `true`가 이를 이긴다. **[확인]** 2026-10-04 poker에서 enabled
 - 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:notion-sync`, 템플릿, 재무 스크립트.
 - 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), 상태 파일 전부, `notion/config.json`, 코드.
-- 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`, 기본 `autelon`)에 만들고 `~/.claude/git-workflow.md`와 조직 `.github` 저장소의 `setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03)
+- 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`)에 만들고, 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md` 표준과 같은 저장소의 `scripts/setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03) 표준 문서는 처음에 사용자 홈의 전역 설정에 있었고 2026-10-04에 `autelon/.github`로 옮겼다(autelon/.github#4). 첫 push는 PR이 아니므로 push 전에 security-reviewer가 로컬 `main` 전체 히스토리를 검토하고 "통과"일 때만 올린다(company#12).
 - PR 리뷰어는 프로젝트마다 정해 프로젝트 `docs/git-rules.md`에 적는다. `director`(기본값) / `reviewer role` / `사람`. 리뷰어가 머지 명령을 낸다. (사용자 결정 2026-10-03)
 - Notion 루트 페이지는 플러그인 기본값에 두지 않는다. 플러그인 리포가 public이라 URL이 공개되기 때문이다. 루트 URL은 사용자 설정 `pluginConfigs["autelon@autelon"].options.notion_root_page`에 둔다(로컬, 저장소에 안 올라감). 값이 없으면 found-company가 사람에게 묻는다. (사용자 결정 2026-10-03, 2026-10-04)
   - 프로젝트 `notion/`(루트·프로젝트 페이지·DB·뷰 ID의 `config.json`, 항목별 페이지 URL의 `ids.json`)은 커밋하지 않고 `.gitignore`에 넣는다. 처음에는 항목 URL을 board·PRD의 `notion_id`와 notion-sync handoff에 두었는데, 모두 커밋되는 파일이라 옮겼다. 프로젝트 저장소가 public이면 ID가 공개되기 때문이다. 다른 기기에서는 이 파일을 다시 만들거나 옮겨야 한다. (사용자 결정 2026-10-04)
-  - userConfig에 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는지 **[미확인]** 문서에 없음. 그래서 빈 값과 치환되지 않은 글자 둘 다 "설정 안 됨"으로 본다.
+  - `${user_config.*}`는 스킬을 불러올 때 치환된다. 세션이 열린 뒤에 넣은 값은 `/reload-plugins`가 필요하고, reload가 치환을 다시 한다. **[확인]** 2026-10-04 poker. manifest의 `default`는 치환에 쓰이지 않았다(`github_org`가 reload 뒤에도 글자 그대로). **[확인]** 그래서 스킬은 글자 그대로 남은 값과 빈 값을 둘 다 "설정 안 됨"으로 본다. 사용자는 값을 사용자 설정 `pluginConfigs`에 넣어 두고(이 기기에는 `notion_root_page`와 `github_org` 둘 다 들어 있다), 값은 이 리포에 적지 않는다.
   - `pluginConfigs`(userConfig 값)는 사용자·관리 설정에서만 읽고 프로젝트 settings에서는 무시한다. **[확인]** settings-reference 문서
 - 기존 프로젝트는 `adopt-project` 스킬로 들인다. found-company는 CLAUDE.md·결정·목표 파일을 템플릿으로 만들어 기존 프로젝트에서는 덮어쓰거나 충돌한다. adopt-project는 기존 문서를 원본으로 두고 없는 autelon 파일만 더하며, 기존 작업 방식은 비교해 제안만 한다. (2026-10-04, logistics-hub 도입 요청에서)
-- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)는 원격에 올리지 않고 로컬 설정(`pluginConfigs`, 프로젝트 `notion/`·`local/`, gitignore)에만 둔다. 커밋되는 파일은 이름으로 가리킨다. (사용자 결정 2026-10-04) 2026-10-04 점검: autelon 조직 저장소 3개(company, .github, logistics-hub)의 전체 히스토리·PR·코멘트에 Notion URL·개인 경로 없음. poker 로컬 히스토리의 절대 경로는 push 전에 `~/`로 바꿨다.
+- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)는 원격에 올리지 않고 로컬 설정(`pluginConfigs`, 프로젝트 `notion/`·`local/`, gitignore)에만 둔다. 커밋되는 파일은 이름으로 가리킨다. (사용자 결정 2026-10-04) 2026-10-04 점검: autelon 조직 저장소 3개(company, .github, logistics-hub)의 전체 히스토리·PR·코멘트에 Notion URL·개인 경로 없음. poker 로컬 히스토리의 경로는 push 전에 홈 기준 경로로 바꿨지만, 그것도 커밋되는 파일에서는 위반이라 poker 저장소를 지우고 다시 만들었다(아래).
+  - 원칙: 커밋되는 파일에서 경로는 repo 루트 기준 상대 경로로 쓰고, repo 밖의 것은 저장소나 문서 이름으로 가리킨다. 홈 기준 경로(`~/...`)도 위반이다. security-reviewer 검토 항목 1에 넣었다. (사용자 결정 2026-10-04, company#12)
+  - 의심스러운 것은 push 전에 막는다. PR 브랜치에 한 번 올라간 커밋은 force push로 빼도 PR 타임라인이 이전 head를 붙잡고 있어 SHA로 계속 조회된다. **[확인]** poker
+  - director는 Notion을 직접 읽거나 쓰지 않는다. 예외: found-company·adopt-project는 설립·도입 때 Notion 페이지와 DB를 직접 만들고, first-run의 Notion 확인은 notion-sync에 맡긴다.
 - 보안 검토자(`security-reviewer`)는 공용 role로 플러그인에 둔다. 리뷰어 지정(director / reviewer role / 사람)과 상관없이 모든 PR에 들어가고, 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있어야 머지한다. 개인 경로, Notion 주소·ID, 비밀 값, 개인 정보, 위험한 CI·의존성 변경을 엄격하고 보수적으로 본다(확신이 없으면 수정 필요). 공용 role로 둔 이유: 프로젝트 role로 두면 프로젝트마다 기준이 달라지고, 플러그인 업데이트만으로 진행 중인 프로젝트(poker, logistics-hub)에도 같은 기준이 들어간다. (사용자 결정 2026-10-04)
 - 프로젝트 기본 무시 항목은 `templates/project/gitignore.template`이 원본이다(notion/, local/, .env*, state/quota.json, role 메모리, settings.local.json, worktrees). found-company·adopt-project가 프로젝트 `.gitignore`에 합친다. (company#9)
 - role 개선의 두 층
-  - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`. **커밋하지 않는다**(`.gitignore`). 무엇이 기록될지 미리 알 수 없고 finance 메모리에는 계정 사용량이 들어가서, public 저장소에 올리면 공개된다. 그래서 role 학습은 기기마다 따로 쌓인다. (사용자 결정 2026-10-04, company#9) 공용 role의 메모리 폴더는 `autelon:finance` → `autelon-finance/`처럼 콜론이 하이픈으로 바뀐다. **[확인]** poker first-run
+  - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`. **커밋하지 않는다**(`.gitignore`). 무엇이 기록될지 미리 알 수 없고 finance 메모리에는 계정 사용량이 들어가서, public 저장소에 올리면 공개된다. 그래서 role 학습은 기기마다 따로 쌓인다. (사용자 결정 2026-10-04, company#9) 공용 role의 메모리 폴더는 `autelon:finance` → `autelon-finance/`처럼 콜론이 하이픈으로 바뀐다. **[확인]** poker first-run. `memory: project`는 유지한다. `.claude/agent-memory-local/`은 무시 목록에만 있는 안전 항목이다. (사용자 결정 2026-10-04)
   - 프로젝트를 넘는 개선: `plugin/templates/roles/`를 고쳐 커밋 → 다음에 설립하는 프로젝트부터 반영
 - director 규칙은 플러그인 `settings.agent`(메인 대화를 director agent로 띄우기)로 넣지 않고 스킬로 둔다. 문서상 agent를 메인으로 쓰면 그 agent 프롬프트가 Claude Code 기본 시스템 프롬프트를 **통째로 대체**한다. **[확인]** sub-agents 문서. 기본 도구 사용 지침을 잃을 위험이 있어, 프로젝트 CLAUDE.md가 세션 시작 시 `autelon:director` 스킬을 부르게 했다.
 - 플러그인 agent는 `permissionMode`, `hooks`, `mcpServers`를 무시하고 `memory`, `isolation`, `tools`, `model`, `skills`, `omitClaudeMd`는 지원한다. **[확인]** plugins/components 문서
@@ -128,7 +140,7 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
 - 동기화는 `notion-sync` subagent(haiku)만 한다. Notion MCP 도구를 director와 다른 role의 context에 두지 않기 위해서다. 그래서 다른 role은 `tools:`를 명시해 MCP 도구를 상속하지 않게 한다.
 - **[확인]** claude.ai Notion 커넥터로 DB 생성(SQL DDL), 양방향 relation, 자기 참조 relation, 보드 뷰 생성까지 된다. 2026-10-03 실제로 만들었다. 위치와 ID는 프로젝트 `notion/config.json`.
 - Tasks DB에 보드 뷰 두 개: `칸반`(Status별), `role별`(Role별). role별 보드가 후순위로 미룬 "role 단위 보기"의 최소판이다.
-- **[미확인]** subagent(notion-sync)가 claude.ai 커넥터 도구를 상속받아 쓸 수 있는지. notion-sync는 `tools:`를 지정하지 않아 모든 도구를 상속하게 했다. `plugin/playbooks/first-run.md` 4단계에서 확인.
+- **[확인]** subagent(notion-sync)가 claude.ai 커넥터 도구를 상속받아 쓸 수 있다. notion-sync는 `tools:`를 지정하지 않아 모든 도구를 상속한다. 2026-10-04 poker
 - Notion → 로컬 역방향은 없다. 승인은 AskUserQuestion·푸시로만 받는다. (사용자 결정 2026-10-03)
 
 DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
@@ -188,24 +200,27 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 ## 7. 남은 확인 항목
 
 - [x] Notion 커넥터 기능 확인, DB·뷰 생성 (2026-10-03)
-- [ ] role 실제 호출 확인 → `plugin/playbooks/first-run.md` (설립한 프로젝트에서)
-- [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 4단계)
+- [x] role 실제 호출 확인: 프로젝트 role은 `/reload-plugins` 뒤, 공용 role은 로드된 뒤 부를 수 있다 (2026-10-04 poker). 프로젝트별 짧은 점검은 `plugin/playbooks/first-run.md`
+- [x] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있다 (2026-10-04 poker)
 - [x] directory 소스 + 프로젝트 settings만으로 Desktop Code 세션에 로드되는가 → 안 됨 (2026-10-03 poker 관찰). GitHub 소스로 바꿈 (0절)
 - [x] (user scope 설치로 바꿔 필요 없어짐) GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker). 문서상 프로젝트 settings에만 켜진 외부 소스 플러그인은 받지 않지만 상대 경로 소스는 예외다("A relative-path plugin needs no install record because it loads from the marketplace itself", plugins/loading). autelon은 상대 경로라 자동 설치를 기대할 근거가 있다
-- [ ] 사용자 설정의 `autoUpdate: true`로 main 머지가 실제로 반영되는가. 수동 `claude plugin update`는 확인함(버전이 매번 main 최신 커밋으로 바뀜, 2026-10-04)
-- [ ] Desktop Code 세션에 플러그인이 실제로 로드되고 + → Plugins와 `/`에 스킬이 보이는가 (poker 설립 세션)
+- [ ] 사용자 설정의 `autoUpdate: true`로 main 머지가 Desktop 세션에서 실제로 반영되는가. 수동 `claude plugin update`와 `/reload-plugins`로 반영되는 것은 확인함(버전이 main HEAD SHA 12자와 같음, 2026-10-04)
+- [ ] 문서만 바꾼 머지도 새 버전을 만드는가
+- [x] Desktop Code 세션에 플러그인이 로드되고 스킬 자동완성에 `autelon:*`가 보인다. + → Plugins 메뉴에는 나오지 않았다, 원인 **[미확인]** (2026-10-04 poker)
 - [x] `defaultEnabled: false`를 프로젝트 settings의 `enabledPlugins: true`가 이기는가 → 이긴다 (2026-10-04)
-- [ ] userConfig 설정 창이 언제 뜨는가(설치 때 / 켤 때), 값이 없을 때 `${user_config.*}`가 무엇으로 치환되는가 (poker)
+- [x] `${user_config.*}`는 스킬 로드 때 치환되고 세션 중에 넣은 값은 `/reload-plugins`가 필요하다. `default`는 치환에 쓰이지 않았다 (2026-10-04 poker). 설정 창이 뜨는 때는 설치 때 "not yet set" 안내까지만 확인
 - [x] 새 세션에 작업을 넘기는 방법: `mcp__ccd_session__spawn_task`. 칩이 뜨고 사람이 눌러야 세션이 생기며, `prompt`가 첫 메시지가 된다. `cwd`로 다른 프로젝트 폴더를 줄 수 있다 (2026-10-03 사용자 안내, poker 칩으로 확인)
-  - 도구 설명은 "gets a fresh worktree"라고 하지만, poker 세션은 메인 checkout(main)에서 열렸다. 칩을 누를 때 worktree 선택이 있었는지는 **[미확인]**
+  - 도구 설명은 "gets a fresh worktree"라고 하지만, `spawn_task` 세션은 worktree 없이 메인 checkout에서 열렸다. **[확인]** 2026-10-04
   - `start_session`·`hand_off_to_session`(사람 클릭 없이 세션 시작)은 Desktop 2.19675.0 코드에 있지만 서버 기능 플래그 `sideSessions`가 꺼져 있어 등록되지 않는다. 앱 캐시 `fcache`의 값은 `on:false, source:defaultValue`. 사용자 설정이나 settings.json으로 켤 수 없다 (2026-10-03 앱 코드 확인). 요청 이슈 anthropics/claude-code#89783 (열려 있음)
   - `claude://code/new?folder=…&q=…` 딥링크도 새 세션을 연다. 글은 입력창에 채워질 뿐 자동 전송되지 않고, 폴더는 매번 확인 창이 뜬다 (support.claude.com 문서)
-- [ ] `found-company` 스킬이 role 설계·상태 파일·Notion 생성을 끝까지 해내는지
+- [x] `found-company` 스킬이 role 설계·상태 파일·Notion 생성·GitHub 저장소까지 해냈다 (poker). 개선점은 company#12
+- [ ] 폰 푸시가 안 오는 회차의 원인: 4번째 시도에서 `/config inputNeededNotifEnabled=true`를 다시 실행한 뒤 푸시가 왔고 폰에서 고른 답이 세션에 들어왔다. 푸시는 데스크톱보다 늦게 오기도 했다. logistics-hub에서는 앱을 보고 있을 때 푸시가 억제됐다. poker의 이전 누락 원인은 **[미확인]**
+- [ ] 재무 판정 스크립트 `finance-check.mjs`가 표준 입력으로 `get_usage` 결과를 받게 하기 (company#12 항목 10, 이 PR에서 구현하지 않음)
 - [ ] 재개 예약 방식 (scheduled-tasks / CronCreate)
 - [ ] Desktop Code 탭에서 statusline 동작 여부 (필요해질 때)
 - [x] 성공지표·성과측정 = 비즈니스 관점, PRD마다 다름, 전체 목표에 연결 (사용자 결정 2026-10-03)
 - [ ] 분석 데이터를 어디에 쌓을지 (da가 선택지 제시 → 사람 결정)
 - [ ] subagent에 전역 CLAUDE.md가 로드되는지 (지금은 문제 아님)
 - [x] `isolation: worktree`일 때 worktree 생성 위치: `.claude/worktrees/` (logistics-hub에서 실제로 생긴 위치로 확인)
-- [ ] worktree 안에서 `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지
+- [ ] developer worktree: handoff가 메인 checkout 절대 경로에 생기는지, worktree 안에서 `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지 (첫 구현 task 때 director가 `docs/first-run.md`의 미확인 항목으로 확인 확인)
 - [x] worktree를 쓰려면 첫 커밋이 있어야 함 (2026-10-03 첫 커밋 완료)

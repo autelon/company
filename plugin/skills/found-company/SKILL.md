@@ -35,6 +35,7 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 3. 구성안을 표로 보여주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 모델, 기본 템플릿에서 바꾼 점.
 4. 승인된 role을 프로젝트 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`를 둔다. 첫 줄 주석 `(v0 페르소나 — role 설계 단계에서 개선 예정)`은 유지한다.
 5. 공용 role(`autelon:finance`, `autelon:notion-sync`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 모든 PR에 항상 들어간다(director 스킬의 "코드 변경과 PR").
+6. 프로젝트 role을 쓰기 전에 사람에게 `/reload-plugins`를 입력해 달라고 요청한다. 내장 명령이라 Claude가 실행할 수 없고, 같은 세션에서 방금 만든 role을 부르면 `Agent type '<role>' not found`가 난다(2026-10-04 poker 관찰). reload 뒤에 role을 부를 수 있는지 확인한다.
 
 ## 3. 상태 파일
 
@@ -61,9 +62,9 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 
 claude.ai Notion 커넥터 도구로 만든다.
 
-1. 루트 페이지를 정한다. 플러그인 설정값은 `${user_config.notion_root_page}`이다. 이 값이 비어 있거나 `${user_config`로 시작하는 글자 그대로 남아 있으면 설정되지 않은 것이다. 그때는 AskUserQuestion으로 루트 페이지 URL을 묻는다. 추정하거나 검색해서 고르지 않는다. 다음부터 묻지 않게 하려면 사용자 설정 `~/.claude/settings.json`의 `pluginConfigs["autelon@autelon"].options.notion_root_page`에 넣으면 된다고 사람에게 알린다(넣는 것은 사람이 정한다). 정한 URL은 `notion/config.json`의 `root_page`에 쓴다.
-2. 루트 페이지 아래에 프로젝트 이름으로 페이지를 만든다. 본문: "이 페이지는 `<repo 경로>`의 투영이다. 원본은 로컬 파일이고, 여기서 고친 내용은 로컬로 돌아가지 않는다."
-3. 그 페이지 아래에 DB 세 개를 만든다. 순서대로 만들고, 앞 DB의 data source ID로 relation을 건다.
+1. 루트 페이지를 정한다. 플러그인 설정값은 `${user_config.notion_root_page}`이다. 이 값은 스킬을 불러올 때 치환된다. 세션이 열린 뒤에 넣은 값은 `/reload-plugins` 뒤에 반영된다. 이 값이 비어 있거나 `${user_config`로 시작하는 글자 그대로 남아 있으면 설정되지 않은 것이다. 그때는 AskUserQuestion으로 루트 페이지 URL을 묻는다. 추정하거나 검색해서 고르지 않는다. 다음부터 묻지 않게 하려면 사용자 설정(user settings)의 `pluginConfigs["autelon@autelon"].options.notion_root_page`에 넣으면 된다고 사람에게 알린다(넣는 것은 사람이 정한다). 정한 URL은 `notion/config.json`의 `root_page`에 쓴다.
+2. 루트 페이지 아래에 프로젝트 이름으로 페이지를 만든다. 본문: "이 페이지는 `<조직>/<이름>`(GitHub 저장소)의 투영이다. 원본은 로컬 파일이고, 여기서 고친 내용은 로컬로 돌아가지 않는다."
+3. 그 페이지 아래에 DB 세 개를 만든다. 순서대로 만들고, 앞 DB의 data source ID로 relation을 건다. `RELATION('...')`에는 data source **UUID만** 넣는다. `collection://` 접두사를 붙이면 `Cannot create relation on collecti-on:/-/...` 오류가 난다. 아래 `<milestones ds>`, `<prds ds>`는 접두사를 뺀 UUID다.
    - Milestones: `CREATE TABLE ("Name" TITLE, "Local ID" RICH_TEXT, "Status" SELECT('planned':gray, 'active':blue, 'done':green), "Target date" DATE)`
    - PRDs: `CREATE TABLE ("Name" TITLE, "Local ID" RICH_TEXT, "Status" SELECT('draft':gray, 'approved':blue, 'in_dev':yellow, 'released':purple, 'measured':orange, 'closed':green), "Milestone" RELATION('<milestones ds>', DUAL 'PRDs'), "Owner role" SELECT(<프로젝트 role들>))`
      그다음 update-data-source로 `ADD COLUMN "Derived from" RELATION('<prds ds>', DUAL 'Follow-up PRDs' 'follow_up_prds')`
@@ -87,7 +88,7 @@ claude.ai Notion 커넥터 도구로 만든다.
 
 `notion/config.json`과 `notion/ids.json`(항목별 페이지 URL, notion-sync가 쓴다)은 **커밋하지 않는다.** 프로젝트 `.gitignore`에는 3단계에서 기본 무시 항목(`notion/`, `local/` 포함)을 넣었다(director 스킬의 "개인 리소스 정보" 절). 저장소가 public이면 Notion 페이지·DB ID가 공개되기 때문이다. 커밋 메시지, PR, `decisions/log.md`, `CLAUDE.md` 같은 커밋되는 파일에도 Notion URL이나 ID를 적지 않는다.
 
-Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지점과 오류를 `decisions/log.md`와 사람에게 알린다.
+Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지점과 오류를 사람에게 알린다(`decisions/log.md`에는 사람의 결정만 쓴다).
 
 ## 5. 설립 커밋
 
@@ -97,19 +98,22 @@ Notion 단계가 실패하면 상태 파일은 그대로 두고, 실패한 지�
 
 ## 6. GitHub 저장소
 
-GitHub 조직은 `${user_config.github_org}`이다. 비어 있거나 글자 그대로 남아 있으면 사람에게 묻는다.
-`~/.claude/git-workflow.md`가 있으면 먼저 읽고 그 "새 프로젝트를 시작할 때" 절차를 따른다. 아래는 그 절차를 이 스킬에 맞춘 순서다.
+GitHub 조직은 `${user_config.github_org}`이다. 비어 있거나 글자 그대로 남아 있으면 사람에게 묻는다. manifest의 `default`는 치환에 쓰이지 않아 값이 글자 그대로 남는다(2026-10-04 관찰). 값을 사용자 설정 `pluginConfigs["autelon@autelon"].options.github_org`에 넣으면 묻지 않는다(넣는 것은 사람이 정한다).
+표준 문서는 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`다. 먼저 읽고 그 "새 프로젝트를 시작할 때" 절차를 따른다. 로컬에 클론이 없으면 `gh repo clone <조직>/.github`로 임시 폴더에 받는다. 아래는 그 절차를 이 스킬에 맞춘 순서다.
 
 1. `gh auth status`로 로그인을 확인한다. 안 되어 있으면 멈추고 사람에게 알린다.
-2. 1단계에서 받은 이름·공개 여부로 저장소를 만들고 main을 올린다: `gh repo create <조직>/<이름> --<public|private> --source . --push`. 이미 원격이 있거나 같은 이름의 저장소가 있으면 멈추고 사람에게 묻는다.
-3. push로 `ci.yml`이 main에서 한 번 돈다. `gh run list --branch main`으로 `git-policy` 실행이 끝났는지 확인한다. 필수 검사는 그 이름의 검사가 한 번 돈 뒤에 걸어야 PR이 영원히 대기하지 않는다.
-4. 표준 적용 스크립트를 찾는다: `~/dev/<조직>/.github/scripts/setup-repo.sh`. 없으면 `gh repo clone <조직>/.github`로 받은 곳의 `scripts/setup-repo.sh`. 표준 값은 그 저장소의 `rulesets/main.json`과 스크립트가 원본이다.
-5. **적용 전에 사람의 승인을 받는다.** 스크립트와 `rulesets/main.json`을 읽고, 바뀔 값을 표로 보여 주고 AskUserQuestion으로 묻는다: 저장소 설정(병합 방식, auto-merge, Update branch, 브랜치 자동 삭제), main 규칙(삭제·force push 금지, PR 필수, 필수 검사 이름, 머지 큐 또는 up to date 필수). 필수 검사는 지금은 `git-policy / merge-commits` 하나다.
-6. 승인되면 `setup-repo.sh <조직>/<이름> "git-policy / merge-commits"`를 실행하고, `gh api repos/<조직>/<이름>`과 `gh api repos/<조직>/<이름>/rulesets/<id>`로 다시 읽어 실제 값을 확인한다.
-7. `docs/git-rules.md`의 자리표시자를 채운다. 최신화는 public이면 "머지 큐", private이면 "up to date 필수". 머지 명령은 머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`. main이 보호되었으므로 이 변경부터는 브랜치와 PR로 올린다. 이 첫 PR의 리뷰어도 `docs/git-rules.md`에 정한 리뷰어다. 머지 명령은 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있을 때만 낸다.
+2. **push 전에 보안 검토를 받는다.** 첫 push는 PR이 아니라서 검토를 거치지 않으므로, `autelon:security-reviewer`에게 로컬 `main`의 전체 히스토리(`git log -p`의 모든 커밋과 커밋 메시지)를 검토시킨다. "통과"가 나오기 전에는 push하지 않는다. 수정 필요면 push 전이므로 히스토리를 고친 뒤 다시 검토받는다. push한 뒤에는 브랜치를 다시 써도 지워지지 않는다.
+3. 1단계에서 받은 이름·공개 여부로 저장소를 만들고 main을 올린다: `gh repo create <조직>/<이름> --<public|private> --source . --push`. 이미 원격이 있거나 같은 이름의 저장소가 있으면 멈추고 사람에게 묻는다.
+4. push로 `ci.yml`이 main에서 한 번 돈다. `gh run list --branch main`으로 `git-policy` 실행이 끝났는지 확인한다. 필수 검사는 그 이름의 검사가 한 번 돈 뒤에 걸어야 PR이 영원히 대기하지 않는다.
+5. 표준 적용 스크립트는 조직 `.github` 저장소의 `scripts/setup-repo.sh`다(위에서 받은 클론). 표준 값은 그 저장소의 `rulesets/main.json`과 스크립트가 원본이다.
+6. **적용 전에 사람의 승인을 받는다.** 스크립트와 `rulesets/main.json`을 읽고, 바뀔 값을 표로 보여 주고 AskUserQuestion으로 묻는다: 저장소 설정(병합 방식, auto-merge, Update branch, 브랜치 자동 삭제), main 규칙(삭제·force push 금지, PR 필수, 필수 검사 이름, 머지 큐 또는 up to date 필수). 필수 검사는 지금은 `git-policy / merge-commits` 하나다.
+7. 승인되면 `setup-repo.sh <조직>/<이름> "git-policy / merge-commits"`를 실행하고, `gh api repos/<조직>/<이름>`과 `gh api repos/<조직>/<이름>/rulesets/<id>`로 다시 읽어 실제 값을 확인한다.
+8. `docs/git-rules.md`의 자리표시자를 채운다. 최신화는 public이면 "머지 큐", private이면 "up to date 필수". 머지 명령은 머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`. main이 보호되었으므로 이 변경부터는 브랜치와 PR로 올린다. 이 첫 PR의 리뷰어도 `docs/git-rules.md`에 정한 리뷰어다. 머지 명령은 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있을 때만 낸다.
 
-GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지점과 오류를 `decisions/log.md`와 사람에게 알린다.
+GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지점과 오류를 사람에게 알린다(`decisions/log.md`에는 사람의 결정만 쓴다).
 
 ## 7. 보고
 
 사람에게 보고한다: role 구성, 만든 파일, Notion 페이지 링크, GitHub 저장소와 적용된 규칙, PR 리뷰어, 다음 단계(목표·지표 체계 수립 또는 first-run).
+
+보고에 `/reload-plugins`를 입력해 달라는 요청을 넣는다. 프로젝트 role은 reload 뒤에 부를 수 있다. first-run은 `docs/first-run.md`가 없으면 director가 시작 때 진행한다(`${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`).
