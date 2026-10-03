@@ -5,7 +5,7 @@ autelon으로 설립한 프로젝트에서 director가 처음 할 일. 지금까
 
 ## 준비
 
-- Desktop 앱에서 프로젝트 repo 폴더로 Code 세션을 연다. 프로젝트 `.claude/settings.json`이 `enabledPlugins`로 autelon 플러그인을 켜고, 사용자 설정에 GitHub 마켓플레이스(`autelon/company`)가 등록되어 있어야 한다. (다른 폴더에서 시작한 세션은 그 폴더의 role을 인식하지 못한다. 2026-10-03 확인)
+- Desktop 앱에서 프로젝트 repo 폴더로 Code 세션을 연다. 프로젝트 `.claude/settings.json`이 `enabledPlugins`로 autelon 플러그인을 켜고, 사용자 설정에 GitHub 마켓플레이스(`autelon/company`)가 등록되고 플러그인이 user scope로 설치되어 있어야 한다. (다른 폴더에서 시작한 세션은 그 폴더의 role을 인식하지 못한다. 2026-10-03 확인)
 - 플러그인이 설치됐는지 본다: `claude plugin list`에 `autelon@autelon`이 있고 켜져 있는가. 없으면 결과를 그대로 기록하고 사람에게 알린다. 설치는 사용자 설정(`~/.claude/plugins/`)을 바꾸므로 사람이 정한다. 방법은 플러그인 리포 README의 "Use in a project".
 - `/remote-control`을 켠다. 아래 2단계의 폰 푸시는 Remote Control이 켜져 있어야 온다.
 - `/config`에서 **Push when actions required**를 켠다. 폰에 Claude 앱이 같은 계정으로 로그인돼 있어야 한다.

@@ -11,13 +11,15 @@ Design notes (Korean): `docs/design.md`.
 
 ## Use in a project
 
-One-time setup per machine: register the marketplace and turn on auto-update in your user settings.
+One-time setup per machine: register the marketplace, install the plugin at user scope, and turn on auto-update.
 
 ```bash
 claude plugin marketplace add autelon/company
+claude plugin install autelon@autelon --scope user
 ```
 
-Then make the `autelon` entry in `~/.claude/settings.json` look like this. Keep `source` identical to what `marketplace add` recorded (adding `"ref"` makes Claude Code ignore the marketplace):
+The plugin sets `defaultEnabled: false`, so the user-scope install records `"autelon@autelon": false` in `~/.claude/settings.json`: installed everywhere, enabled nowhere.
+Then make `~/.claude/settings.json` look like this. Keep `source` identical to what `marketplace add` recorded (adding `"ref"` makes Claude Code ignore the marketplace):
 
 ```json
 {
@@ -26,11 +28,12 @@ Then make the `autelon` entry in `~/.claude/settings.json` look like this. Keep 
       "source": { "source": "github", "repo": "autelon/company" },
       "autoUpdate": true
     }
-  }
+  },
+  "enabledPlugins": { "autelon@autelon": false }
 }
 ```
 
-In each project, enable the plugin in the committed `.claude/settings.json`. Do not declare the marketplace there: a project entry with the same name replaces the user entry, including `autoUpdate`.
+In each project that uses autelon, enable it in the committed `.claude/settings.json`. Project settings take precedence over user settings, so the plugin is on only there. Do not declare the marketplace in the project: a project entry with the same name replaces the user entry, including `autoUpdate`.
 
 ```json
 {
@@ -38,7 +41,8 @@ In each project, enable the plugin in the committed `.claude/settings.json`. Do 
 }
 ```
 
-Check with `claude plugin list` in the project folder. If the plugin is not installed, run `claude plugin install autelon@autelon --scope project` there. Then run the `autelon:found-company` skill.
+Enable it by editing that file rather than the plugin toggle in a session; which settings file the toggle writes is not verified.
+Check with `claude plugin list` in the project folder (`enabled`), then run the `autelon:found-company` skill.
 
 ## Updates
 
