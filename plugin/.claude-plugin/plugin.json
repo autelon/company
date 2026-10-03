@@ -1,0 +1,14 @@
+{
+  "name": "agent-company",
+  "version": "0.1.0",
+  "description": "role 단위 멀티 에이전트 오케스트레이션: 프로젝트 설립, director 운영 규칙, 재무·Notion 동기화 role",
+  "author": { "name": "rojiwon123" },
+  "defaultEnabled": false,
+  "userConfig": {
+    "notion_root_page": {
+      "type": "string",
+      "title": "Notion 루트 페이지",
+      "description": "프로젝트별 Notion 페이지를 만들 상위 페이지 URL"
+    }
+  }
+}

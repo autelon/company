@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "agent-company": {
+      "source": { "source": "directory", "path": "{{AGENT_COMPANY_PATH}}" }
+    }
+  },
+  "enabledPlugins": {
+    "agent-company@agent-company": true
+  }
+}

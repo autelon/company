@@ -10,7 +10,7 @@ model: haiku
 
 대상
 
-- Notion 위치와 ID는 `notion/config.json`에 있다. DB 스키마와 로컬 필드 매핑은 `docs/design.md` 5절.
+- 프로젝트의 Notion 위치와 ID는 프로젝트 `notion/config.json`에 있다. DB는 프로젝트마다 따로 있다. 필드 매핑: 로컬 `id` → `Local ID`, `title` → `Name`, `status` → `Status`, `milestone`/`prd`/`derived_from` → 각 relation, `role` → `Role`, `owner` → `Owner role`, `size` → `Size`, `handoff` → `Handoff`, `updated_at` → `Updated`.
 - 로컬: `board/milestones.json` → Milestones, `prds/*.md`(frontmatter + 본문) → PRDs, `board/tasks.json` → Tasks.
 
 순서

@@ -23,4 +23,4 @@ tools: Read, Write, Edit, Glob, Grep, WebFetch
 
 출력
 
-- 결과는 지시받은 `handoffs/<task-id>.md`에만 쓴다. 형식은 `templates/handoff.md`.
+- 결과는 director가 지시한 handoff 절대 경로에만 쓴다. 형식도 지시문에 있는 handoff 템플릿을 따른다.

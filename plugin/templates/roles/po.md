@@ -24,6 +24,6 @@ tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
 
 출력
 
-- 결과는 지시받은 `handoffs/<task-id>.md`에만 쓴다. 형식은 `templates/handoff.md`.
+- 결과는 director가 지시한 handoff 절대 경로에만 쓴다. 형식도 지시문에 있는 handoff 템플릿을 따른다.
 - PRD 섹션 초안은 handoff 안에 쓴다. `prds/` 파일을 직접 고치지 않는다.
 - 다음에도 쓸 만한 판단 기준(사용자 선호, 반려 이유 등)은 메모리에 남긴다.

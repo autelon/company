@@ -4,6 +4,20 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 
 표기: **[확인]** 문서·실행으로 확인함 / **[추정]** 근거는 있으나 확인 안 함 / **[미확인]** 모름, 구현 시 확인
 
+## 0. 배포 구조: 플러그인 + 프로젝트별 독립 repo
+
+- agent-company는 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다. (사용자 결정 2026-10-03)
+- 그래서 이 리포는 Claude Code 플러그인(`plugin/`)이다. 프로젝트 repo의 `.claude/settings.json`이 `extraKnownMarketplaces`(directory 소스)와 `enabledPlugins`로 이 플러그인을 켠다. 전역 설정에는 켜지 않는다. **[확인]** settings-reference 문서
+  - 프로젝트 settings의 마켓플레이스 등록은 그 폴더의 workspace trust를 수락한 뒤에만 적용된다. **[확인]** 문서
+  - directory 소스 플러그인이 프로젝트 settings만으로 설치되는지, 한 번 `/plugin install`이 필요한지, 등록 흔적이 `~/.claude`에 남는지 **[미확인]**
+- 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `agent-company:finance`·`agent-company:notion-sync`, 템플릿, 재무 스크립트.
+- 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), 상태 파일 전부, `notion/config.json`, 코드.
+- role 개선의 두 층
+  - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`
+  - 프로젝트를 넘는 개선: `plugin/templates/roles/`를 고쳐 커밋 → 다음에 설립하는 프로젝트부터 반영
+- director 규칙은 플러그인 `settings.agent`(메인 대화를 director agent로 띄우기)로 넣지 않고 스킬로 둔다. 문서상 agent를 메인으로 쓰면 그 agent 프롬프트가 Claude Code 기본 시스템 프롬프트를 **통째로 대체**한다. **[확인]** sub-agents 문서. 기본 도구 사용 지침을 잃을 위험이 있어, 프로젝트 CLAUDE.md가 세션 시작 시 `agent-company:director` 스킬을 부르게 했다.
+- 플러그인 agent는 `permissionMode`, `hooks`, `mcpServers`를 무시하고 `memory`, `isolation`, `tools`, `model`, `skills`, `omitClaudeMd`는 지원한다. **[확인]** plugins/components 문서
+
 ## 1. 구조 (B안: director + role subagent)
 
 ```
@@ -24,13 +38,14 @@ director 세션 (Desktop Code 탭, Remote Control 켬)  ◀┘
 Notion     = 사람이 보는 투영(projection)
 ```
 
-- role = `.claude/agents/<role>.md` 하나. 각 호출은 빈 context에서 시작한다. **[확인]** "Each subagent starts with a fresh, isolated context window." (sub-agents 문서)
+- 아래 그림의 role 구성은 기본 템플릿이다. 실제 구성은 프로젝트마다 설립 때 정한다.
+- role = 프로젝트 `.claude/agents/<role>.md` 하나 (공용 role은 플러그인 `agents/`). 각 호출은 빈 context에서 시작한다. **[확인]** "Each subagent starts with a fresh, isolated context window." (sub-agents 문서)
 - role 장기 기억 = `memory: project` → `.claude/agent-memory/<role>/MEMORY.md` 앞 200줄/25KB 자동 로드. **[확인]**
 - subagent는 AskUserQuestion을 못 쓴다. 사람에게 묻는 건 director만 한다. **[확인]**
 - 권한 요청·질문은 Remote Control + "Push when actions required"로 폰에 온다. 답할 때까지 열려 있다. **[확인]**
 - director도 오래 쓰지 않는다. 스프린트가 끝나면 상태를 파일에 남기고 종료하고, 다음 director가 파일을 읽고 이어간다.
 
-## 2. 파일 규칙
+## 2. 파일 규칙 (모두 프로젝트 repo 안)
 
 | 경로                                        | 내용                                                                        | 쓰는 쪽                                           |
 | ------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------- |
@@ -61,7 +76,7 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
   - Desktop 앱: director가 `get_usage` (ccd_session_mgmt)를 호출한다. **[확인]** 이 세션에서 실제로 호출함
   - CLI: statusline JSON `rate_limits.five_hour/seven_day.used_percentage, resets_at`. **[확인]** 문서. 단 Desktop Code 탭에서 statusline 스크립트가 도는지는 **[미확인]** → 지금은 만들지 않음
 - director는 `get_usage` 결과의 `plan` 객체를 가공 없이 `state/quota.json`에 저장한다. 숫자를 LLM이 옮겨 적지 않기 위해서다.
-- 판정은 규칙 스크립트(`scripts/finance-check.mjs`)로 한다. LLM은 정리 계획·보고만 맡는다.
+- 판정은 규칙 스크립트(`plugin/scripts/finance-check.mjs`, 프로젝트 루트에서 실행)로 한다. LLM은 정리 계획·보고만 맡는다.
 
 | 5시간 사용률 | 신호                             | director 행동                                                                                         |
 | ------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -77,12 +92,15 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
 
 원칙
 
+- 프로젝트마다 루트 페이지(플러그인 `userConfig.notion_root_page`) 아래에 프로젝트 페이지와 DB 세 개를 따로 만든다. `found-company` 스킬이 만들고 ID를 프로젝트 `notion/config.json`에 쓴다.
+- 2026-10-03에 루트 페이지 바로 아래 만든 DB 세 개는 스키마 검증용이었다. 구조가 프로젝트별로 바뀌어 더는 쓰지 않는다 (사람이 지워도 된다).
+
 - 로컬 파일이 원본, Notion은 투영. **role/director는 Notion을 읽고 판단하지 않는다.** (양방향 충돌 해결을 만들지 않기 위해)
 - 동기화는 체크포인트에서만: task 상태 변경 묶음, handoff 승인, 스프린트 종료.
 - 동기화는 `notion-sync` subagent(haiku)만 한다. Notion MCP 도구를 director와 다른 role의 context에 두지 않기 위해서다. 그래서 다른 role은 `tools:`를 명시해 MCP 도구를 상속하지 않게 한다.
-- **[확인]** claude.ai Notion 커넥터로 DB 생성(SQL DDL), 양방향 relation, 자기 참조 relation, 보드 뷰 생성까지 된다. 2026-10-03 실제로 만들었다. 위치와 ID는 `notion/config.json`.
+- **[확인]** claude.ai Notion 커넥터로 DB 생성(SQL DDL), 양방향 relation, 자기 참조 relation, 보드 뷰 생성까지 된다. 2026-10-03 실제로 만들었다. 위치와 ID는 프로젝트 `notion/config.json`.
 - Tasks DB에 보드 뷰 두 개: `칸반`(Status별), `role별`(Role별). role별 보드가 후순위로 미룬 "role 단위 보기"의 최소판이다.
-- **[미확인]** subagent(notion-sync)가 claude.ai 커넥터 도구를 상속받아 쓸 수 있는지. notion-sync는 `tools:`를 지정하지 않아 모든 도구를 상속하게 했다. `docs/playbooks/first-run.md` 3단계에서 확인.
+- **[미확인]** subagent(notion-sync)가 claude.ai 커넥터 도구를 상속받아 쓸 수 있는지. notion-sync는 `tools:`를 지정하지 않아 모든 도구를 상속하게 했다. `plugin/playbooks/first-run.md` 4단계에서 확인.
 - Notion → 로컬 역방향은 없다. 승인은 AskUserQuestion·푸시로만 받는다. (사용자 결정 2026-10-03)
 
 DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
@@ -142,8 +160,10 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 ## 7. 남은 확인 항목
 
 - [x] Notion 커넥터 기능 확인, DB·뷰 생성 (2026-10-03)
-- [ ] role 실제 호출 확인 → `docs/playbooks/first-run.md`
-- [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 3단계)
+- [ ] role 실제 호출 확인 → `plugin/playbooks/first-run.md` (설립한 프로젝트에서)
+- [ ] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있는지 (first-run 4단계)
+- [ ] directory 소스 플러그인이 프로젝트 settings만으로 로드되는지, `/plugin install`이 필요한지
+- [ ] `found-company` 스킬이 role 설계·상태 파일·Notion 생성을 끝까지 해내는지
 - [ ] 재개 예약 방식 (scheduled-tasks / CronCreate)
 - [ ] Desktop Code 탭에서 statusline 동작 여부 (필요해질 때)
 - [x] 성공지표·성과측정 = 비즈니스 관점, PRD마다 다름, 전체 목표에 연결 (사용자 결정 2026-10-03)

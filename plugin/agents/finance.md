@@ -12,7 +12,7 @@ tools: Read, Write, Glob
 
 입력
 
-- `state/quota.json` (사용률, 리셋 시각), `board/tasks.json`, `node scripts/finance-check.mjs` 결과는 director가 지시문에 넣어 준다.
+- `state/quota.json` (사용률, 리셋 시각), `board/tasks.json`, 재무 판정 스크립트 결과는 director가 지시문에 넣어 준다.
 
 책임 (WRAP_UP일 때)
 

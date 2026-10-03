@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-// state/quota.json 을 읽어 재무 신호를 출력한다. 기준은 docs/design.md 4절.
+// 프로젝트의 state/quota.json 을 읽어 재무 신호를 출력한다. 기준은 agent-company 의 docs/design.md 4절.
+// 사용: node finance-check.mjs [quota.json 경로]  (기본: 현재 디렉터리의 state/quota.json)
 // quota.json 은 get_usage 결과의 plan 객체 원본이다: { windows: [{ label, percentUsed, resetsAt }, ...] }
 // 출력: {"signal": "...", "five_hour": n, "seven_day": n, "resets_at": "...", "weekly_low": bool}
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const quotaPath = path.join(root, 'state', 'quota.json');
+const quotaPath = path.resolve(process.argv[2] ?? path.join('state', 'quota.json'));
 
 const CAUTION_AT = 70;
 const WRAP_UP_AT = 85;

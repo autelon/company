@@ -1,12 +1,25 @@
 # agent-company
 
-Multi-agent orchestration organized by roles (po, strategist, designer, developer, reviewer, da, finance, notion-sync).
-Built only on official Claude Code features: custom subagents, agent memory, Remote Control, and push notifications.
+A Claude Code plugin for role-based multi-agent orchestration.
+Each project lives in its own repository with its own roles, state files, and Notion databases; this repository only holds the shared operating model.
 
-- Design: `docs/design.md` (Korean)
-- Director rules: `CLAUDE.md`
-- Role definitions: `.claude/agents/`
+- `found-company` skill: sets up a project repo (designs roles, scaffolds board/PRD/decision files, creates the project's Notion page and databases).
+- `director` skill: operating rules for the main session in a project.
+- Shared roles: `finance` (token budget) and `notion-sync`.
 
-## Getting started
+Design notes (Korean): `docs/design.md`.
 
-Open a Claude Code session in this folder (Desktop Code tab), turn on `/remote-control`, and start working with the session as the director.
+## Use in a project
+
+Add to the project's `.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "agent-company": { "source": { "source": "directory", "path": "/path/to/agent-company" } }
+  },
+  "enabledPlugins": { "agent-company@agent-company": true }
+}
+```
+
+Open a Claude Code session in the project folder and run the `found-company` skill.
