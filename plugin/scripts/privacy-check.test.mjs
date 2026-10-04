@@ -37,6 +37,8 @@ test('통과: 40자리 git SHA, 저장소 상대 경로, noreply 메일, 저장�
     'noreply' + '@anthropic.com',
     'autelon/logistics-hub#36',
     '~~취소선~~',
+    'GET /users/{id}',
+    '/homepage/index',
   ].join('\n');
   assert.deepEqual(scan(ok), []);
 });

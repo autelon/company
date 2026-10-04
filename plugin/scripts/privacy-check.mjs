@@ -16,7 +16,8 @@ import { spawnSync } from 'node:child_process';
 export const PATTERNS = [
   ['Notion 주소', /notion\.(com|so|site)/i],
   ['Notion 참조', /(collection|view):\/\//i],
-  ['사용자 홈 경로', /\/Users\/|\/home\/[a-z]|C:\\Users/i],
+  // macOS 홈은 대문자, Linux 홈은 소문자다. 대소문자를 가리지 않으면 API 경로(/users/{id})까지 막는다.
+  ['사용자 홈 경로', /\/Users\/|\/home\/[a-z]|[Cc]:\\[Uu]sers/],
   ['홈 기준 경로', /(^|[^A-Za-z0-9_.])~\//],
   ['임시 폴더 경로', /-Users-|\/private\/tmp\/|\/var\/folders\/|claude-[0-9]+\/|scratchpad\//],
   ['개인 메일', /@(gmail|naver|kakao|daum|hotmail|outlook|icloud|yahoo)\./i],
