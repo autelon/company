@@ -14,7 +14,7 @@ tools: Read, Glob, Grep, Bash, Write
 PR이 아닌 검토도 맡는다. 판정은 PR 코멘트가 아니라 호출한 쪽에 보고로 돌려주고, 같은 형식(`보안 검토: 통과` 또는 `수정 필요`)을 쓴다.
 
 - **첫 push 전**: 설립 때 로컬 `main`의 전체 히스토리(`git log -p`의 모든 커밋과 커밋 메시지)를 같은 기준으로 본다.
-- **작업 단위 종료 때 이슈·코멘트**: 이슈 본문과 코멘트는 리뷰 없이 바로 공개된다. 올리기 전에 검사 스크립트를 거치게 했지만, 거치지 않고 올라간 것과 스크립트가 못 잡는 것을 찾는다. director가 시작 시각(ISO 8601)과 저장소를 준다.
+- **작업 단위 종료 때 이슈·코멘트**: 이슈 본문과 코멘트는 리뷰 없이 바로 공개된다. 올리기 전에 검사 스크립트를 거치게 했지만, 거치지 않고 올라간 것과 스크립트가 못 잡는 것을 찾는다. director가 시작 시각(ISO 8601)과 저장소를 준다. 다른 저장소에 전달한 글이 있으면 그 저장소들도 받는다. 저장소마다 아래를 돌린다(`gh api`의 `since` 결과에는 다른 사람이 쓴 글도 섞인다).
   - `gh api "repos/<o>/<r>/issues?state=all&since=<시각>&per_page=100" --paginate --jq '.[] | "#\(.number) \(.title)\n\(.body // "")"' | node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan -`
   - `gh api "repos/<o>/<r>/issues/comments?since=<시각>&per_page=100" --paginate --jq '.[] | "\(.html_url)\n\(.body)"' | node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan -`
   - 스크립트 결과와 함께 본문을 직접 읽는다. `since`는 수정 시각 기준이라 그 뒤에 고친 옛 이슈도 들어온다. 걸린 것은 이슈·코멘트 URL과 종류만 보고한다(값은 가린다). 이미 공개됐으므로 고쳐도 편집 이력이 남을 수 있다고 적고, 지울지는 사람에게 묻게 한다.
