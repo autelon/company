@@ -7,6 +7,7 @@
 //   node privacy-check.mjs gh <gh 인자...>      제목·본문을 검사하고, 통과하면 그 gh 명령을 그대로 실행한다.
 //   node privacy-check.mjs hook                  PreToolUse(Bash) 훅. 표준 입력의 명령에 스크립트를 거치지 않은
 //                                               gh 글쓰기가 있으면 deny 를 출력한다(plugin/hooks/hooks.json).
+//                                               도움말 플래그(--help, -h)만 붙은 호출은 통과한다.
 //
 // gh 모드는 이슈·PR의 제목·본문·코멘트와 그 밖의 공개 글을 올리는 유일한 통로다. 이슈와 코멘트는 리뷰 없이 바로
 // 공개되므로 올리기 전에 막아야 한다. 받는 명령: issue create|edit|comment, pr create|edit|comment,
@@ -300,6 +301,7 @@ function apiTexts(args, readFile) {
 // ---- hook 모드: PreToolUse(Bash) 훅 ----
 // Bash 명령에서 검사 스크립트를 거치지 않고 공개 글을 쓰는 gh 호출을 찾아 막는다(autelon/company#29).
 // 셸을 흉내 낸 간단한 분해라 변수에 담은 명령, eval, bash -c 안의 명령 등은 잡지 못한다. 실수 방지용이다.
+// 도움말만 보는 호출(gh issue create --help)은 글을 쓰지 않으므로 통과한다(isHelpOnly).
 
 // 명령 문자열을 단순 명령(단어 배열)들로 나눈다. 따옴표 안은 한 단어로 묶고, 연산자(; & | ( ) 줄바꿈 백틱)에서 끊는다.
 // here-document 본문은 명령이 아니므로 건너뛴다.
@@ -480,8 +482,60 @@ function apiFieldKeys(a) {
   return keys;
 }
 
+// 도움말만 보는 호출인가(autelon/company#55). 명령에 그대로 적힌 단어가 하위 명령, --help·-h, 위치 인자,
+// -R/--repo 와 그 값뿐이고 도움말 플래그가 하나 이상이면 true. gh 는 도움말 플래그가 있으면 도움말만 찍고 명령을
+// 실행하지 않는다. 막는 하위 명령 중 -h 를 다른 뜻으로 쓰는 것은 없다(gh 2.102.0 의 gh help <명령>).
+// 판정은 셸이 펼치기 전 글자를 본다. 그래서:
+// - 적힌 플래그가 도움말과 -R 말고 하나라도 있으면 false 다. 값을 받는 플래그 뒤의 --help 는 그 플래그의 값이 되어
+//   명령이 실행되고(--title --help), --help=false 도 실행된다. 플래그마다 값을 받는지 흉내 내지 않으려고 섞인
+//   도움말(gh issue create -t x --help)은 그대로 막는다. 묶은 짧은 플래그(-hL)와 -- 도 같다.
+// - 위치 인자와 -R 값은 셸이 펼치지 않는 글자(LITERAL)만 받는다. $V, ${V}, $'..', {a,b}, 글롭(* ? [), ~, 리다이렉트는
+//   펼친 뒤에 --help=false 같은 플래그가 될 수 있어 false 다. 따옴표를 벗긴 뒤의 글자를 보므로 따옴표로 감싼
+//   리터럴('*')도 false 다(splitCommands 가 따옴표 여부를 남기지 않는다). # 은 단어 맨 앞이면 주석이 되어 뒤의
+//   --help 를 지우므로 받지 않는다.
+// - $( 나 백틱, xargs 처럼 판정이 볼 수 없는 인자가 붙는 경우는 bashViolation 이 helpPass: false 로 끈다.
+const LITERAL = /^[A-Za-z0-9._/:@+=-]+$/;
+const isLiteral = (w) => typeof w === 'string' && LITERAL.test(w) && !w.startsWith('-');
+function isHelpOnly(rawArgs) {
+  let i = 0;
+  const repoValue = (w, next) => {
+    if (w === '-R' || w === '--repo') return isLiteral(next) ? 2 : 0;
+    const m = w.match(/^(?:-R=?|--repo=)(.+)$/);
+    return m && isLiteral(m[1]) ? 1 : 0;
+  };
+  // 하위 명령 앞의 -R
+  while (i < rawArgs.length && /^(-R|--repo)/.test(rawArgs[i])) {
+    const n = repoValue(rawArgs[i], rawArgs[i + 1]);
+    if (!n) return false;
+    i += n;
+  }
+  if (!isLiteral(rawArgs[i]) || !isLiteral(rawArgs[i + 1])) return false;
+  let help = false;
+  for (i += 2; i < rawArgs.length;) {
+    const w = rawArgs[i];
+    if (w === '--help' || w === '-h') {
+      help = true;
+      i++;
+    } else if (/^(-R|--repo)/.test(w)) {
+      // -R/--repo 의 값은 도움말 플래그로 세지 않는다(-R --help 는 리터럴이 아니라 false).
+      const n = repoValue(w, rawArgs[i + 1]);
+      if (!n) return false;
+      i += n;
+    } else if (isLiteral(w)) i++;
+    else return false;
+  }
+  return help;
+}
+
 // gh 인자 하나(gh 다음부터)가 막을 호출이면 { what, via, hint } 를, 아니면 null 을 돌려준다.
-export function ghViolation(rawArgs, readFile = readSmallFile, resolvePath = (f) => f) {
+// helpPass: 도움말만 보는 호출을 통과시킬지. bashViolation 이 판정이 볼 수 없는 인자가 붙는 경우에 끈다.
+export function ghViolation(
+  rawArgs,
+  readFile = readSmallFile,
+  resolvePath = (f) => f,
+  { helpPass = true } = {},
+) {
+  if (helpPass && isHelpOnly(rawArgs)) return null;
   const args = stripGhRepo(rawArgs);
   const [group, sub] = args;
   const rest = args.slice(2);
@@ -634,6 +688,8 @@ export function ghViolation(rawArgs, readFile = readSmallFile, resolvePath = (f)
 // Bash 명령 문자열에서 막을 gh 호출을 찾는다. 없으면 null. 같은 명령 안의 cd 를 따라가 상대 경로 파일을 읽는다.
 export function bashViolation(command, cwd = process.cwd()) {
   let dir = cwd;
+  // $( 와 백틱은 splitCommands 가 끊어 버려 gh 인자에 무엇이 붙는지 볼 수 없다. 이때는 도움말 통과를 끈다.
+  const substitution = /\$\(|`/.test(command);
   for (const words of splitCommands(command)) {
     const cmd = stripWrappers(words);
     if (!cmd.length) continue;
@@ -649,10 +705,13 @@ export function bashViolation(command, cwd = process.cwd()) {
     )
       continue;
     if (basename(cmd[0]) !== 'gh') continue;
+    // xargs 는 표준 입력의 단어를 gh 인자 뒤에 붙인다. 걷어 낸 감싸는 명령에 xargs 가 있으면 도움말 통과를 끈다.
+    const viaXargs = words.slice(0, words.length - cmd.length).some((w) => basename(w) === 'xargs');
     const found = ghViolation(
       cmd.slice(1),
       (f) => readSmallFile(pathResolve(dir, f)),
       (f) => pathResolve(dir, f),
+      { helpPass: !substitution && !viaXargs },
     );
     if (found) return found;
   }

@@ -364,3 +364,81 @@ test('훅: 판정에 읽는 파일은 일반 파일 1MB 까지만 읽는다(코�
     assert.equal(bashViolation(`gh issue edit 1 -F ${f}`, dir).via, 'script', f);
   }
 });
+
+// autelon/company#55: 도움말 플래그만 붙은 호출은 글을 쓰지 않으므로 통과한다.
+test('훅: --help·-h 만 붙은 gh 글쓰기 하위 명령은 통과한다', () => {
+  for (const ok of [
+    'gh issue create --help',
+    'gh issue create -h',
+    'gh issue comment 1 -h',
+    'gh issue edit 1 --help',
+    'gh pr create -h',
+    'gh pr comment 3 --help',
+    'gh pr merge 2 --help',
+    'gh label create x --help',
+    'gh release create v1 --help',
+    'gh api repos/o/r/milestones --help',
+    'gh -R o/r issue comment 1 --help',
+    'gh issue create -R o/r --help',
+    'gh issue create --repo=o/r -h',
+    'timeout 30 gh issue create --help',
+    'gh help issue create',
+  ]) {
+    assert.equal(bashViolation(ok), null, ok);
+  }
+});
+
+test('훅: 다른 플래그와 섞이거나 플래그 값인 --help 는 그대로 막는다', () => {
+  for (const bad of [
+    'gh issue create -t --help -b x',
+    'gh issue create --title --help -b x',
+    'gh issue create -t "--help" -b x',
+    'gh issue create --title=--help -b x',
+    'gh issue create -t=--help -b x',
+    'gh issue comment 1 -b --help',
+    'gh issue comment 1 -F local/c.md --help',
+    'gh issue create -t x -b y --help',
+    'gh issue create --help=false -t x -b y',
+    'gh issue create --help=true',
+    'gh issue create -hb x',
+    'gh issue comment 1 -- --help',
+    'gh issue comment 1 -R --help',
+    'gh issue close 1 --comment --help',
+    'gh pr review 2 -b --help',
+    'gh api repos/o/r/issues/1/comments -f body=x --help',
+    'gh issue create -H --help',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+});
+
+// 셸이 펼친 뒤 --help=false 같은 플래그가 될 수 있는 단어, 판정이 볼 수 없는 인자가 붙는 호출은 도움말로 보지 않는다.
+test('훅: 셸 전개·명령 치환·xargs 가 붙은 도움말은 막는다', () => {
+  for (const bad of [
+    'gh issue create --help $V',
+    'gh issue create --help "$V"',
+    'gh issue create --help ${A}',
+    "gh issue create --help $'--help=false'",
+    'gh issue comment $N --help',
+    'gh issue comment 1 --help $(cat local/a.txt)',
+    'gh issue comment 1 --help `cat local/a.txt`',
+    'gh issue list -L 1 && gh issue comment 1 --help `cat local/a.txt`',
+    'gh issue comment 1 --help {--help=false,-b,x}',
+    'gh issue comment 1 --help *',
+    'gh issue comment 1 --help a?',
+    'gh issue comment 1 --help [ab]',
+    'gh issue comment 1 --help ~',
+    'gh issue comment 1 --help <(cat local/a.txt)',
+    'gh issue comment 1 #x --help',
+    'gh issue create -R $X --help',
+    'gh issue create --repo=$X --help',
+    'gh -R $X issue create --help',
+    'echo "--help=false -b x" | xargs gh issue comment 1 --help',
+    'xargs -0 gh issue comment 1 --help < local/a.txt',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+  // 리터럴 글자만 있으면 따옴표가 있어도 통과한다(펼칠 것이 없다)
+  assert.equal(bashViolation('gh issue create -R "o/r" --help'), null);
+  assert.equal(bashViolation('gh api repos/o/r/milestones/3 --help'), null);
+});
