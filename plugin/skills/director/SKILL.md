@@ -46,10 +46,10 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 5. Project 보드와 열린 이슈를 읽는다(playbook 3절 "읽기").
 6. 사용량을 확인한다 (재무 규칙).
 7. **버전 비교**: 설치된 플러그인 버전과 프로젝트가 마지막으로 맞춘 버전을 비교해, 다르면 sync 이슈를 만든다(autelon/company#42 결정 2. 바뀐 경로와 상관없이 다르면 만든다). 1번에서 설립·도입으로 갔으면 하지 않는다(그 스킬이 기준 버전 파일을 만든다).
-   1. 설치 SHA: `autelon:found-company` 스킬 3단계 "기준 버전 파일"의 읽는 방법(1~5번)을 따른다. 이 스킬의 플러그인 루트는 `${CLAUDE_PLUGIN_ROOT}`다. 결과가 `미정`(개발본으로 띄운 세션, 읽지 못함)이면 비교하지 않고 이슈도 쓰지 않는다. 사람에게 이유를 알린다(루틴은 마지막 요약에 적는다).
-   2. 기록 SHA: `.claude/autelon-sync.json`의 `pluginSha`. 파일이 없거나 값이 `미정`이면 "기준 없음"이다.
+   1. 설치 SHA: `${CLAUDE_PLUGIN_ROOT}/skills/found-company/SKILL.md` 파일을 읽고 3단계 "기준 버전 파일"의 읽는 방법(1~5번)을 따른다. 스킬로 부르지 않는다(설립 절차가 로드된다). 그 파일 안의 `${CLAUDE_PLUGIN_ROOT}`는 치환되지 않은 글자 그대로이므로, 플러그인 루트는 이 줄의 값 `${CLAUDE_PLUGIN_ROOT}`를 쓴다. 결과가 `미정`(개발본으로 띄운 세션, 읽지 못함)이면 비교하지 않고 이슈도 쓰지 않는다. 사람에게 이유를 알린다(루틴은 마지막 요약에 적는다).
+   2. 기록 SHA: 기본 브랜치에 머지된 `.claude/autelon-sync.json`의 `pluginSha`. 작업 폴더가 뒤처져 있으면 옛 값으로 이슈를 만들 수 있으므로 `git fetch origin` 뒤 `git show origin/main:.claude/autelon-sync.json`으로 읽는다. 파일이 없거나 값이 `미정`이면 "기준 없음"이다.
    3. 두 값이 같으면 끝. 다르면 비교 상태를 본다: `gh api repos/autelon/company/compare/<기록 SHA>...<설치 SHA> --jq .status`. `identical`이면 끝. 기준 없음이면 비교하지 않는다.
-   4. 열린 sync 이슈를 찾는다. 라벨과 상관없이 제목이 `autelon sync:`로 시작하는 열린 이슈다. 있으면 새로 만들지 않는다. 그 이슈 본문과 코멘트에 지금 설치 SHA가 이미 있으면 아무것도 쓰지 않고, 없으면 `설치 SHA: <12자> (비교 상태: <상태>)` 한 줄을 코멘트로 더한다(루틴이면 첫 줄 `[루틴]`). 라벨은 바꾸지 않는다.
+   4. 열린 sync 이슈를 찾는다. 라벨과 상관없이 제목이 `autelon sync:`로 시작하는 열린 이슈다. 있으면 새로 만들지 않는다. 그 이슈 본문과 코멘트에 지금 설치 SHA가 이미 있으면 아무것도 쓰지 않고, 없으면 `설치 SHA: <12자> (비교 상태: <상태>)` 한 줄을 코멘트로 더한다(루틴이면 첫 줄 `[루틴]`). 비교 명령이 실패했거나 기준 없음이면 상태에 `-`를 쓴다(템플릿 표와 같다). 더한 줄의 상태가 `ahead`가 아니고(`behind`·`diverged`·`-`) 이슈 라벨이 `agent:ready`면 `agent:needs-user`로 바꾼다(`agent:ready`를 뗀다). 이슈가 처리되기 전에 설치본이 뒤로 가도 옛 템플릿으로 내려 맞추지 않게 하려는 것이다(autelon/company#66 결정). 반대로 `agent:needs-user` 이슈에 `ahead` 줄이 붙어도 라벨은 그대로 두고 사람이 정한다.
 
       ```
       gh issue list --author @me --state open --search 'in:title "autelon sync"' --json number,title,labels --jq '.[] | select(.title | startswith("autelon sync:"))'

@@ -2,6 +2,7 @@
      제목: 기준 SHA가 있으면 `autelon sync: <기록 SHA> 이후`, 기준 파일이 없거나 pluginSha가 미정이면 `autelon sync: 기준 버전 정하기`.
      열린 sync 이슈는 제목이 `autelon sync:`로 시작하는 것으로 찾는다. 하나만 열어 둔다.
      라벨: compare 상태가 ahead면 agent:ready, 그 밖(behind, diverged, 비교 실패, 기준 없음)이면 agent:needs-user.
+     열린 이슈에 ahead가 아닌 `설치 SHA:` 줄이 더해지면 director가 agent:ready를 agent:needs-user로 바꾼다.
      해당하지 않는 절("사람에게 묻기" 또는 "할 일")은 지운다. -->
 
 ## 현재 결론
@@ -17,7 +18,7 @@
 | 설치 SHA  | `<설치 SHA>` |
 | 비교 상태 | `<상태>`     |
 
-설치 SHA가 바뀌면 director가 `설치 SHA: <12자> (비교 상태: <상태>)` 줄로 코멘트를 더한다. 맞출 대상은 가장 마지막 `설치 SHA:` 줄의 값이다.
+설치 SHA가 바뀌면 director가 `설치 SHA: <12자> (비교 상태: <상태>)` 줄로 코멘트를 더한다. 맞출 대상은 가장 마지막 `설치 SHA:` 줄의 값이다. 그 줄의 비교 상태가 `ahead`가 아니면 맞추지 않는다.
 
 ## 배경
 
@@ -33,13 +34,14 @@ gh api repos/autelon/company/compare/<기록 SHA>...<설치 SHA> --jq '.files[].
 
 <!-- 비교 상태가 ahead일 때 -->
 
+- 처리하기 전에 가장 마지막 `설치 SHA:` 줄(코멘트에 없으면 위 표)의 비교 상태를 본다. `ahead`가 아니면 맞추지 않는다. 그 사실을 코멘트로 남기고 `agent:needs-user`로 넘긴다(옛 템플릿으로 되돌리지 않는다, autelon/company#66).
 - `autelon:sync-project` 스킬(가칭, autelon/company#67)을 불러 맞춘다. 플러그인에 아직 이 스킬이 없으면 손으로 맞추지 않는다. "sync 스킬 없음"을 코멘트로 남기고 `agent:needs-user`로 넘긴다.
 - 맞출 것이 없으면 기준 버전 파일만 올리는 PR로 끝낸다.
 
 ## 사람에게 묻기
 
 <!-- 기준 없음: 기준 버전 파일이 없거나 pluginSha가 미정이다. 다음 중 하나를 골라 달라고 쓴다.
-     ① 지금 설치 SHA를 기준으로 기록한다(프로젝트 파일이 이미 이 버전에 맞는다고 본다) ② 다른 SHA를 기준으로 준다(그 SHA부터 sync) ③ 프로젝트를 다시 만들 때까지 둔다
+     ① 지금 설치 SHA를 기준으로 기록한다(프로젝트 파일이 이미 이 버전에 맞는다고 본다) ② 다른 SHA를 기준으로 준다(그 SHA부터 sync) ③ 프로젝트를 다시 만들 때까지 둔다(이 이슈를 닫지 않고 agent:needs-user로 열어 둔다. 닫으면 다음 세션이 같은 이슈를 다시 만든다)
      behind / diverged / 비교 실패: 설치된 플러그인이 기록보다 오래됐거나 갈라졌다. 플러그인 업데이트는 사람이 한다. 업데이트할지, 기록이 틀렸는지 묻는다 -->
 
 ## 완료 조건
