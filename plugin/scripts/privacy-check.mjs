@@ -5,6 +5,8 @@
 // 사용
 //   node privacy-check.mjs scan [파일|-]       파일(기본: 표준 입력)을 검사한다. 걸리면 위치를 찍고 1로 끝난다.
 //   node privacy-check.mjs gh <gh 인자...>      제목·본문을 검사하고, 통과하면 그 gh 명령을 그대로 실행한다.
+//   node privacy-check.mjs hook                  PreToolUse(Bash) 훅. 표준 입력의 명령에 스크립트를 거치지 않은
+//                                               gh 글쓰기가 있으면 deny 를 출력한다(plugin/hooks/hooks.json).
 //
 // gh 모드는 이슈·PR의 제목·본문·코멘트와 그 밖의 공개 글을 올리는 유일한 통로다. 이슈와 코멘트는 리뷰 없이 바로
 // 공개되므로 올리기 전에 막아야 한다. 받는 명령: issue create|edit|comment, pr create|edit|comment,
@@ -291,6 +293,264 @@ function apiTexts(args) {
   return texts;
 }
 
+// ---- hook 모드: PreToolUse(Bash) 훅 ----
+// Bash 명령에서 검사 스크립트를 거치지 않고 공개 글을 쓰는 gh 호출을 찾아 막는다(autelon/company#29).
+// 셸을 흉내 낸 간단한 분해라 변수에 담은 명령, eval, bash -c 안의 명령 등은 잡지 못한다. 실수 방지용이다.
+
+// 명령 문자열을 단순 명령(단어 배열)들로 나눈다. 따옴표 안은 한 단어로 묶고, 연산자(; & | ( ) 줄바꿈 백틱)에서 끊는다.
+// here-document 본문은 명령이 아니므로 건너뛴다.
+export function splitCommands(command) {
+  const commands = [];
+  let words = [];
+  let word = null;
+  let quote = null;
+  const heredocs = [];
+  const endWord = () => {
+    if (word !== null) words.push(word);
+    word = null;
+  };
+  const endCommand = () => {
+    endWord();
+    if (words.length) commands.push(words);
+    words = [];
+  };
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i];
+    if (quote) {
+      if (c === quote) quote = null;
+      else if (c === '\\' && quote === '"' && i + 1 < command.length) word += command[++i];
+      else word += c;
+      continue;
+    }
+    if (c === "'" || c === '"') {
+      quote = c;
+      word ??= '';
+      continue;
+    }
+    if (c === '\\' && i + 1 < command.length) {
+      if (command[i + 1] !== '\n') word = (word ?? '') + command[i + 1];
+      i++;
+      continue;
+    }
+    if (c === '<' && command[i + 1] === '<' && command[i + 2] !== '<') {
+      const m = command.slice(i).match(/^<<-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1/);
+      if (m) {
+        endWord();
+        heredocs.push(m[2]);
+        i += m[0].length - 1;
+        continue;
+      }
+    }
+    if (c === '\n') {
+      endCommand();
+      // 이 줄에서 연 here-document 본문을 건너뛴다.
+      for (const tag of heredocs.splice(0)) {
+        const rest = command.slice(i + 1);
+        const re = new RegExp(`^[\\t ]*${tag}[\\t ]*$`, 'm');
+        const m = re.exec(rest);
+        i = m ? i + 1 + m.index + m[0].length - 1 : command.length;
+      }
+      continue;
+    }
+    if (';&|()`'.includes(c) || (c === '$' && command[i + 1] === '(')) {
+      endCommand();
+      if (c === '$') i++;
+      continue;
+    }
+    if (c === ' ' || c === '\t') {
+      endWord();
+      continue;
+    }
+    word = (word ?? '') + c;
+  }
+  endCommand();
+  return commands;
+}
+
+// 명령 앞의 변수 대입과 감싸는 명령(command, env, xargs, mise exec -- 등)을 걷어 실제 명령을 찾는다.
+const WRAPPERS = new Set([
+  'command',
+  'exec',
+  'builtin',
+  'noglob',
+  'nohup',
+  'time',
+  'sudo',
+  'env',
+  'xargs',
+]);
+function stripWrappers(words) {
+  let i = 0;
+  while (i < words.length) {
+    const w = words[i];
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(w)) i++;
+    else if (WRAPPERS.has(w)) {
+      i++;
+      while (i < words.length && words[i].startsWith('-')) i++;
+    } else if (w === 'mise' && words[i + 1] === 'exec') {
+      const dd = words.indexOf('--', i);
+      i = dd < 0 ? words.length : dd + 1;
+    } else break;
+  }
+  return words.slice(i);
+}
+
+const basename = (w) => w.slice(w.lastIndexOf('/') + 1);
+const hasFlag = (args, longs, shorts) =>
+  args.some(
+    (a) =>
+      longs.some((l) => a === l || a.startsWith(`${l}=`)) ||
+      shorts.some((s) => a === s || (a.startsWith(s) && !a.startsWith('--'))),
+  );
+// 글이 담긴 REST 자원. 이 경로로 쓰는(GET 이 아닌) 호출은 검사 스크립트를 거쳐야 한다.
+const TEXT_REST =
+  /^repos\/[^/]+\/[^/]+\/(issues(\/\d+)?|issues\/\d+\/comments|issues\/comments\/\d+|pulls(\/\d+)?|pulls\/\d+\/(comments|reviews)(\/\d+)?|pulls\/comments\/\d+|milestones(\/\d+)?|labels(\/[^/]+)?|releases(\/\d+)?)$/;
+// gh api 의 값을 받지 않는 플래그. 엔드포인트를 찾을 때 쓴다.
+const API_BOOL = new Set([
+  '--paginate',
+  '--silent',
+  '--slurp',
+  '-i',
+  '--include',
+  '--verbose',
+  '--allow-escape-sequences',
+]);
+// 글을 쓰는 GraphQL mutation. Project 필드·화면 mutation 은 playbook 의 고정 문구라 막지 않는다.
+const TEXT_MUTATION =
+  /\b(addComment|updateIssueComment|createIssue|updateIssue|createPullRequest|updatePullRequest|addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|submitPullRequestReview|updatePullRequestReview|updatePullRequestReviewComment|createDiscussion|updateDiscussion|addDiscussionComment|updateDiscussionComment|createLabel|updateLabel|createRelease|updateRelease)\b/;
+
+// gh 인자 하나(gh 다음부터)가 막을 호출이면 이유를, 아니면 null 을 돌려준다.
+export function ghViolation(args, readFile = (f) => readFileSync(f, 'utf8')) {
+  const [group, sub] = args;
+  const rest = args.slice(2);
+  if (group === 'issue' || group === 'pr') {
+    if (sub === 'create' || sub === 'comment') return `gh ${group} ${sub}`;
+    if (sub === 'edit') {
+      try {
+        if (textsFromGhArgs(args).length) return `gh ${group} edit (제목·본문)`;
+      } catch {
+        return `gh ${group} edit`;
+      }
+      return null;
+    }
+    if (sub === 'close' && hasFlag(rest, ['--comment'], ['-c']))
+      return `gh ${group} close --comment`;
+    if (
+      group === 'pr' &&
+      sub === 'review' &&
+      hasFlag(rest, ['--body', '--body-file'], ['-b', '-F'])
+    )
+      return 'gh pr review (본문)';
+    if (
+      group === 'pr' &&
+      sub === 'merge' &&
+      hasFlag(rest, ['--body', '--body-file', '--subject'], ['-b', '-F', '-t'])
+    )
+      return 'gh pr merge (커밋 제목·본문)';
+    return null;
+  }
+  if (group === 'label' && (sub === 'create' || sub === 'edit')) return `gh label ${sub}`;
+  if (group === 'api') {
+    const a = args.slice(1);
+    let endpoint = '';
+    for (let i = 0; i < a.length; i++) {
+      const w = a[i];
+      if (!w.startsWith('-')) {
+        endpoint = w;
+        break;
+      }
+      // 값이 붙지 않은 값 플래그(-X PATCH, --jq .x)는 다음 단어가 값이다.
+      if (!API_BOOL.has(w) && (/^-[A-Za-z]$/.test(w) || (w.startsWith('--') && !w.includes('='))))
+        i++;
+    }
+    const isMethod = (w) => w === '-X' || w === '--method' || /^(-X.|--method=)/.test(w);
+    // gh 는 -X 를 여러 번 주면 마지막 값을 쓴다. 판정이 갈리지 않게 여러 번이면 막는다(gh 모드도 거절한다).
+    if (a.filter(isMethod).length > 1) return 'gh api (-X 여러 번)';
+    const methodIdx = a.findIndex(isMethod);
+    const method = (
+      methodIdx < 0
+        ? ''
+        : /^(-X|--method)$/.test(a[methodIdx])
+          ? (a[methodIdx + 1] ?? '')
+          : a[methodIdx].replace(/^(-X=?|--method=)/, '')
+    ).toUpperCase();
+    const hasFields = hasFlag(a, ['--field', '--raw-field', '--input'], ['-f', '-F']);
+    if (endpoint === 'graphql') {
+      let body = a.join(' ');
+      const inputIdx = a.findIndex((w) => w === '--input' || w.startsWith('--input='));
+      if (inputIdx >= 0) {
+        const file = a[inputIdx] === '--input' ? a[inputIdx + 1] : a[inputIdx].slice(8);
+        try {
+          body += ` ${readFile(file)}`;
+        } catch {
+          return 'gh api graphql --input (읽을 수 없는 파일)';
+        }
+      }
+      for (const w of a) {
+        const m = w.match(/^[A-Za-z_]+=@(.+)$/);
+        if (m && m[1] !== '-') {
+          try {
+            body += ` ${readFile(m[1])}`;
+          } catch {
+            return 'gh api graphql (읽을 수 없는 파일)';
+          }
+        }
+      }
+      return TEXT_MUTATION.test(body) ? 'gh api graphql (글을 쓰는 mutation)' : null;
+    }
+    const writes = method ? method !== 'GET' : hasFields;
+    if (writes && TEXT_REST.test(endpoint.replace(/^\//, '').replace(/\?.*$/, '')))
+      return `gh api ${method || 'POST'} ${endpoint}`;
+    return null;
+  }
+  return null;
+}
+
+// Bash 명령 문자열에서 막을 gh 호출을 찾는다. 없으면 null.
+export function bashViolation(command) {
+  for (const words of splitCommands(command)) {
+    const cmd = stripWrappers(words);
+    if (!cmd.length) continue;
+    // 검사 스크립트를 거치는 호출은 통과한다(스크립트가 안에서 띄우는 gh 는 Bash 도구 호출이 아니다).
+    if (
+      basename(cmd[0]) === 'node' &&
+      cmd.slice(1).some((w) => basename(w) === 'privacy-check.mjs')
+    )
+      continue;
+    if (basename(cmd[0]) !== 'gh') continue;
+    const reason = ghViolation(cmd.slice(1));
+    if (reason) return reason;
+  }
+  return null;
+}
+
+function hook() {
+  let input;
+  try {
+    input = JSON.parse(readFileSync(0, 'utf8'));
+  } catch {
+    return 0; // 입력을 못 읽으면 막지 않는다(훅 고장으로 모든 Bash 가 막히지 않게).
+  }
+  const command = input?.tool_input?.command;
+  if (typeof command !== 'string') return 0;
+  const reason = bashViolation(command);
+  if (!reason) return 0;
+  const script = fileURLToPath(import.meta.url);
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny',
+        permissionDecisionReason:
+          `autelon: ${reason} 는 공개 글을 쓰므로 검사 스크립트로 실행한다: node "${script}" gh <같은 인자>. ` +
+          '본문은 local/ 아래 파일로 넘긴다(-F). 스크립트가 받지 않는 호출이면 다른 방법을 찾지 말고 사람에게 알린다. ' +
+          '규칙: director 스킬 "이슈 쓰기 규칙", playbooks/issues.md 1절.',
+      },
+    }),
+  );
+  return 0;
+}
+
 function report(source, hits) {
   for (const h of hits) console.error(`${source}:${h.line}: ${h.kind}: ${h.masked}`);
 }
@@ -329,7 +589,10 @@ function main(argv) {
     const res = spawnSync('gh', rest, { stdio: 'inherit' });
     return res.status ?? 1;
   }
-  console.error('사용: privacy-check.mjs scan [파일|-] | privacy-check.mjs gh <gh 인자...>');
+  if (mode === 'hook') return hook();
+  console.error(
+    '사용: privacy-check.mjs scan [파일|-] | privacy-check.mjs gh <gh 인자...> | privacy-check.mjs hook',
+  );
   return 2;
 }
 

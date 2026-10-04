@@ -62,7 +62,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - **이슈 생성, 본문 수정, 상태·Project 필드·라벨·마일스톤·하위 이슈·의존 관계 변경, 닫기는 director만 한다.**
 - **role은 자기 task 이슈에 코멘트만 쓴다.** 다른 이슈에 쓰지 않고, 본문을 고치지 않는다.
 - 저장소 파일 중 `docs/goals.md`, `state/`는 director만 쓴다. role은 코드(developer), `analytics/`(da) 외의 저장소 파일을 쓰지 않는다.
-- **제목·본문·코멘트를 올리거나 고칠 때는 반드시 검사 스크립트를 거친다**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" gh issue <create|edit|comment> ...`. 라벨 이름·설명(`gh label create|edit`), 마일스톤 제목·설명과 마지막이 아닌 코멘트 고치기(`gh api`)도 스크립트로 한다(playbook 1절). 스크립트를 거치지 않는 글 쓰기(`gh issue close --comment`, 스크립트가 받지 않는 `gh api` 쓰기, 웹 화면)는 하지 않는다. 스크립트는 검사할 수 없는 곳에서 글을 가져오는 플래그(표준 입력, 편집기, 브라우저, 템플릿, `-f/--fill*`, `--recover`), 코멘트 삭제(`--delete-last`), 묶어 쓴 짧은 플래그를 거절하고, create·comment에는 본문을, create에는 제목(`-t`)도 요구한다. PR 본문·코멘트도 같다(`gh pr create|edit|comment`).
+- **제목·본문·코멘트를 올리거나 고칠 때는 반드시 검사 스크립트를 거친다**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" gh issue <create|edit|comment> ...`. 라벨 이름·설명(`gh label create|edit`), 마일스톤 제목·설명과 마지막이 아닌 코멘트 고치기(`gh api`)도 스크립트로 한다(playbook 1절). 스크립트를 거치지 않는 글 쓰기(`gh issue close --comment`, 스크립트가 받지 않는 `gh api` 쓰기, 웹 화면)는 하지 않는다. 플러그인 훅이 이런 Bash 호출을 막는다(subagent 포함). 막히면 스크립트로 다시 실행하고, 훅을 피해 가는 방법(변수에 담기, `bash -c` 등)을 쓰지 않는다. 스크립트는 검사할 수 없는 곳에서 글을 가져오는 플래그(표준 입력, 편집기, 브라우저, 템플릿, `-f/--fill*`, `--recover`), 코멘트 삭제(`--delete-last`), 묶어 쓴 짧은 플래그를 거절하고, create·comment에는 본문을, create에는 제목(`-t`)도 요구한다. PR 본문·코멘트도 같다(`gh pr create|edit|comment`).
 - 본문은 `local/issues/`, 코멘트 초안은 `local/comments/`에 파일로 쓰고 `-F`로 넘긴다. `local/`은 커밋하지 않는다.
 - 다른 저장소의 이슈·PR은 `<조직>/<저장소>#N`(예: `autelon/company#30`)으로 쓴다. `#N`만 쓰면 지금 저장소의 이슈·PR로 자동 링크된다. 지금 저장소에 없는 번호(지운 저장소의 PR 등)는 `#` 없이 쓴다.
 
