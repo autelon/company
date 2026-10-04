@@ -89,7 +89,7 @@ GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지�
 
 1. 이슈 타입 Task·Feature가 조직에 있는지 본다. 없으면 조직 설정을 바꾸지 말고 사람에게 알린다.
 2. 라벨 `decision`, `sprint`, `first-run`, `agent:ready`, `agent:needs-user`를 만든다.
-3. Project를 만든다(`project` 권한이 있을 때): 제목은 저장소 이름, 저장소에 연결, 필드 `Role`(`director`와 2단계에서 승인한 role, 쉼표로), `Size`(small, large), `Start date`, `Target date`. 기본 `Status` 선택지(id를 유지한 채 이름만 바꾼다)와 화면은 API로 만든다(playbook 2절). 보드 열 기준·로드맵 날짜 필드와 기본 워크플로(playbook 2절 표)는 API로 정할 수 없어 사람에게 웹 화면에서 해 달라고 요청한다.
+3. Project를 만든다(`project` 권한이 있을 때): 제목은 저장소 이름, 저장소에 연결, 필드 `Role`(`director`와 2단계에서 승인한 role, 쉼표로), `Size`(small, large), `Start date`, `Target date`. 기본 `Status` 선택지(id를 유지한 채 이름만 바꾼다)와 화면은 API로 만든다(playbook 2절). 보드 열 기준·로드맵 날짜 필드와 기본 워크플로(playbook 2절 표)는 API로 정할 수 없어 브라우저 도구로 웹 화면에서 설정한다(playbook 2절 "웹 설정": "Save view" 뒤 확인 창까지, Status를 바꾼 뒤 워크플로 대상 확인). 브라우저 도구가 없을 때만 사람에게 정확한 조작을 안내한다.
 4. Project 번호를 `CLAUDE.md`의 `{{PROJECT_NUMBER}}`에 채운다. 권한이 없어 미뤘으면 `미정`으로 두고 보고에 적는다.
 5. 1단계에서 기한이 나왔으면 마일스톤을 만든다. 없으면 만들지 않는다(director가 첫 PRD 때 만든다).
 6. 현재 스프린트 이슈(`templates/issues/sprint.md`, Task, `sprint` 라벨)를 만들고 고정한다. first-run 이슈(`templates/issues/first-run.md`, Task, `first-run` 라벨)를 만든다.
@@ -100,6 +100,6 @@ GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지�
 
 ## 7. 보고
 
-사람에게 보고한다: role 구성, 만든 파일, GitHub 저장소와 적용된 규칙, PR 리뷰어, 만든 라벨·Project·이슈(번호), 사람이 웹 화면에서 해야 할 일(보드 열 기준, 로드맵 날짜 필드, 기본 워크플로. playbook 2절), 다음 단계(목표·지표 체계 수립 또는 first-run, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`).
+사람에게 보고한다: role 구성, 만든 파일, GitHub 저장소와 적용된 규칙, PR 리뷰어, 만든 라벨·Project·이슈(번호), 웹 화면에서 설정한 것과, 브라우저 도구가 없어 사람이 해야 할 일이 남았으면 그 조작(playbook 2절 "웹 설정"), 다음 단계(목표·지표 체계 수립 또는 first-run, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`).
 
 보고에 `/reload-plugins`를 입력해 달라는 요청을 넣는다. 프로젝트 role은 reload 뒤에 부를 수 있다. first-run은 director가 시작 때 진행한다(`${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`).

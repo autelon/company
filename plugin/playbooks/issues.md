@@ -98,8 +98,8 @@ gh api graphql --input local/status-options.json
 #### 화면(view)
 
 - 표, `Status`별 보드, `Role`별 보드, 로드맵(`Start date`·`Target date`, 마일스톤).
-- GraphQL `createProjectV2View`(이름, 레이아웃 TABLE·BOARD·ROADMAP)로 만들 수 있다 **[확인]** poker. 입력의 설정은 보이는 필드(`visibleFieldIds`)뿐이라 **보드의 열 기준 필드와 로드맵 날짜 필드는 웹 화면에서 정한다.** 새 보드의 열 기준은 Status다. 새 Project의 기본 "View 1"은 `deleteProjectV2View`로 지운다.
-- 웹에서 화면 설정을 바꾸면 "Save view" 뒤에 "Save display options?" 확인 창이 한 번 더 뜬다. 거기까지 눌러야 저장된다(poker에서 한 번 저장이 빠졌다. autelon/logistics-hub#7). 저장 뒤 아래로 확인한다(보드의 `verticalGroupByFields`에 열 기준 필드가 나온다) **[확인]** 2026-10-04 poker Project.
+- GraphQL `createProjectV2View`(이름, 레이아웃 TABLE·BOARD·ROADMAP)로 만들 수 있다 **[확인]** poker. 입력의 설정은 보이는 필드(`visibleFieldIds`)뿐이라 **보드의 열 기준 필드와 로드맵 날짜 필드는 director가 브라우저 도구로 웹 화면에서 정한다**(아래 "웹 설정"). 새 보드의 열 기준은 Status다. 새 Project의 기본 "View 1"은 `deleteProjectV2View`로 지운다.
+- 저장 뒤 아래로 확인한다(보드의 `verticalGroupByFields`에 열 기준 필드가 나온다) **[확인]** 2026-10-04 poker Project.
 
 ```
 gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>){ views(first:20){ nodes{ name layout verticalGroupByFields(first:5){ nodes{ ... on ProjectV2FieldCommon { name } } } } } } } }'
@@ -107,9 +107,13 @@ gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>)
 
 - 화면 이름은 위 고정 문구만 쓴다.
 
-#### 기본 워크플로 (웹에서 켠다)
+#### 기본 워크플로 (웹에서 켠다, 아래 "웹 설정")
 
-워크플로는 API로 켜거나 고칠 수 없다. 조회는 되지만 mutation은 `deleteProjectV2Workflow`뿐이다 **[확인]** poker. 새 Project는 Auto-add sub-issues만 켜진 채로 시작했다. 사람에게 웹 화면에서 아래처럼 켜 달라고 요청한다.
+워크플로는 API로 켜거나 고칠 수 없다. 조회는 되지만 mutation은 `deleteProjectV2Workflow`뿐이다 **[확인]** poker. 새 Project는 Auto-add sub-issues만 켜진 채로 시작했다. director가 브라우저 도구로 아래처럼 켠다. 켠 뒤 아래 GraphQL로 `enabled`를 확인한다 **[확인]** 2026-10-04 poker Project(대상 값은 나오지 않는다).
+
+```
+gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>){ workflows(first:20){ nodes{ name enabled } } } } }'
+```
 
 | 워크플로                       | 기준값                                       | 이유                                                                                                                                                                                            |
 | ------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -122,6 +126,19 @@ gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>)
 | Auto-add to project (저장소)   | 선택. 켜지 않으면 이슈를 만들 때 `--project` | 사람이 정한다                                                                                                                                                                                   |
 
 - poker는 사람의 지시로 여섯 개를 모두 켜고 "Pull request linked to issue"를 `review`로 골랐다(autelon/company#31 코멘트). 위 표는 플러그인 규칙(`Refs #N`, 승인 뒤 `done`)에 맞춘 기준값이고, 프로젝트가 다르게 켜면 그 이유를 프로젝트 `CLAUDE.md`에 적는다.
+
+#### 웹 설정 (브라우저 도구)
+
+API로 정할 수 없는 Project 설정(보드 열 기준, 로드맵 날짜 필드, 기본 워크플로)은 **director가 브라우저 도구로 직접 설정한다.** 사람에게 미루지 않는다(사용자 결정 2026-10-04).
+
+- 브라우저: 사람의 로그인 세션이 있는 브라우저 도구(Claude in Chrome 등)를 쓴다. 사용자 환경에 브라우저를 열고 확장을 연결하는 스킬이 있으면 먼저 그것을 쓴다. 브라우저 도구가 없거나 연결되지 않을 때만 사람에게 아래 조작을 그대로(화면, 메뉴, 고를 값) 안내한다.
+- 주소: `https://github.com/orgs/<조직>/projects/<P>`. 워크플로는 Project 메뉴의 Workflows 화면이다.
+- 화면: Status 보드와 Role 보드는 열 기준 필드를 각각 `Status`, `Role`로, 로드맵은 날짜 필드를 `Start date`·`Target date`로 고른다. **"Save view"를 누른 뒤 뜨는 "Save display options?" 확인 창까지 눌러야 저장된다**(poker에서 한 번 저장이 빠졌다. autelon/logistics-hub#7). 저장 뒤 위 화면 GraphQL로 `verticalGroupByFields`를 확인한다.
+- 워크플로: 위 표대로 켜고 대상 값을 고른 뒤 저장한다.
+- **Status 선택지를 바꾼 뒤에는 워크플로 화면을 연다.** 선택지를 지우거나 새로 만들면 워크플로의 대상이 지워져 "A value is required" 경고가 뜬다(poker, autelon/company#31). 경고가 있는 워크플로는 대상 값을 다시 고른다. id를 유지해 이름만 바꾼 경우에도 대상이 그대로인지 이 화면에서 확인한다.
+- 화면의 메뉴 이름은 poker에서 본 화면(워크플로의 "Set value", 화면의 "Save view")과 GitHub 문서 기준이다. 화면이 바뀌었으면 본 대로 하고 이 절을 고치는 이슈를 autelon/company에 남긴다.
+- 웹에서 바꾸는 값은 위 고정 값뿐이다. 다른 설정(공개 범위, 권한, 저장소 설정)은 바꾸지 않고, 로그인·토큰·계정 설정 화면은 열지 않는다. 글(제목·본문·코멘트)은 웹으로 쓰지 않는다(1절).
+- 루틴(무인 실행)에서는 웹 설정을 하지 않는다. 필요하면 `agent:needs-user`로 넘기고 사람이 연 director 세션에서 한다.
 
 #### 기타
 

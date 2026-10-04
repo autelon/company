@@ -14,7 +14,7 @@
 
 ## 순서
 
-1. **준비** (playbook 2절): 라벨, Project(필드 `Role`은 `director`와 프로젝트 role), Status 선택지(기본 선택지 셋은 id를 유지한 채 이름만 바꾼다), 화면(기본 "View 1"은 지운다). 보드 열 기준·로드맵 날짜 필드와 기본 워크플로는 API로 정할 수 없으니 사람에게 웹 화면 작업 목록(playbook 2절 "기본 워크플로" 표)을 준다.
+1. **준비** (playbook 2절): 라벨, Project(필드 `Role`은 `director`와 프로젝트 role), Status 선택지(기본 선택지 셋은 id를 유지한 채 이름만 바꾼다), 화면(기본 "View 1"은 지운다). 보드 열 기준·로드맵 날짜 필드와 기본 워크플로는 API로 정할 수 없어 director가 브라우저 도구로 설정한다(playbook 2절 "웹 설정"). Status 선택지를 바꾼 뒤 워크플로 화면에서 대상이 깨지지 않았는지 본다.
 2. **마일스톤**: `board/milestones.json`의 항목마다 저장소 마일스톤을 만든다(제목 `M-01 <title>`, `target`이 있으면 `due_on`). done이면 마일스톤을 닫는다.
 3. **PRD**: `prds/*.md`마다 Feature 이슈를 만든다. 본문은 `templates/issues/prd.md` 형식으로, 섹션은 원래 PRD 본문을 그대로 옮기고 "현재 결론"에 frontmatter `status`(단계)를 적는다. 마일스톤을 단다. 모두 만든 뒤 `derived_from`을 `파생: #N`으로 채운다. `closed`면 닫는다.
 4. **task**: `board/tasks.json`의 task마다 Task 이슈를 만든다. 본문 `templates/issues/task.md`, "현재 결론"에 `예전 ID: T-0001`을 적는다. `--parent <PRD 이슈>`, 마일스톤, `depends_on` → `--blocked-by`. Project 필드 `Status`·`Role`·`Size`를 채운다. `done`은 `--reason completed`, `rejected`는 `--reason "not planned"`로 닫고 **닫은 뒤에** Status를 `rejected`로 고친다(Item closed 워크플로가 닫힘 사유를 가리지 않아 `done`으로 덮일 수 있다. playbook 3절 "닫기").
