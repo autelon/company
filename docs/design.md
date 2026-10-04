@@ -46,7 +46,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 - Notion 투영(notion-sync role, 프로젝트별 Notion DB)은 2026-10-04에 없앴다. 화면은 GitHub Project가 맡는다(5절). (사용자 결정 2026-10-04) 그 전의 Notion 설정 경위는 git 히스토리에 있다(`git log -S notion_root_page`).
   - `${user_config.*}`는 스킬을 불러올 때 치환된다. 세션이 열린 뒤에 넣은 값은 `/reload-plugins`가 필요하고, reload가 치환을 다시 한다. **[확인]** 2026-10-04 poker. manifest의 `default`는 치환에 쓰이지 않았다(`github_org`가 reload 뒤에도 글자 그대로). **[확인]** 그래서 스킬은 글자 그대로 남은 값과 빈 값을 둘 다 "설정 안 됨"으로 본다. 사용자는 값을 사용자 설정 `pluginConfigs`에 넣어 두고, 값은 이 리포에 적지 않는다.
   - `pluginConfigs`(userConfig 값)는 사용자·관리 설정에서만 읽고 프로젝트 settings에서는 무시한다. **[확인]** settings-reference 문서
-- 기존 프로젝트는 `adopt-project` 스킬로 들인다. found-company는 CLAUDE.md·목표 파일을 템플릿으로 만들어 기존 프로젝트에서는 덮어쓰거나 충돌한다. adopt-project는 기존 문서를 원본으로 두고 없는 autelon 파일만 더하며, 기존 작업 방식은 비교해 제안만 한다. (2026-10-04, logistics-hub 도입 요청에서)
+- 기존 프로젝트는 `adopt-project` 스킬로 들인다. found-company는 CLAUDE.md·목표 파일을 템플릿으로 만들어 기존 프로젝트에서는 덮어쓰거나 충돌한다. adopt-project는 기존 문서를 원본으로 두고 없는 autelon 파일만 더한다. (2026-10-04, logistics-hub 도입 요청에서) 도입한 프로젝트도 항상 director로 운영한다. 기존 작업 방식과 다른 점·충돌하는 점은 비교해 알리고 확인받는다. director를 쓰지 않는 갈래에서는 role 지시문에 공통 규칙(director 스킬 "모든 role 공통")과 검사 스크립트 경로를 넣을 방법이 없어서다. (사용자 결정 2026-10-05, autelon/company#64)
 - 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)는 원격(커밋, PR, 이슈·코멘트)에 올리지 않고 로컬 설정(`pluginConfigs`, 프로젝트 `local/`·예전 `notion/`, gitignore)에만 둔다. 패턴의 원본은 `plugin/scripts/privacy-check.mjs`다. 커밋되는 파일은 이름으로 가리킨다. (사용자 결정 2026-10-04) 2026-10-04 점검: autelon 조직 저장소 3개(company, .github, logistics-hub)의 전체 히스토리·PR·코멘트에 Notion URL·개인 경로 없음. poker 로컬 히스토리의 경로는 push 전에 홈 기준 경로로 바꿨지만, 그것도 커밋되는 파일에서는 위반이라 poker 저장소를 지우고 다시 만들었다(아래).
   - 원칙: 커밋되는 파일에서 경로는 repo 루트 기준 상대 경로로 쓰고, repo 밖의 것은 저장소나 문서 이름으로 가리킨다. 홈 기준 경로(`~/...`)도 위반이다. security-reviewer 검토 항목 1에 넣었다. (사용자 결정 2026-10-04, company#12)
   - 의심스러운 것은 push 전에 막는다. PR 브랜치에 한 번 올라간 커밋은 force push로 빼도 PR 타임라인이 이전 head를 붙잡고 있어 SHA로 계속 조회된다. **[확인]** poker
@@ -80,7 +80,7 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
 ```
 
 - 아래 그림의 role 구성은 기본 템플릿이다. 실제 구성은 프로젝트마다 설립 때 정한다.
-- role = 프로젝트 `.claude/agents/<role>.md` 하나 (공용 role은 플러그인 `agents/`). 각 호출은 빈 context에서 시작한다. **[확인]** "Each subagent starts with a fresh, isolated context window." (sub-agents 문서)
+- role = 프로젝트 `.claude/agents/<role>.md` 하나 (공용 role은 플러그인 `agents/`). role 파일에는 frontmatter(`tools:` 포함)와 role마다 다른 내용(페르소나, 책임, 원칙, role 고유의 출력·메모리 규칙)만 둔다. 모든 role에 같은 글로 된 규칙(결과 코멘트로만 출력, 검사 스크립트로 올리기, 초안 경로, 기록 위치, `Refs #N` 등)은 director 스킬 "모든 role 공통"에 두고 director가 호출 때마다 지시문에 넣는다. 그래서 공통 규칙은 플러그인 업데이트로 모든 프로젝트에 같이 반영되고, 프로젝트에 복사된 role 파일은 고치지 않아도 된다. (사용자 결정 2026-10-04, autelon/company#42 결정 4) 각 호출은 빈 context에서 시작한다. **[확인]** "Each subagent starts with a fresh, isolated context window." (sub-agents 문서)
 - role 장기 기억 = `memory: project` → `.claude/agent-memory/<role>/MEMORY.md` 앞 200줄/25KB 자동 로드. **[확인]**
 - subagent는 AskUserQuestion을 못 쓴다. 사람에게 묻는 건 director만 한다. **[확인]**
 - 권한 요청·질문은 Remote Control + "Push when actions required"로 폰에 온다. 답할 때까지 열려 있다. **[확인]**

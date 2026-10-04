@@ -40,6 +40,7 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
    - 모델은 판단이 무거운 role만 opus, 정해진 규칙대로 하는 role은 sonnet/haiku.
 3. 구성안을 표로 보여주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 모델, 기본 템플릿에서 바꾼 점.
 4. 승인된 role을 프로젝트 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`를 둔다. 첫 줄 주석 `(v0 페르소나 — role 설계 단계에서 개선 예정)`은 유지한다.
+   - role 파일에는 frontmatter(`tools:` 포함)와 role마다 다른 내용만 쓴다. 모든 role에 같은 규칙(결과를 task 이슈 코멘트로 올리기, 코멘트 템플릿, 초안 경로와 검사 스크립트, 기록 위치, Bash 용도, `Refs #N` 등)은 넣지 않는다. director가 director 스킬 "모든 role 공통"을 지시문에 넣는다. 새로 정의한 role도 같다.
 5. 공용 role(`autelon:finance`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 모든 PR에 항상 들어간다(director 스킬의 "코드 변경과 PR").
 6. 프로젝트 role을 쓰기 전에 사람에게 `/reload-plugins`를 입력해 달라고 요청한다. 내장 명령이라 Claude가 실행할 수 없고, 같은 세션에서 방금 만든 role을 부르면 `Agent type '<role>' not found`가 난다(2026-10-04 poker 관찰). reload 뒤에 role을 부를 수 있는지 확인한다.
 

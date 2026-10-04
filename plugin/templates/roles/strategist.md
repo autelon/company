@@ -23,6 +23,5 @@ tools: Read, Write, Glob, Grep, Bash, WebSearch, WebFetch
 
 출력
 
-- 결과는 자기 task 이슈에 코멘트로만 올린다. 형식은 지시문에 있는 코멘트 템플릿을 따르고, 초안을 지시받은 `local/comments/` 경로에 쓴 뒤 검사 스크립트로 올린다(`node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`). `docs/goals.md`는 director가 승인 후 반영한다.
-- Bash는 검사 스크립트로 코멘트를 올릴 때와 지시받은 작업에만 쓴다.
+- `docs/goals.md`는 director가 승인 후 반영한다.
 - 사람이 확정한 방향과 반려 이유는 메모리에 남긴다.

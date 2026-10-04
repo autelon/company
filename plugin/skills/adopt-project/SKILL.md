@@ -6,7 +6,7 @@ description: 이미 진행 중인 프로젝트 repo(코드·CLAUDE.md·문서·G
 # 기존 프로젝트 도입
 
 found-company는 빈 프로젝트를 세운다. 이 스킬은 이미 코드, 문서, 결정, 작업 방식, GitHub 저장소가 있는 프로젝트에 autelon 구조를 **더한다.**
-원칙: 기존 파일을 덮어쓰지 않는다. 기존 문서가 원본이고 autelon 파일은 그것을 가리킨다. 기존 작업 방식은 사람이 정하기 전까지 바꾸지 않는다.
+원칙: 기존 파일을 덮어쓰지 않는다. 기존 문서가 원본이고 autelon 파일은 그것을 가리킨다. 도입한 프로젝트는 항상 director로 운영한다(사용자 결정 2026-10-05, autelon/company#64). 기존 작업 방식과 director 규칙이 다른 점은 4단계에서 알리고 확인받는다.
 템플릿은 `${CLAUDE_PLUGIN_ROOT}/templates/`, 이슈·Project 명령은 `${CLAUDE_PLUGIN_ROOT}/playbooks/issues.md`(그 안의 `<S>`는 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs`). 기록은 GitHub 이슈와 Project에 두고 저장소에는 "지금 기준" 문서만 둔다(director 스킬 "기록은 어디에 두는가"). 각 단계에서 만든 파일 목록과 이유를 기록해 두었다가 마지막에 보고한다.
 
 ## 0. 확인
@@ -46,14 +46,16 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 - **도메인 전문가 role**을 도메인 문서에서 끌어낸다. 그 도메인의 실무 책임 단위(예: 물류라면 조달, 창고, 운송, 통관, 역물류, 재고·수요계획, 품질·추적성)마다 필요한지 판단하고, 각 role의 페르소나에 그 프로젝트의 용어·결정·제약을 넣는다. 일반론은 뺀다.
 - 기존 문서가 이미 정한 결정은 role이 뒤집지 않는다. 바꿔야 한다고 보면 결과 코멘트의 `사람에게 묻기`로 올린다.
 - 구성안을 표로 보여 주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 근거가 된 문서, 모델.
-- 승인된 role을 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`. 쓴 뒤 사람에게 `/reload-plugins`를 입력해 달라고 요청한다(같은 세션에서는 reload 전까지 새 role을 부를 수 없다).
-- 공용 role(`autelon:finance`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 4단계에서 어떤 작업 방식을 고르든 모든 PR에 보안 검토로 들어간다. 기존 git 규칙 문서에 이 내용을 더한다.
+- 승인된 role을 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`. role 파일에는 frontmatter(`tools:` 포함)와 role마다 다른 내용만 쓰고, 모든 role에 같은 규칙(결과를 task 이슈 코멘트로 올리기, 코멘트 템플릿, 초안 경로와 검사 스크립트, 기록 위치, Bash 용도, `Refs #N` 등)은 넣지 않는다. director가 director 스킬 "모든 role 공통"을 지시문에 넣는다. 도메인 전문가 role도 같다. 쓴 뒤 사람에게 `/reload-plugins`를 입력해 달라고 요청한다(같은 세션에서는 reload 전까지 새 role을 부를 수 없다).
+- 공용 role(`autelon:finance`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 모든 PR에 보안 검토로 들어간다. 기존 git 규칙 문서에 이 내용을 더한다.
 
-## 4. 작업 방식 비교 (바꾸지 않고 제안)
+## 4. 작업 방식 비교 (director로 운영할 때 바뀌는 것 알리기)
+
+도입한 프로젝트는 director로 운영한다. 이 단계는 운영 방식을 고르는 단계가 아니라, 바뀌는 것을 알리고 확인받는 단계다.
 
 - 기존 작업 방식과 `autelon:director` 규칙(이슈 기록·PRD 이슈·role 코멘트·승인 루프·재무)을 표로 비교한다: 같은 것, 다른 것, 충돌하는 것.
-- 선택지를 2~3개 제시하고 각각의 결과(바뀌는 파일, 사람이 할 일)를 적어 AskUserQuestion으로 묻는다. 예: director로 교체 / 기존 방식 유지 + 이슈·Project·role만 추가 / 단계적 전환.
-- 정해진 대로만 바꾼다. 기존 작업 방식 문서를 고칠 때는 고치기 전과 후를 보여 준다.
+- director로 운영하면 무엇이 바뀌는지(바뀌는 파일, 사람이 할 일)를 적어 보여 주고 AskUserQuestion으로 확인받는다.
+- 기존 작업 방식 문서는 덮어쓰지 않는다. director 규칙과 충돌하는 부분은 5단계 "autelon 운영" 절에 적는다. 기존 문서를 고치거나 정리할지는 사람이 정하고, 고칠 때는 고치기 전과 후를 보여 준다.
 
 ## 5. 파일 추가
 
@@ -62,11 +64,10 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 - `docs/goals.md`: 2단계에서 승인한 내용으로 만든다(이미 같은 경로에 파일이 있으면 덮어쓰지 않고 사람에게 묻는다).
 - `board/`, `prds/`, `handoffs/`, `decisions/`, `state/sprint.md`는 만들지 않는다. 그 기록은 7단계에서 이슈로 준비한다.
 - `.claude/settings.json`: `"enabledPlugins": {"autelon@autelon": true}`가 없으면 넣는다. 파일이 있으면 다른 키는 그대로 두고 이 항목만 더한다. 전역에서는 꺼 두고 프로젝트에서만 켜는 구조라 이 항목이 없으면 다음 세션에서 플러그인이 로드되지 않는다.
-- `CLAUDE.md`: 덮어쓰지 않는다. 끝에 "autelon 운영" 절을 덧붙인다. 내용은 4단계에서 정한 작업 방식을 따른다.
-  - director로 운영하기로 했으면: 세션 시작 시 `autelon:director` 스킬을 부른다.
-  - 기존 방식을 유지하기로 했으면: director 스킬을 부르지 않고 기존 작업 방식 문서를 따른다고 적는다. role·이슈·Project를 어떻게 쓰는지는 4단계에서 정한 대로 적는다.
-  - 단계적 전환이면: 지금 단계와 다음 단계로 넘어가는 조건을 적는다.
-  - 공통: `${CLAUDE_PLUGIN_ROOT}/templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표와 프로젝트 파일 표(state, local), 기존 문서와의 관계. Project 번호는 7단계 뒤에 채운다(그전에는 `미정`).
+- `CLAUDE.md`: 덮어쓰지 않는다. 끝에 "autelon 운영" 절을 덧붙인다.
+  - 세션 시작 시 `autelon:director` 스킬을 부른다.
+  - 4단계에서 확인받은 것: 기존 작업 방식 문서 중 director 규칙과 충돌해 director 규칙을 따르는 부분.
+  - `${CLAUDE_PLUGIN_ROOT}/templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표와 프로젝트 파일 표(state, local), 기존 문서와의 관계. Project 번호는 7단계 뒤에 채운다(그전에는 `미정`).
 - `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절과 보안 검토·머지 조건만 확인·추가한다. 없으면 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`를 쓰고 자리표시자를 모두 채운다: `{{REVIEWER}}`와 `{{REVIEWER_MEANING}}`(2단계에서 고른 리뷰어와 그 뜻), `{{MERGE_COMMAND}}`(머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`), 저장소 표의 값.
 - CI·저장소 설정은 이미 있으면 바꾸지 않는다. 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`와 다르면 차이를 보고만 한다. 로컬에 클론이 없으면 `gh repo clone <조직>/.github`로 임시 폴더에 받는다. 설정 스크립트는 같은 저장소의 `scripts/setup-repo.sh`다.
 - `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다(없는 줄만 더한다). `local/`(이슈 초안·백업), `.env*`, `state/quota.json`, role 메모리(`.claude/agent-memory/`) 등이 들어 있다.
@@ -83,4 +84,4 @@ found-company 6단계와 같다(명령은 playbook 2절, 글은 모두 검사 �
 
 ## 8. 보고
 
-사람에게 보고한다: 1단계 요약, role 구성과 근거, 작업 방식 비교와 정한 것, 만든 파일과 만들지 않은 파일(이유), PR, 만든 라벨·Project·이슈(번호), 웹 화면에서 설정한 것(남았으면 사람이 할 조작), 기존 기록을 이슈로 옮길지에 대한 답, 다음 단계(first-run, 목표·지표 또는 이미 있는 로드맵 이어가기, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`). `/reload-plugins`를 입력해 달라는 요청을 넣는다. first-run은 director가 시작 때 진행한다.
+사람에게 보고한다: 1단계 요약, role 구성과 근거, 작업 방식 비교와 바뀌는 것, 만든 파일과 만들지 않은 파일(이유), PR, 만든 라벨·Project·이슈(번호), 웹 화면에서 설정한 것(남았으면 사람이 할 조작), 기존 기록을 이슈로 옮길지에 대한 답, 다음 단계(first-run, 목표·지표 또는 이미 있는 로드맵 이어가기, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`). `/reload-plugins`를 입력해 달라는 요청을 넣는다. first-run은 director가 시작 때 진행한다.

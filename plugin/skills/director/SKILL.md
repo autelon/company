@@ -51,7 +51,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - task마다 이슈를 만든다: 본문은 `templates/issues/task.md`, PRD의 task면 `--parent <PRD 이슈>`, 선행 task가 있으면 `--blocked-by`, 마일스톤. Project 필드 `Status`·`Role`·`Size`를 채운다(`size`: small | large, 재무 신호 CAUTION이면 small만 시작).
 - task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`). Project `Status` 필드로 두고, done은 `--reason completed`, rejected는 `--reason "not planned"`로 닫는다. 반려는 닫은 뒤 Status를 `rejected`로 고친다(Item closed 워크플로가 닫힘 사유를 가리지 않아 `done`으로 덮일 수 있다. playbook 3절 "닫기").
 - role을 호출할 때 지시문에 넣을 것: 저장소(`<조직>/<이름>`), task 이슈 번호, 목표, 읽을 것(저장소 상대 경로, 이슈 번호), 완료 조건, 결과 코멘트 템플릿 `${CLAUDE_PLUGIN_ROOT}/templates/issues/comment-handoff.md`, 검사 스크립트 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs`, 코멘트 초안 경로 `local/comments/<이슈 번호>-<role>.md`(프로젝트 루트 기준, 커밋하지 않는 폴더).
-  - role은 초안을 쓰고 `node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`로 올린다. 검사에 걸리면 고쳐서 다시 올린다.
+  - 아래 "모든 role 공통"도 함께 넣는다. role 파일에는 공통 규칙이 없다. role이 결과를 올리는 방법도 그 절에 있다.
 - 예외: PR 리뷰와 보안 검토 task는 이슈 코멘트 대신 PR 코멘트가 기록이다.
 - 지시문에 대화 맥락을 길게 붙이지 않는다. 필요한 맥락은 이슈 본문이나 저장소 파일에 두고 번호·경로만 준다.
 - 서로 의존하지 않는 task는 병렬로 호출한다. role들은 코멘트를 덧붙이기만 하므로 병렬로 써도 충돌하지 않는다.
@@ -170,8 +170,14 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 모든 role 공통 (role 지시문에 넣을 것)
 
+프로젝트 role 파일(`.claude/agents/<role>.md`)에는 frontmatter와 role마다 다른 내용(페르소나, 책임, 원칙, role 고유의 출력·메모리 규칙)만 있다. 모든 role에 같은 아래 규칙은 role 파일에 넣지 않고, director가 role을 부를 때마다 지시문에 넣는다. 플러그인이 업데이트되면 모든 프로젝트에 같이 반영되게 하려는 것이다(autelon/company#42). 공용 role(`autelon:finance`, `autelon:security-reviewer`)에는 이 절의 출력·코멘트 항목(결과 코멘트, PR 코멘트, PRD 섹션 초안, "쓸 수 있는 것")을 넣지 않는다. 공용 role의 출력 방식은 그 role 파일을 따른다.
+
 - 추정으로 결정하지 않는다. 모르면 결과 코멘트의 `사람에게 묻기`에 적는다.
+- 결과는 자기 task 이슈에 코멘트로만 올린다. 형식은 지시문에 있는 코멘트 템플릿을 따른다. 초안을 지시받은 `local/comments/` 경로에 쓰고 `node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`로 올린다. 검사에 걸리면 고쳐서 다시 올린다. `local/`은 커밋되지 않는다(worktree 안에서도 같다).
+- PR 코멘트(PR 리뷰 결과 등)도 초안을 `local/` 아래에 쓰고 `node <검사 스크립트> gh pr comment <PR> -R <저장소> -F <초안 경로>`로 올린다.
+- PRD 섹션 초안은 결과 코멘트의 산출물 절에 "PRD #N / <섹션>" 제목 아래 전문을 쓴다. PRD 이슈 본문을 직접 고치지 않는다(director가 사람의 승인을 받은 뒤 반영한다).
 - 쓸 수 있는 것: 자기 task 이슈의 코멘트(검사 스크립트로 올린다)와 지시받은 저장소 파일. 이슈를 만들거나 본문·라벨·상태를 고치지 않는다. Bash는 검사 스크립트로 코멘트를 올릴 때와 지시받은 작업에만 쓴다.
+- PR을 올리는 role은 PR 본문에 `Closes #N`을 넣지 않는다(task는 사람의 승인 뒤 director가 닫는다). 이슈는 `Refs #N`으로 가리킨다.
 - 경로는 프로젝트 루트 기준 상대 경로로 적는다(코멘트 포함).
 - 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 임시 폴더 경로, 계정 정보)를 커밋되는 파일과 코멘트에 쓰지 않는다.
 - scratchpad·임시 파일·로컬 추출본의 경로를 커밋되는 문서나 코멘트에 출처로 적지 않는다. 출처는 원문 URL, 저장소 상대 경로, 이슈·PR 번호로 적는다. 로컬에만 있는 자료는 "로컬 추출본(커밋하지 않음)"이라고만 적는다.

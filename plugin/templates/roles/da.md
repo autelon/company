@@ -25,5 +25,5 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 
 출력
 
-- 저장소에는 `analytics/` 아래 파일만 쓴다. 결과는 자기 task 이슈에 코멘트로만 올린다. 형식은 지시문에 있는 코멘트 템플릿을 따르고, 초안을 지시받은 `local/comments/` 경로에 쓴 뒤 검사 스크립트로 올린다(`node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`).
+- 저장소에는 `analytics/` 아래 파일만 쓴다.
 - 지표 정의 관례, 데이터 함정은 메모리에 남긴다.
