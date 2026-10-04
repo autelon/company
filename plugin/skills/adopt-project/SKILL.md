@@ -52,7 +52,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 ## 4. 작업 방식 비교 (바꾸지 않고 제안)
 
 - 기존 작업 방식과 `autelon:director` 규칙(이슈 기록·PRD 이슈·role 코멘트·승인 루프·재무)을 표로 비교한다: 같은 것, 다른 것, 충돌하는 것.
-- 선택지를 2~3개 제시하고 각각의 결과(바뀌는 파일, 사람이 할 일)를 적어 AskUserQuestion으로 묻는다. 예: director로 교체 / 기존 방식 유지 + board·role만 추가 / 단계적 전환.
+- 선택지를 2~3개 제시하고 각각의 결과(바뀌는 파일, 사람이 할 일)를 적어 AskUserQuestion으로 묻는다. 예: director로 교체 / 기존 방식 유지 + 이슈·Project·role만 추가 / 단계적 전환.
 - 정해진 대로만 바꾼다. 기존 작업 방식 문서를 고칠 때는 고치기 전과 후를 보여 준다.
 
 ## 5. 파일 추가
@@ -64,7 +64,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 - `.claude/settings.json`: `"enabledPlugins": {"autelon@autelon": true}`가 없으면 넣는다. 파일이 있으면 다른 키는 그대로 두고 이 항목만 더한다. 전역에서는 꺼 두고 프로젝트에서만 켜는 구조라 이 항목이 없으면 다음 세션에서 플러그인이 로드되지 않는다.
 - `CLAUDE.md`: 덮어쓰지 않는다. 끝에 "autelon 운영" 절을 덧붙인다. 내용은 4단계에서 정한 작업 방식을 따른다.
   - director로 운영하기로 했으면: 세션 시작 시 `autelon:director` 스킬을 부른다.
-  - 기존 방식을 유지하기로 했으면: director 스킬을 부르지 않고 기존 작업 방식 문서를 따른다고 적는다. role·board를 어떻게 쓰는지는 4단계에서 정한 대로 적는다.
+  - 기존 방식을 유지하기로 했으면: director 스킬을 부르지 않고 기존 작업 방식 문서를 따른다고 적는다. role·이슈·Project를 어떻게 쓰는지는 4단계에서 정한 대로 적는다.
   - 단계적 전환이면: 지금 단계와 다음 단계로 넘어가는 조건을 적는다.
   - 공통: `${CLAUDE_PLUGIN_ROOT}/templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표와 프로젝트 파일 표(state, local), 기존 문서와의 관계. Project 번호는 7단계 뒤에 채운다(그전에는 `미정`).
 - `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절과 보안 검토·머지 조건만 확인·추가한다. 없으면 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`를 쓰고 자리표시자를 모두 채운다: `{{REVIEWER}}`와 `{{REVIEWER_MEANING}}`(2단계에서 고른 리뷰어와 그 뜻), `{{MERGE_COMMAND}}`(머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`), 저장소 표의 값.
@@ -74,7 +74,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 ## 6. 커밋과 PR
 
 - 프로젝트의 커밋 규칙과 검증 명령(0단계에서 찾은 것)을 따른다. 새로 만든 파일도 포맷 검사 대상이다.
-- 개인 리소스 정보 확인: director 스킬의 "개인 리소스 정보" 절의 확인(내용 grep, 작성자·`Co-Authored-By` 확인)이 비어 있어야 한다. 도입 PR의 push 범위 커밋과 `git config user.email`도 본다.
+- 개인 리소스 정보 확인: director 스킬의 "개인 리소스 정보" 절의 확인(내용 검사 스크립트, 작성자·`Co-Authored-By` 확인)이 비어 있어야 한다. 도입 PR의 push 범위 커밋과 `git config user.email`도 본다.
 - 브랜치와 PR로 올린다. 리뷰어는 2단계에서 정한 대로 하고, 보안 검토는 `autelon:security-reviewer`가 한다. 작업한 세션은 자기 PR을 머지하지 않는다.
 
 ## 7. 이슈·Project 준비 (도입 PR이 머지된 뒤)

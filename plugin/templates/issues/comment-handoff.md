@@ -1,5 +1,5 @@
 <!-- role의 작업 결과 코멘트. 자기 task 이슈에만 쓴다. 이 줄을 포함한 주석은 지우고 올린다.
-     올리기: node <privacy-check.mjs 경로> gh issue comment <이슈 번호> -F local/comments/<이슈 번호>-<role>.md -->
+     올리기: node <privacy-check.mjs 경로> gh issue comment <이슈 번호> -R <저장소> -F local/comments/<이슈 번호>-<role>.md -->
 
 **handoff** · role: <role> · 상태: done <!-- done | partial | blocked -->
 
