@@ -81,6 +81,7 @@ test('gh 인자: 검사할 수 없는 글과 코멘트 삭제는 거절한다', 
     ['issue', 'comment', '1', '-F', '-'],
     ['issue', 'comment', '1', '-F-'],
     ['pr', 'create', '--fill'],
+    ['pr', 'create', '-f', '-t', '제목', ...body],
     ['pr', 'create', '--fill-first', ...body],
     ['issue', 'create', '-e', ...body],
     ['issue', 'create', '--web', ...body],
@@ -96,6 +97,8 @@ test('gh 인자: 검사할 수 없는 글과 코멘트 삭제는 거절한다', 
 
 test('gh 인자: create·comment 는 본문이 있어야 한다, edit 는 없어도 된다', () => {
   assert.throws(() => textsFromGhArgs(['issue', 'create', '-t', '제목']));
+  assert.throws(() => textsFromGhArgs(['pr', 'create', '-b', '본문']));
+  assert.equal(textsFromGhArgs(['pr', 'create', '-t', '제목', '-b', '본문']).length, 2);
   assert.throws(() => textsFromGhArgs(['issue', 'comment', '1']));
   assert.deepEqual(textsFromGhArgs(['issue', 'edit', '1', '--add-label', 'decision']), []);
 });

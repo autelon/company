@@ -10,7 +10,7 @@
 // 올리기 전에 막아야 한다. 받는 명령: issue create|edit|comment, pr create|edit|comment.
 // 본문은 -F/--body-file 파일이나 -b/--body 문자열로만 받는다. 검사할 수 없는 곳에서 글을 가져오는 플래그
 // (표준 입력 -F -, 편집기, 브라우저, 템플릿, --fill, --recover), 코멘트 삭제(--delete-last), 묶어 쓴 짧은 플래그는 거절한다.
-// create·comment 는 본문이 없으면 대화형 입력으로 넘어가므로 본문을 꼭 받는다.
+// create·comment 는 본문이 없으면 대화형 입력으로 넘어가므로 본문을 꼭 받고, create 는 제목(-t)도 받는다.
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -67,6 +67,7 @@ const REJECTED = new Set([
   '-T',
   '--template',
   '--recover',
+  '-f',
   '--fill',
   '--fill-first',
   '--fill-verbose',
@@ -122,6 +123,10 @@ export function textsFromGhArgs(args) {
       // -dw 같은 묶음은 어떤 플래그가 들어 있는지 확실히 가를 수 없다
       throw new Error(`묶어 쓴 짧은 플래그(${arg})는 받지 않는다. 하나씩 나눠 쓴다`);
     }
+  }
+  // create 는 제목이 없으면 커밋 메시지·대화형 입력에서 채워져 검사를 거치지 않는다
+  if (sub === 'create' && !texts.some((t) => t.source === '--title')) {
+    throw new Error(`gh ${group} create 는 -t 로 제목을 넘겨야 한다`);
   }
   if (NEEDS_BODY.has(sub) && !texts.some((t) => t.source !== '--title')) {
     throw new Error(

@@ -21,7 +21,7 @@ node <S> gh issue create -R <o>/<r> --type Task --title "<제목>" -F local/issu
 node <S> gh issue edit <N> -R <o>/<r> -F local/issues/<N>.md
 ```
 
-- 본문은 파일로 넘긴다(`-F`). 표준 입력(`-F -`), `-e/--editor`, `-w/--web`, `-T/--template`, `--fill*`, `--recover`, `--delete-last`, 묶어 쓴 짧은 플래그(`-dw`)는 거절된다. create·comment는 본문이 없으면 거절된다(대화형 입력으로 넘어가지 않게). 파일은 커밋하지 않는 `local/` 아래에 쓴다(`local/comments/`, `local/issues/`).
+- 본문은 파일로 넘긴다(`-F`). 표준 입력(`-F -`), `-e/--editor`, `-w/--web`, `-T/--template`, `-f/--fill*`, `--recover`, `--delete-last`, 묶어 쓴 짧은 플래그(`-dw`)는 거절된다. create·comment는 본문이, create는 제목(`-t`)도 없으면 거절된다(커밋 메시지나 대화형 입력에서 채워지지 않게). 파일은 커밋하지 않는 `local/` 아래에 쓴다(`local/comments/`, `local/issues/`).
 - 라벨·마일스톤·상태만 바꾸는 명령(`--add-label`, `close`)은 글이 없으니 스크립트 없이 실행해도 된다.
 - 걸리면 위치와 종류만 찍고 올리지 않는다. 값을 고쳐 다시 실행한다. 패턴 설명이 필요한 글은 "사용자 홈 경로"처럼 말로 쓴다.
 - 이미 올라간 본문·코멘트를 고쳐도 GitHub의 편집 이력에 이전 내용이 남는 것으로 안다. 누가 그 이력을 볼 수 있는지, 이력에서 지울 수 있는지는 **[미확인]**. 그래서 올리기 전에 막는다.
