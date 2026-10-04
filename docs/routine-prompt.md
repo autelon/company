@@ -56,7 +56,7 @@ role을 부를 때 넣는다: 저장소 `autelon/company`, 이슈 번호, 목표
 
 - **한 프로젝트의 사정만으로 공통 규칙을 바꾸지 않는다.** plugin-developer의 결과 코멘트에 "다른 프로젝트 영향"이 없으면 다시 맡긴다. 이 세션은 그 내용을 읽고 이슈에 `[루틴]` 코멘트로 판단을 남긴다: 공통으로 맞으면 진행, 한 프로젝트에만 필요하면 공통 규칙을 바꾸지 않고 그 프로젝트에 할 일로 보낸다(5번 "다른 프로젝트에 전할 일"), 판단이 갈리면 `agent:needs-user`.
 - **BREAKING**(기존 프로젝트가 옮겨야 하는 변경)이면 PR을 올리고 리뷰·보안 검토·검증까지 받되 **머지하지 않는다.** 이슈에 PR 번호, 바뀌는 것, 프로젝트마다 옮길 일을 코멘트로 남기고 `agent:needs-user`로 넘긴다. 사람이 머지를 정하고 `agent:ready`로 바꾸면 다음 실행이 같은 head sha의 판정 세 개를 다시 확인하고 reviewer에게 머지를 맡긴다(사람의 답 코멘트를 지시문에 넣는다). head가 바뀌었으면 판정을 다시 받는다.
-- **루틴의 안전 장치 파일(`.claude/agents/`의 role, `docs/routine-prompt.md`, `docs/git-rules.md`의 리뷰·머지 조건)을 바꾸는 PR도 BREAKING과 같이 다룬다**(사용자 결정 2026-10-04). 루틴이 자기 규칙을 사람 없이 바꾸지 않게 하기 위해서다. PR을 올리고 판정을 받되 머지하지 않고 `agent:needs-user`로 넘긴다.
+- **루틴의 안전 장치 파일(`.claude/agents/`의 role, `docs/routine-prompt.md`, `docs/git-rules.md`의 리뷰·머지 조건과 BREAKING 정의, `plugin/agents/security-reviewer.md`, `plugin/scripts/privacy-check.mjs`)을 바꾸는 PR도 BREAKING과 같이 다룬다**(사용자 결정 2026-10-04). 루틴이 자기 규칙과 관문(보안 검토 기준, 글쓰기 검사, BREAKING 판단)을 사람 없이 바꾸지 않게 하기 위해서다. PR을 올리고 판정을 받되 머지하지 않고 `agent:needs-user`로 넘긴다.
 - **루틴은 머지까지만 한다.** main에 머지되면 각 프로젝트가 자동 업데이트로 받을 수 있으므로 머지가 마지막 관문이다(`CLAUDE.md` "고칠 때 주의"). 플러그인 업데이트(`claude plugin update`, `/reload-plugins`)와 각 프로젝트의 복사된 파일 고치기·루틴 지시문 재등록은 하지 않는다. 그 일은 루트 세션이 머지된 변경을 읽고 한다. 필요한지만 처리 요약에 적는다.
 
 ### PR

@@ -83,7 +83,7 @@ git 은 작성자(author)와 커밋한 사람(committer)을 따로 기록한다.
 - 사용자가 "이 PR 은 내가 리뷰한다"고 하면 리뷰어는 사용자다. 에이전트는 그 PR 의 머지 명령을 내지 않는다.
 - 리뷰 결과는 PR 코멘트로 남긴다. 계정이 하나라 GitHub 승인(approve)은 쓰지 않는다.
 - 리뷰어 에이전트는 company role `reviewer`(`.claude/agents/reviewer.md`), 검증은 `verifier`(읽기 기반 모의 실행)다. role을 만든 세션에서는 이름으로 부를 수 없으면 일반 에이전트에게 그 파일 본문을 지시문으로 준다. 리뷰 판정 첫 줄은 `리뷰: 통과 (<sha>)` 또는 `리뷰: 수정 필요 (<sha>)`다.
-- BREAKING PR과 루틴의 안전 장치 파일(`.claude/agents/`의 role, `docs/routine-prompt.md`, `docs/git-rules.md`의 리뷰·머지 조건)을 바꾸는 PR은 리뷰·보안 검토·검증을 통과해도 사람이 머지를 정하기 전에는 머지 명령을 내지 않는다(autelon/company#34).
+- BREAKING PR과 루틴의 안전 장치 파일(`.claude/agents/`의 role, `docs/routine-prompt.md`, `docs/git-rules.md`의 리뷰·머지 조건과 BREAKING 정의, `plugin/agents/security-reviewer.md`, `plugin/scripts/privacy-check.mjs`)을 바꾸는 PR은 리뷰·보안 검토·검증을 통과해도 사람이 머지를 정하기 전에는 머지 명령을 내지 않는다(autelon/company#34).
 - **보안 검토는 리뷰어와 별도로 모든 PR에 항상 한다.** 이 리포는 플러그인을 켜지 않으므로 `autelon:security-reviewer`를 이름으로 부를 수 없다. 대신 별도 에이전트에게 `plugin/agents/security-reviewer.md` 본문을 지시문으로 주고 PR 번호를 넘긴다. 머지 조건은 아래 "머지 명령"이다.
 
 ### 머지 명령
