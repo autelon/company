@@ -79,7 +79,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 
 ## 7. 이슈·Project 준비 (도입 PR이 머지된 뒤)
 
-found-company 6단계와 같다(명령은 playbook 2절, 글은 모두 검사 스크립트로 올린다): 이슈 타입 확인, 라벨 `decision`·`sprint`·`first-run`·`agent:ready`·`agent:needs-user`, Project(`project` 권한이 있을 때, 필드 `Role`은 3단계에서 승인한 role), 기존 로드맵에 기한이 있는 단계가 있으면 마일스톤, 현재 스프린트 이슈(고정), first-run 이슈, 도입 중에 사람이 한 결정을 담은 결정 이슈 하나. Project 번호를 `CLAUDE.md`에 채우는 변경은 PR로 올린다. 사람이 웹 화면에서 해야 할 일(Status 선택지, 화면, 자동화)을 모아 둔다.
+found-company 6단계와 같다(명령은 playbook 2절, 글은 모두 검사 스크립트로 올린다): 이슈 타입 확인, 라벨 `decision`·`sprint`·`first-run`·`agent:ready`·`agent:needs-user`, Project(`project` 권한이 있을 때, 필드 `Role`은 `director`와 3단계에서 승인한 role), 기존 로드맵에 기한이 있는 단계가 있으면 마일스톤, 현재 스프린트 이슈(고정), first-run 이슈, 도입 중에 사람이 한 결정을 담은 결정 이슈 하나. Project 번호를 `CLAUDE.md`에 채우는 변경은 PR로 올린다. 사람이 웹 화면에서 해야 할 일(보드 열 기준, 로드맵 날짜 필드, 기본 워크플로. playbook 2절)을 모아 둔다.
 
 ## 8. 보고
 
