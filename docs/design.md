@@ -24,7 +24,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - `claude plugin uninstall autelon@autelon --scope project`는 설치 기록뿐 아니라 그 프로젝트 `.claude/settings.json`의 `enabledPlugins` 항목도 지웠다(`{}`가 됨). **[확인]** 2026-10-04 실행
   - 설치할 때 "2 userConfig options not yet set — run /plugin configure autelon@autelon"이 나왔다. 기본값이 있는 `github_org`도 미설정으로 셌다. **[확인]**
 - 업데이트: `plugin.json`에 `version`을 두지 않는다. (사용자 결정 2026-10-03) 설치된 버전은 `bb0599b8e999`로, `plugin/`을 마지막으로 바꾼 커밋(`44ad66d`)이 아니라 **main 최신 커밋**이었다. **[확인]** 2026-10-04. 설치할 때와 업데이트할 때마다 설치된 버전은 autelon/company main HEAD SHA의 앞 12자와 같았다. **[확인]** 2026-10-04 poker, 이 기기. 그래서 문서만 바뀐 머지도 새 버전이 될 가능성이 높다(문서만 바꾼 머지가 새 버전을 만드는지는 **[미확인]**).
-  - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. `/reload-plugins`가 실행 중인 세션에 플러그인 업데이트를 적용하는 것은 직접 확인했다. **[확인]** 2026-10-04 바로 받으려면 `claude plugin update autelon@autelon`. Desktop 세션에서도 도는지는 **[미확인]**.
+  - 자동 업데이트는 대화형 세션에서 첫 메시지 뒤 최대 10분 안에 백그라운드로 돌고, 받은 버전은 다음 세션이나 `/reload-plugins`부터 적용된다. **[확인]** plugins/loading 문서. `/reload-plugins`가 실행 중인 세션에 플러그인 업데이트를 적용하는 것은 직접 확인했다. **[확인]** 2026-10-04 바로 받으려면 `claude plugin update autelon@autelon`. `/reload-plugins`는 Desktop 세션에서도 실행된다. **[확인]** 2026-10-04 poker Desktop 세션에서 사용자가 입력한 `/reload-plugins`로 새 role이 로드됨(아래 관찰), commands 문서(1절). 자동 업데이트가 Desktop 세션에서도 백그라운드로 도는지는 **[미확인]**(7절).
   - 버전 관리 대안: semver를 직접 올리거나(B), 프로젝트별로 `ref`를 릴리스 태그로 고정(C). 프로젝트마다 반영 시점을 따로 정해야 할 때 검토한다.
 - 플러그인 개발: 고친 내용은 main에 머지되어야 프로젝트에 간다. 머지 전 확인은 이 리포에서 `--plugin-dir ./plugin`. **[확인]** plugins/install 문서
 - 관찰 (2026-10-04, poker와 이 기기, 모두 **[확인]**)
@@ -141,7 +141,7 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
 - 2026-10-03에 루트 페이지 바로 아래 만든 DB 세 개는 스키마 검증용이었다. 구조가 프로젝트별로 바뀌어 더는 쓰지 않는다 (사람이 지워도 된다).
 
 - 로컬 파일이 원본, Notion은 투영. **role/director는 Notion을 읽고 판단하지 않는다.** (양방향 충돌 해결을 만들지 않기 위해)
-- 동기화는 체크포인트에서만: task 상태 변경 묶음, handoff 승인, 스프린트 종료.
+- 동기화는 체크포인트에서만: task 상태 변경 묶음, handoff 승인, 작업 단위 종료(스프린트, 기능 하나, PRD 하나).
 - 동기화는 `notion-sync` subagent(haiku)만 한다. Notion MCP 도구를 director와 다른 role의 context에 두지 않기 위해서다. 그래서 다른 role은 `tools:`를 명시해 MCP 도구를 상속하지 않게 한다.
 - **[확인]** claude.ai Notion 커넥터로 DB 생성(SQL DDL), 양방향 relation, 자기 참조 relation, 보드 뷰 생성까지 된다. 2026-10-03 실제로 만들었다. 위치와 ID는 프로젝트 `notion/config.json`.
 - Tasks DB에 보드 뷰 두 개: `칸반`(Status별), `role별`(Role별). role별 보드가 후순위로 미룬 "role 단위 보기"의 최소판이다.

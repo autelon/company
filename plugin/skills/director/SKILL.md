@@ -68,7 +68,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## Notion 동기화
 
-- 체크포인트(handoff 승인, task 상태 변경 묶음, 스프린트 종료)에서 `autelon:notion-sync`를 호출한다.
+- 체크포인트(handoff 승인, task 상태 변경 묶음, 작업 단위 종료)에서 `autelon:notion-sync`를 호출한다.
 - director는 Notion을 직접 읽거나 쓰지 않는다. Notion을 보고 판단하지 않는다. Notion에서 고친 내용은 로컬로 가져오지 않는다.
 - 예외: `autelon:found-company`와 `autelon:adopt-project`는 설립·도입 때 Notion 페이지와 DB를 직접 만든다. 운영 중인 first-run의 Notion 확인은 `autelon:notion-sync`에 맡긴다.
 
