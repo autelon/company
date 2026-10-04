@@ -248,6 +248,8 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - **패턴의 원본은 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs` 하나다.** 이 절, found-company·adopt-project·security-reviewer는 이 스크립트를 부르고 패턴을 따로 복사하지 않는다. 패턴을 바꿀 때는 스크립트와 그 테스트만 고친다.
 - 커밋 전에 다음 둘이 비어 있어야 한다.
   1. 내용: `git diff --cached | node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan -` (걸리면 줄 번호·종류·앞 4자를 찍고 1로 끝난다)
+     - 표준 입력으로 넘기지 못하면 파일로 검사한다: `mkdir -p local && git diff --cached > local/staged.diff` 뒤 `node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan local/staged.diff`. 같은 패턴으로 검사하고, 걸리면 같은 줄을 찍고 1로 끝난다. 파일은 커밋하지 않는 `local/` 아래에 둔다. **[확인]** `isolation: worktree`로 격리된 agent에서 Claude Code가 `… | node <검사 스크립트> scan -` 명령을 실행 전에 거절했고, 파일 형태는 실행됐다(autelon/company#78).
+     - 두 형태 모두 돌리지 못하면 커밋하지 않고 그 사실을 결과에 적는다. 검사를 건너뛰고 커밋하지 않는다.
   2. 작성자와 공동 작성자(push할 범위 `<base>..HEAD`, 첫 push면 `HEAD`): `git log --format='%ae%n%ce%n%B' <범위> | grep -o -i -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u | grep -v -i -E '@users\.noreply\.github\.com$|^noreply@github\.com$|^noreply@anthropic\.com$'` (주소를 하나씩 뽑은 뒤 허용 주소만 지운다. 출력이 남으면 위반. author와 committer를 한 줄에 찍으면 허용 주소가 섞인 줄이 통째로 지워져 committer의 개인 주소를 놓친다)
 - 스크립트는 개인 도메인이 아닌 이메일과 패턴에 없는 형식의 비밀 값을 잡지 못하므로 diff를 눈으로도 확인한다. 이 규칙 문서처럼 패턴을 설명하는 글이 diff에서 걸리는 것은 위반이 아니다(걸린 줄을 하나씩 본다). 이슈·코멘트는 설명 글이어도 막히므로 "사용자 홈 경로"처럼 말로 쓴다.
 
@@ -263,4 +265,5 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - PR을 올리는 role은 PR 본문에 `Closes #N`을 넣지 않는다(task는 사람의 승인 뒤 director가 닫는다). 이슈는 `Refs #N`으로 가리킨다.
 - 경로는 프로젝트 루트 기준 상대 경로로 적는다(코멘트 포함).
 - 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 임시 폴더 경로, 계정 정보)를 커밋되는 파일과 코멘트에 쓰지 않는다.
+- 커밋하는 role은 커밋 전에 내용 검사 `git diff --cached | node <검사 스크립트> scan -`를 한다. 표준 입력으로 넘기지 못하면 `mkdir -p local && git diff --cached > local/staged.diff` 뒤 `node <검사 스크립트> scan local/staged.diff`로 같은 검사를 한다. 걸리면(1로 끝나면) 고치기 전에는 커밋하지 않고, 두 형태 모두 돌리지 못해도 커밋하지 않고 결과에 적는다.
 - scratchpad·임시 파일·로컬 추출본의 경로를 커밋되는 문서나 코멘트에 출처로 적지 않는다. 출처는 원문 URL, 저장소 상대 경로, 이슈·PR 번호로 적는다. 로컬에만 있는 자료는 "로컬 추출본(커밋하지 않음)"이라고만 적는다.

@@ -51,7 +51,7 @@ frontmatter의 격리 설정에 기대지 않는다. 자기 작업 폴더를 직
 - 커밋은 지시받은 커밋 묶음대로 나눈다. 건너뛴 행이 있는 묶음도 나머지 행으로 커밋하되, 응답에 건너뛴 행을 적는다.
 - 커밋·push 전에 worktree 안에서 할 것. 하나라도 걸리면 커밋(작성자 확인은 push)하지 않고 응답한다.
   - `git diff --cached`에 `{{`가 없는지 grep
-  - `git diff --cached | node <검사 스크립트> scan -`
+  - `git diff --cached | node <검사 스크립트> scan -`. 표준 입력으로 넘기지 못하면 `mkdir -p local && git diff --cached > local/staged.diff` 뒤 `node <검사 스크립트> scan local/staged.diff`(같은 검사, 걸리면 1로 끝난다). 두 형태 모두 돌리지 못하면 커밋하지 않고 응답한다
   - 작성자 확인: 지시받은 작성자 확인 명령을 push할 범위(`origin/main..HEAD`)에 돌린다(커밋 뒤, push 전). 출력이 남으면 push하지 않는다
   - 지시받은 검증 명령
 - 커밋 author는 지시받은 모델명과 `noreply@anthropic.com`, 공동 작성자 줄은 지시받은 그대로 붙인다.
