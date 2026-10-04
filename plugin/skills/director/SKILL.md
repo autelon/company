@@ -170,7 +170,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 모든 role 공통 (role 지시문에 넣을 것)
 
-프로젝트 role 파일(`.claude/agents/<role>.md`)에는 frontmatter와 role마다 다른 내용(페르소나, 책임, 원칙, role 고유의 출력·메모리 규칙)만 있다. 모든 role에 같은 아래 규칙은 role 파일에 넣지 않고, director가 role을 부를 때마다 지시문에 넣는다. 플러그인이 업데이트되면 모든 프로젝트에 같이 반영되게 하려는 것이다(autelon/company#42). 공용 role(`autelon:finance`, `autelon:security-reviewer`)의 출력 방식은 그 role 파일에 있다.
+프로젝트 role 파일(`.claude/agents/<role>.md`)에는 frontmatter와 role마다 다른 내용(페르소나, 책임, 원칙, role 고유의 출력·메모리 규칙)만 있다. 모든 role에 같은 아래 규칙은 role 파일에 넣지 않고, director가 role을 부를 때마다 지시문에 넣는다. 플러그인이 업데이트되면 모든 프로젝트에 같이 반영되게 하려는 것이다(autelon/company#42). 공용 role(`autelon:finance`, `autelon:security-reviewer`)에는 이 절의 출력·코멘트 항목(결과 코멘트, PR 코멘트, PRD 섹션 초안, "쓸 수 있는 것")을 넣지 않는다. 공용 role의 출력 방식은 그 role 파일을 따른다.
 
 - 추정으로 결정하지 않는다. 모르면 결과 코멘트의 `사람에게 묻기`에 적는다.
 - 결과는 자기 task 이슈에 코멘트로만 올린다. 형식은 지시문에 있는 코멘트 템플릿을 따른다. 초안을 지시받은 `local/comments/` 경로에 쓰고 `node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`로 올린다. 검사에 걸리면 고쳐서 다시 올린다. `local/`은 커밋되지 않는다(worktree 안에서도 같다).

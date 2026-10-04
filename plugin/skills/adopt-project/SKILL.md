@@ -46,7 +46,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 - **도메인 전문가 role**을 도메인 문서에서 끌어낸다. 그 도메인의 실무 책임 단위(예: 물류라면 조달, 창고, 운송, 통관, 역물류, 재고·수요계획, 품질·추적성)마다 필요한지 판단하고, 각 role의 페르소나에 그 프로젝트의 용어·결정·제약을 넣는다. 일반론은 뺀다.
 - 기존 문서가 이미 정한 결정은 role이 뒤집지 않는다. 바꿔야 한다고 보면 결과 코멘트의 `사람에게 묻기`로 올린다.
 - 구성안을 표로 보여 주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 근거가 된 문서, 모델.
-- 승인된 role을 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`. role 파일에는 frontmatter(`tools:` 포함)와 role마다 다른 내용만 쓰고, 모든 role에 같은 규칙(결과를 task 이슈 코멘트로 올리기, 코멘트 템플릿, 초안 경로와 검사 스크립트, 기록 위치, Bash 용도, `Refs #N` 등)은 넣지 않는다. director가 director 스킬 "모든 role 공통"을 지시문에 넣는다. 도메인 전문가 role도 같다. 쓴 뒤 사람에게 `/reload-plugins`를 입력해 달라고 요청한다(같은 세션에서는 reload 전까지 새 role을 부를 수 없다).
+- 승인된 role을 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`. role 파일에는 frontmatter(`tools:` 포함)와 role마다 다른 내용만 쓰고, 모든 role에 같은 규칙(결과를 task 이슈 코멘트로 올리기, 코멘트 템플릿, 초안 경로와 검사 스크립트, 기록 위치, Bash 용도, `Refs #N` 등)은 넣지 않는다. role을 부르는 세션이 director 스킬 "모든 role 공통"을 지시문에 넣는다(5단계 "autelon 운영" 절). 도메인 전문가 role도 같다. 쓴 뒤 사람에게 `/reload-plugins`를 입력해 달라고 요청한다(같은 세션에서는 reload 전까지 새 role을 부를 수 없다).
 - 공용 role(`autelon:finance`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 4단계에서 어떤 작업 방식을 고르든 모든 PR에 보안 검토로 들어간다. 기존 git 규칙 문서에 이 내용을 더한다.
 
 ## 4. 작업 방식 비교 (바꾸지 않고 제안)
@@ -66,7 +66,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
   - director로 운영하기로 했으면: 세션 시작 시 `autelon:director` 스킬을 부른다.
   - 기존 방식을 유지하기로 했으면: director 스킬을 부르지 않고 기존 작업 방식 문서를 따른다고 적는다. role·이슈·Project를 어떻게 쓰는지는 4단계에서 정한 대로 적는다.
   - 단계적 전환이면: 지금 단계와 다음 단계로 넘어가는 조건을 적는다.
-  - 공통: `${CLAUDE_PLUGIN_ROOT}/templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표와 프로젝트 파일 표(state, local), 기존 문서와의 관계. Project 번호는 7단계 뒤에 채운다(그전에는 `미정`).
+  - 공통: `${CLAUDE_PLUGIN_ROOT}/templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표와 프로젝트 파일 표(state, local), 기존 문서와의 관계. 그리고 어느 작업 방식이든 role을 부를 때 `autelon:director` 스킬의 "모든 role 공통" 절을 지시문에 넣는다는 것(role 파일에는 공통 규칙이 없다). Project 번호는 7단계 뒤에 채운다(그전에는 `미정`).
 - `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절과 보안 검토·머지 조건만 확인·추가한다. 없으면 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`를 쓰고 자리표시자를 모두 채운다: `{{REVIEWER}}`와 `{{REVIEWER_MEANING}}`(2단계에서 고른 리뷰어와 그 뜻), `{{MERGE_COMMAND}}`(머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`), 저장소 표의 값.
 - CI·저장소 설정은 이미 있으면 바꾸지 않는다. 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`와 다르면 차이를 보고만 한다. 로컬에 클론이 없으면 `gh repo clone <조직>/.github`로 임시 폴더에 받는다. 설정 스크립트는 같은 저장소의 `scripts/setup-repo.sh`다.
 - `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다(없는 줄만 더한다). `local/`(이슈 초안·백업), `.env*`, `state/quota.json`, role 메모리(`.claude/agent-memory/`) 등이 들어 있다.
