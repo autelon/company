@@ -36,7 +36,7 @@
 
 - `list_task_runs`로 실행 상태와 요약을 보고, 현재 스프린트 이슈의 처리 요약 코멘트를 읽는다.
 - 처리 요약의 "확인하지 못한 도구 동작"을 보고, 지시문의 **[미확인]**을 확인되면 지운다. 안 되는 것이 있으면 지시문을 고치기 전에 사람에게 알린다.
-- 실행 기록이 실제 끝과 맞는지 본다: `list_task_runs`의 `succeeded` 뒤에 그 세션(`get_session`의 `lastActivityAt`)이 계속 움직이면 지시문의 포그라운드 subagent 규칙이 지켜지지 않은 것이다(autelon/company#57).
+- 실행 기록이 실제 끝과 맞는지 본다: `list_task_runs`의 `succeeded` 뒤에 그 세션(`get_session`의 `lastActivityAt`. 이 필드는 2026-10-04 get_session 응답에서 **[확인]**)이 계속 움직이면 지시문의 포그라운드 subagent 규칙이 지켜지지 않은 것이다(autelon/company#57).
 - 한 실행이 시작 때 고정한 목록만 처리했는지 본다: 처리 요약의 처리한 이슈가 실행 시작 전에 `agent:ready`였던 이슈뿐인지, 실행 중에 만든 후속·하위 이슈가 다음 실행으로 넘어갔는지.
 - 확인한 뒤에 사람이 주기를 정하면 `update_scheduled_task`로 넣는다.
 
