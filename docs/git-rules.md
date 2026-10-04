@@ -21,7 +21,7 @@ Refs: docs/design.md
 
 - 형식은 `type(scope): 요약`, 72자 이내. `commit-msg` 훅이 검사한다.
 - **type**: `feat` 동작 추가 · `fix` 잘못된 동작 수정 · `refactor` 동작 변화 없는 구조 변경 · `perf` · `test` · `docs` · `build` 의존성·빌드·도구 · `ci` · `chore` 그 외
-- **scope**: 바뀐 영역 — `skills`(`plugin/skills/`) `agents`(`plugin/agents/`, 공용 role) `templates`(`plugin/templates/`) `playbooks`(`plugin/playbooks/`) `scripts`(`plugin/scripts/`) `plugin`(`plugin/.claude-plugin/`, `.claude-plugin/` 매니페스트) `docs` `ci`(`.github/`). 리포 전역 설정은 `repo`. 여러 개면 쉼표로 (`skills,templates`).
+- **scope**: 바뀐 영역 — `skills`(`plugin/skills/`) `agents`(`plugin/agents/`, 공용 role) `templates`(`plugin/templates/`) `playbooks`(`plugin/playbooks/`) `scripts`(`plugin/scripts/`) `workflows`(`plugin/workflows/`) `plugin`(`plugin/.claude-plugin/`, `.claude-plugin/` 매니페스트) `docs` `ci`(`.github/`). 리포 전역 설정은 `repo`. 여러 개면 쉼표로 (`skills,templates`).
 - 요약은 **동작이나 결과**로 쓴다. "units.service 수정"이 아니라 "배송 완료 이벤트에 출고 때의 주문 참조를 이어 붙임".
 - 기존 프로젝트가 옮겨야 하는 변경이면 `!` 를 붙이고, 본문에 `BREAKING:` 으로 프로젝트마다 무엇을 고쳐야 하는지 적는다. 파일 형식(이슈 본문·코멘트 템플릿 형식 포함)이나 프로젝트가 부르는 이름(플러그인·스킬·role 이름)을 호환되지 않게 바꾸는 것, 프로젝트에 복사된 role·템플릿·문서나 등록된 루틴 지시문과 어긋나는 규칙 변경이 해당한다(autelon/company#34).
 
@@ -97,7 +97,7 @@ git 은 작성자(author)와 커밋한 사람(committer)을 따로 기록한다.
 
 ### 머지 명령
 
-머지 조건: 같은 head sha에 리뷰 통과 코멘트와 `보안 검토: 통과 (<sha>)` 코멘트가 둘 다 있어야 한다. `plugin/` 아래 동작(스킬, role, 템플릿, playbook, 훅, 스크립트)을 바꾸는 PR은 `검증: 통과 (<sha>)` 코멘트도 있어야 한다. 하나라도 없으면 머지 명령을 내지 않는다.
+머지 조건: 같은 head sha에 리뷰 통과 코멘트와 `보안 검토: 통과 (<sha>)` 코멘트가 둘 다 있어야 한다. `plugin/` 아래 동작(스킬, role, 템플릿, playbook, 훅, 스크립트, Workflow 스크립트)을 바꾸는 PR은 `검증: 통과 (<sha>)` 코멘트도 있어야 한다. 하나라도 없으면 머지 명령을 내지 않는다.
 
 ```
 gh pr merge <PR> --match-head-commit <리뷰한 head sha>

@@ -28,6 +28,7 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/playbooks/migrate-to-issues.md` | 예전 파일 기록(board 등)을 쓰던 프로젝트를 이슈로 옮기는 절차                                       |
 | `plugin/playbooks/routine.md`           | 이슈 작업 루프: 프로젝트별 로컬 예약 작업(루틴) 등록·확인 절차                                      |
 | `plugin/templates/routine/`             | 루틴 지시문 템플릿(프로젝트마다 채워 예약 작업 prompt로 등록)                                       |
+| `plugin/workflows/`                     | 표준 Workflow 스크립트(PR 판정·수정 반복, 설계안 경쟁). director가 읽어 Workflow로 넘긴다           |
 | `.github/workflows/ci.yml`              | 필수 검사 `check`(커밋 메시지·Prettier·스크립트 테스트)와 조직 `git-policy`                         |
 | `scripts/check-commits.sh`              | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                                                    |
 | `.claude/agents/`                       | company 전용 role: plugin-developer, reviewer, verifier(읽기 기반 모의 실행). 이 리포에서만 쓴다    |
