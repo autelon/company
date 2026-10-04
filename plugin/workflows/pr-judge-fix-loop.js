@@ -273,7 +273,7 @@ for (let round = 1; round <= maxRounds; round++) {
         });
       }),
     );
-    const got = adv.filter(Boolean);
+    const got = adv.map((a, k) => a && { ...a, k: k + 1 }).filter(Boolean);
     if (got.length < nAdv) missing.push(`adversary(${nAdv - got.length}/${nAdv})`);
     const passCount = got.filter((a) => a.verdict === 'pass').length;
     const advOk = passCount * 2 > nAdv;
@@ -283,7 +283,10 @@ for (let round = 1; round <= maxRounds; round++) {
       sha: s,
       head_matches: got.every((a) => a.head_matches !== false),
       needs_user: got.some((a) => a.needs_user),
-      findings: got.filter((a) => a.verdict !== 'pass').flatMap((a) => a.findings),
+      // 통과했어도 사람의 결정을 요구한 반박 검토의 지적은 남긴다(반박 검토는 PR 코멘트를 올리지 않는다).
+      findings: got
+        .filter((a) => a.verdict !== 'pass' || a.needs_user)
+        .flatMap((a) => (a.findings || []).map((f) => `[adversary${a.k}] ${f}`)),
       notes: `반박 검토 ${nAdv}개 중 결과 ${got.length}, 통과 ${passCount}`,
     });
     log(`라운드 ${round}: 반박 검토 통과 ${passCount}/${nAdv}`);
