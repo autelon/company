@@ -1,0 +1,5 @@
+{
+  "pluginSha": "{{PLUGIN_SHA}}",
+  "syncedAt": "{{SYNCED_AT}}",
+  "note": "{{SYNC_NOTE}}"
+}

@@ -110,20 +110,24 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
 
 기준은 하나다. **"언제 무슨 일이 있었고 왜 그렇게 정했나"(기록·진행)는 GitHub 이슈로, agent가 매 세션 읽고 코드를 맞춰야 하는 "지금 기준" 문서는 저장소 md로.** 문서에는 결론만 쓰고, 바뀐 경위는 이슈·PR에 남긴다. (사용자 결정 2026-10-04)
 
-| 기록                                        | 위치                                                                                          | 쓰는 쪽                                |
-| ------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------- |
-| task                                        | 이슈(타입 Task). 상태·Role·Size = Project 필드, 마일스톤 = 저장소 마일스톤, 선행 = blocked by | director                               |
-| role 작업 결과(예전 handoff)                | 그 task 이슈의 코멘트                                                                         | 그 task 담당 role                      |
-| PRD                                         | 이슈(타입 Feature). 명세 = 본문, task = 하위 이슈, 초안·논의·승인 = 코멘트                    | 본문은 director, 초안은 role 코멘트    |
-| 사람의 결정                                 | 결정이 나온 이슈의 코멘트, 따로 난 결정은 Task + `decision` 라벨 이슈                         | director                               |
-| 세션 인계                                   | 고정한 "현재 스프린트" 이슈(`sprint` 라벨) 본문, 이력은 코멘트                                | director                               |
-| first-run 결과                              | `first-run` 라벨 이슈                                                                         | director                               |
-| 로드맵                                      | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                     | director                               |
-| `docs/goals.md`                             | 프로젝트 목표, north star, 하위 지표                                                          | director (strategist 제안 → 사람 확정) |
-| `analytics/events.md`, `analytics/queries/` | 이벤트 수집 명세, 지표별 분석 쿼리                                                            | da                                     |
-| 설계·규칙·playbook·조사 문서 (`docs/`)      | 개념, 도메인 모델, 아키텍처, 기능 설계, 아키텍처·테스트·git 규칙, agent 작업 방식             | PR로                                   |
-| `state/quota.json`                          | 최근 사용량 스냅샷 (`get_usage`의 `plan` 객체 원본, 커밋하지 않음)                            | director                               |
+| 기록                                        | 위치                                                                                          | 쓰는 쪽                                  |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| task                                        | 이슈(타입 Task). 상태·Role·Size = Project 필드, 마일스톤 = 저장소 마일스톤, 선행 = blocked by | director                                 |
+| role 작업 결과(예전 handoff)                | 그 task 이슈의 코멘트                                                                         | 그 task 담당 role                        |
+| PRD                                         | 이슈(타입 Feature). 명세 = 본문, task = 하위 이슈, 초안·논의·승인 = 코멘트                    | 본문은 director, 초안은 role 코멘트      |
+| 사람의 결정                                 | 결정이 나온 이슈의 코멘트, 따로 난 결정은 Task + `decision` 라벨 이슈                         | director                                 |
+| 세션 인계                                   | 고정한 "현재 스프린트" 이슈(`sprint` 라벨) 본문, 이력은 코멘트                                | director                                 |
+| first-run 결과                              | `first-run` 라벨 이슈                                                                         | director                                 |
+| 로드맵                                      | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                     | director                                 |
+| `docs/goals.md`                             | 프로젝트 목표, north star, 하위 지표                                                          | director (strategist 제안 → 사람 확정)   |
+| `analytics/events.md`, `analytics/queries/` | 이벤트 수집 명세, 지표별 분석 쿼리                                                            | da                                       |
+| 설계·규칙·playbook·조사 문서 (`docs/`)      | 개념, 도메인 모델, 아키텍처, 기능 설계, 아키텍처·테스트·git 규칙, agent 작업 방식             | PR로                                     |
+| `state/quota.json`                          | 최근 사용량 스냅샷 (`get_usage`의 `plan` 객체 원본, 커밋하지 않음)                            | director                                 |
+| `.claude/autelon-sync.json`                 | 기준 버전: 마지막으로 맞춘 autelon 플러그인 버전(`pluginSha`), 날짜(`syncedAt`), 메모(`note`) | 설립·도입 때 found-company·adopt-project |
 
+- **기준 버전 파일** `.claude/autelon-sync.json` (사용자 결정 2026-10-04, autelon/company#42 결정 1·5): 프로젝트가 마지막으로 맞춘 플러그인 버전을 파일 하나에 둔다. 템플릿은 `plugin/templates/project/autelon-sync.json`, 필드와 읽는 방법은 `found-company` 3단계 "기준 버전 파일". 커밋되는 파일이라 필드를 셋으로 고정하고 `note`에는 `설립`·`도입`이나 이슈 번호만 쓴다. 기존 프로젝트에는 없다(poker·logistics-hub는 다시 만들 때 생긴다).
+  - `pluginSha`는 커밋 SHA 앞 12자다. 설치 버전(`installed_plugins.json`의 `version`, 설치 폴더 이름)이 12자이고, GitHub API가 12자 SHA를 받는다. **[확인]** 2026-10-05 `gh api repos/autelon/company/compare/<12자>...<12자>`가 비교 결과(ahead_by, files)를 돌려주고 `commits/<12자>`가 40자 SHA로 풀림
+  - 스킬 본문의 `${CLAUDE_PLUGIN_ROOT}`가 설치 폴더(`.../cache/autelon/autelon/<12자>`)로 치환되어 마지막 폴더 이름으로 버전을 읽을 수 있다는 것은 **[추정]**. 읽지 못하면 `미정`으로 두고 사람에게 알린다.
 - 이슈 타입은 조직에 이미 있는 Task·Bug·Feature를 쓰고 결정은 라벨로 구분한다. 새 타입은 조직 설정 변경이 필요해서 만들지 않았다. (사용자 결정 2026-10-04) **[확인]** autelon 조직의 타입은 Task·Bug·Feature 세 개(gh api, 2026-10-04)
 - **이슈 = 원본, Project = 화면.** 이슈 하나만 보고도 무엇인지 알 수 있게 쓰고(타입, 라벨, 마일스톤, 부모, 의존 관계, 본문), Project 필드는 보드를 위한 것이다.
 - **본문 = 현재 결론, 코멘트 = 이력.** 본문 맨 위 "현재 결론" 칸을 결정이 날 때마다 director가 고친다. agent는 기본으로 본문만 읽는다.
