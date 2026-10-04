@@ -146,7 +146,7 @@ git show <위 출력의 마지막 줄>:.claude/autelon-sync.json
 4. 모드를 정한다.
    - 첫 단계: `origin/chore/autelon-sync-<target>`이 없으면 `새로`, 있으면 `다시 만들기`(그 브랜치의 지금 head sha와 같이).
    - 둘째 단계부터: 앞 단계가 결과 코멘트에 남긴 `push head:` 값(`<prev>`)이 `git rev-parse origin/chore/autelon-sync-<target>`과 같으면 `이어서`.
-   - 다르면 이 단계의 앞선 시도가 push만 하고 `push head:`를 남기지 못한 것인지 본다(아래 6의 검증 실패, 8번 4의 건너뛴 행이나 멈춤 응답, 코멘트 전에 실행이 끊김). `git merge-base --is-ancestor <prev> origin/chore/autelon-sync-<target>`가 성공하고 `git diff --name-only <prev> origin/chore/autelon-sync-<target>`의 경로가 모두 이 단계가 맡은 행의 프로젝트 경로 안에 있으면 앞선 시도로 보고 `다시 만들기`(그 브랜치의 지금 head sha와 같이)로 한다.
+   - 다르면 이 단계의 앞선 시도가 push만 하고 `push head:`를 남기지 못한 것인지 본다(아래 6의 검증 실패, 8번 4의 건너뛴 행이나 멈춤 응답, 코멘트 전에 실행이 끊김). `git merge-base --is-ancestor <prev> origin/chore/autelon-sync-<target>`가 성공하고 `git diff --name-only <prev> origin/chore/autelon-sync-<target>`의 경로가 모두 이 단계가 맡은 행의 프로젝트 경로 안에 있으면(마지막 단계면 `.claude/autelon-sync.json`도 허용한다. 아래 5에서 기준 버전 파일 행을 더하기 때문이다) 앞선 시도로 보고 `다시 만들기`(그 브랜치의 지금 head sha와 같이)로 한다.
    - 그 밖이면 단계 사이에 다른 누가 브랜치를 바꾼 것이다. 덮어쓰지 않고 이 단계 이슈를 `agent:needs-user`로 넘긴다(아래 9).
    - `다시 만들기`로 줄 행은 1단계부터 이 단계까지의 모든 적용·합침 행이다(브랜치를 `origin/main` 위에 처음부터 다시 만들기 때문이다).
 5. 8번 2~4대로 이 단계의 행으로 `autelon:sync-editor`를 부르고 응답을 맞춰 본다. 마지막 단계면 기준 버전 파일 행을 더한다. 멈춤 응답이면 8번 4대로 하되 코멘트와 `agent:needs-user`는 이 단계 이슈에 한다.
@@ -155,11 +155,11 @@ git show <위 출력의 마지막 줄>:.claude/autelon-sync.json
    - 판정표의 blob SHA가 `origin/main`과 다르거나, 판정이 바뀌어 이미 옮긴 행을 되돌려야 한다 → 6번부터 다시 분류하지 않고 다시 만들거나 머지하지도 않는다. 위 3과 같이 이 단계 이슈를 `agent:needs-user`로 넘긴다(아래 9). 새 판정표의 `단계` 열과 늘어난 행을 맡을 단계는 사람이 정리한 뒤 sync 이슈에서 다시 정한다.
    - blob SHA는 같고 main만 움직였다(9번의 `BEHIND`·`DIRTY` 갈래) → 같은 판정표로 `다시 만들기`를 한다. 행은 1단계부터 마지막 단계까지의 모든 적용·합침 행과 기준 버전 파일 행이다.
 8. 단계 이슈가 반려(`not planned`)로 닫혔으면 다음 단계를 열지 않고 sync 이슈를 `agent:needs-user`로 둔다(director "이슈 작업 루프"). 닫힌 단계 이슈는 루틴 목록에 없으므로, 사람이 직접 닫을 때는 단계 이슈 본문의 안내(위 "단계 이슈 만들기" 2)대로 사람이 sync 이슈 라벨을 바꾼다. 그 뒤 sync 이슈가 `agent:ready`로 처리될 때 열린 단계와 반려된 단계가 섞여 있으면 "단계 이슈 만들기" 1이 정리 요청을 남긴다. 리뷰 수정이 커서 남은 수정을 하위 이슈로 넘길 때도 같은 브랜치와 같은 PR을 쓴다(같은 규칙).
-9. 이 절에서 단계 이슈를 `agent:needs-user`로 넘길 때는(관문 sync PR의 머지 요청은 빼고. 그것은 9번대로 한다) 이유와 함께 아래 "단계 이슈의 정리 요청"을 코멘트에 넣는다. 사람이 그 단계 이슈를 `agent:ready`로 돌리면 다음 실행은 답 코멘트가 있으면 결정 코멘트로 남긴 뒤 이 절 1부터 다시 한다. 같은 이유로 다시 걸리면 정리 요청을 다시 적어 `agent:needs-user`로 넘긴다. director는 단계 이슈를 `not planned`로 닫거나 sync 이슈의 라벨을 바꾸지 않는다(정리는 사람이 한다).
+9. 이 절에서 단계 이슈를 `agent:needs-user`로 넘길 때는(관문 sync PR의 머지 요청은 빼고. 그것은 9번대로 한다) 이유와 함께 아래 "단계 이슈의 정리 요청"을 코멘트에 넣는다. 사람이 그 단계 이슈를 `agent:ready`로 돌리면 다음 실행은 답 코멘트가 있으면 결정 코멘트로 남긴 뒤 이 절 1부터 다시 한다. 같은 이유로 다시 걸리면 정리 요청을 다시 적어 `agent:needs-user`로 넘긴다. director는 단계 이슈를 `not planned`로 닫지 않고, sync 이슈를 `agent:ready`로 되돌리지 않는다(다시 나누거나 멈추는 정리는 사람이 한다). 이 스킬이 정한 대로 sync 이슈의 `agent:ready`를 떼거나 `agent:needs-user`로 넘기는 일은 한다.
 
 ### 단계 이슈의 정리 요청
 
-단계 이슈나 sync 이슈를 `agent:needs-user`로 넘길 때 코멘트에 넣는 글이다. `<남은 단계>`는 sync 이슈의 가장 마지막 `단계 이슈:` 코멘트의 이슈 중 열린 것이다.
+단계 이슈나 sync 이슈를 `agent:needs-user`로 넘길 때 코멘트에 넣는 글이다. `<남은 단계>`는 sync 이슈의 가장 마지막 `단계 이슈:` 코멘트의 이슈 중 열린 것이다. sync 이슈에 남길 때(위 "단계 이슈 만들기" 1의 섞인 경우) 첫 갈래는 "반려한 단계 이슈를 다시 열었으면 sync 이슈를 `agent:ready`로"로 바꿔 쓴다. 그대로 `agent:ready`로 돌리면 같은 섞인 상태에서 다시 멈추기 때문이다.
 
 ```
 사람이 할 일(하나를 골라 주세요):
