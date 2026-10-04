@@ -41,7 +41,7 @@ gh issue list -R {{REPO}} --author @me --label agent:ready --state open --json n
 ## 4. 이슈 하나 처리
 
 - 본문(현재 결론)과 소유 계정의 코멘트를 읽는다. 배경·목표·완료 기준·하지 말 것이 없어 이슈만으로 작업할 수 없으면 5번 `agent:needs-user`로 넘긴다.
-- `agent:needs-user`였다가 사람이 답하고 `agent:ready`로 바꾼 이슈면, 넘길 때 쓴 `[루틴]` 코멘트보다 뒤에 달린 소유 계정 코멘트 중 사람이 쓴 것만 답으로 읽는다. 루틴과 role도 같은 계정으로 쓰기 때문에 `[루틴]`으로 시작하는 코멘트, role 결과 코멘트(`**handoff** · role:` 줄이 있는 것, `comment-handoff.md` 형식), 다른 프로젝트가 보낸 코멘트(첫 줄이 `보낸 곳:`으로 시작)는 답이 아니다. 그런 코멘트가 없으면(라벨만 바뀜) 답이 없다고 코멘트하고 다시 `agent:needs-user`로 넘긴다. 답을 결정 코멘트(`comment-decision.md`)로 남기고 본문 "현재 결론"을 고친 뒤 이어 간다. 승인 답이면 그 task를 닫고(단계 이슈면 2번 "큰 일은 단계로 쪼개"대로 다음 단계를 연다), 반려 답이면 반려 사유에 맞게 다시 맡기거나 `--reason "not planned"`로 닫고 **닫은 뒤에** Status를 `rejected`로 고친다(playbook 3절 "닫기"). 단계 이슈를 반려로 닫았으면 2번 "큰 일은 단계로 쪼개"대로 다음 단계를 열지 않고 원래 이슈를 `agent:needs-user`로 넘긴다.
+- `agent:needs-user`였다가 사람이 답하고 `agent:ready`로 바꾼 이슈면, 넘길 때 쓴 `[루틴]` 코멘트보다 뒤에 달린 소유 계정 코멘트 중 사람이 쓴 것만 답으로 읽는다. 루틴과 role도 같은 계정으로 쓰기 때문에 `[루틴]`으로 시작하는 코멘트, role 결과 코멘트(`**handoff** · role:` 줄이 있는 것, `comment-handoff.md` 형식), 다른 프로젝트가 보낸 코멘트(첫 줄이 `보낸 곳:`으로 시작)는 답이 아니다. 그런 코멘트가 없으면(라벨만 바뀜) 답이 없다고 코멘트하고 다시 `agent:needs-user`로 넘긴다. 답을 결정 코멘트(`comment-decision.md`)로 남기고 본문 "현재 결론"을 고친 뒤 이어 간다. PR 머지를 정한 답이면 아래 "PR"의 "높음 등급 PR 이어 가기"를 먼저 한다. 승인 답이면 그 task를 닫고(단계 이슈면 2번 "큰 일은 단계로 쪼개"대로 다음 단계를 연다), 반려 답이면 반려 사유에 맞게 다시 맡기거나 `--reason "not planned"`로 닫고 **닫은 뒤에** Status를 `rejected`로 고친다(playbook 3절 "닫기"). 단계 이슈를 반려로 닫았으면 2번 "큰 일은 단계로 쪼개"대로 다음 단계를 열지 않고 원래 이슈를 `agent:needs-user`로 넘긴다.
 - **sync 이슈**: sync 이슈(제목 `autelon sync:`)와 그 단계·사람 확인 이슈는 `autelon:sync-project` 스킬이 답 처리·머지를 정한다(director 스킬 "이슈 작업 루프"의 sync 이슈). 사람 확인 이슈(제목 `sync 설정 확인 (<대상 SHA>)`)는 `agent:ready`여도 루틴이 건너뛴다. 그 스킬의 규칙이 이 지시문의 답 처리와 아래 "PR"보다 앞선다.
 - **작업은 이 세션 안의 subagent(role)에게만 맡긴다.** 이 세션은 직접 산출물을 만들지 않는다. 새 세션(`spawn_task` 칩 등)을 만들지 않는다. subagent끼리 직접 주고받게 하지 않고 이 세션을 거친다. role 지시문은 director 스킬 "task 운영"과 "모든 role 공통"대로 쓴다. subagent는 포그라운드로 부른다(`run_in_background`를 쓰지 않는다). 병렬이 필요하면 한 메시지에 여러 호출을 함께 보낸다. 무인 실행에서 이렇게 병렬로 돌고 실행 기록이 그 뒤에 끝나는지는 **[미확인]**이다. 그래서 이 실행에서 본 것을 마지막 요약의 "확인하지 못한 도구 동작"에 적는다. 백그라운드로 띄우면 이 세션이 결과를 기다리지 않고 차례를 끝내, 실행 기록이 실제보다 먼저 `succeeded`가 되고 다음 주기의 이전 실행 확인(0번)이 이 실행을 놓친다(2026-10-04 company 루틴에서 관찰, autelon/company#57). Workflow는 이것과 다르다. 시작하면 완료 알림으로 이 세션이 다시 깨어나고 그동안 실행 기록이 `running`을 유지한다(director 스킬 "Workflow로 처리하기"의 "기다리기"). Workflow 결과를 받기 전에는 그 이슈의 다음 단계로 가지 않는다.
 - **이 세션이 쓰는 코멘트는 첫 줄을 `[루틴]`으로 시작한다.** 사람의 답과 가리기 위해서다.
@@ -50,16 +50,19 @@ gh issue list -R {{REPO}} --author @me --label agent:ready --state open --json n
 
 ### PR
 
-- **판정과 수정 반복은 표준 판정 Workflow로 한다**(director 스킬 "Workflow로 처리하기"). 그 절대로 등급(기본·높음·가벼움)과 검증을 더할지 정하고, `pr-judge-fix-loop.js`를 Read로 읽어 `script`로, 그 절의 PR 판정 args를 채워 넘긴다. 기본 판정은 리뷰(프로젝트 reviewer role)와 `autelon:security-reviewer`의 보안 검토다. **모든 PR은 리뷰와 별도로 보안 검토를 받는다.** Workflow를 쓸 수 없으면 같은 순서를 포그라운드 subagent로 하고 마지막 요약에 적는다.
-- 결과(`status`)에 따라:
-  - `all_pass`: 프로젝트 `docs/git-rules.md`의 리뷰어를 따른다. 작업한 role은 자기 PR을 머지하지 않는다.
+- **판정과 수정 반복은 표준 판정 Workflow로 한다**(director 스킬 "Workflow로 처리하기"). 그 절대로 등급(기본·높음·가벼움)과 검증을 더할지 정하고, `pr-judge-fix-loop.js`를 Read로 읽어 `script`로, 그 절의 PR 판정 args를 채워 넘긴다. 기본 판정은 리뷰(프로젝트 reviewer role)와 `autelon:security-reviewer`의 보안 검토다. **모든 PR은 리뷰와 별도로 보안 검토를 받는다.** Workflow를 쓸 수 없거나 호출이 실패하면(스크립트 오류, 결과 없음) 같은 순서를 포그라운드 subagent로 하고 마지막 요약에 적는다.
+- 결과(`status`)에 따라(director 스킬 "Workflow로 처리하기"의 결과 처리):
+  - `all_pass`: 먼저 최종 head의 바뀐 파일, 커밋의 `!`·`BREAKING:`, 결과의 `gate_files_touched`로 등급을 다시 정한다. 높음이 되면 `tier: 'high'`로 판정 Workflow를 한 번 다시 돌리거나 5번 `agent:needs-user`로 넘긴다. 그다음 프로젝트 `docs/git-rules.md`의 리뷰어를 따른다. 작업한 role은 자기 PR을 머지하지 않는다.
     - 리뷰어가 `director`: 이 세션이 같은 head에 판정 코멘트가 모두 있는지 보고 머지 명령을 낸다.
     - `reviewer role`: reviewer를 호출해 같은 head의 판정 코멘트를 확인하고 머지 명령을 내게 한다.
     - `사람`: PR 링크를 이슈 코멘트로 남기고 5번 `agent:needs-user`로 넘긴다. 머지하지 않는다.
-    - 높음 등급(검사·판정·머지 조건을 정하는 파일, BREAKING)은 리뷰어와 상관없이 머지하지 않고 반박 검토 결과와 함께 5번 `agent:needs-user`로 넘긴다.
+    - 높음 등급(관문 파일·검사·판정·머지 조건 파일, BREAKING)은 리뷰어와 상관없이 머지하지 않고 head sha와 반박 검토 결과를 코멘트로 남겨 5번 `agent:needs-user`로 넘긴다.
   - `needs_user`, `fix_failed`: 남은 지적(`remaining`)을 결정할 것과 선택지로 정리해 5번 `agent:needs-user`로 넘긴다.
+  - `judge_failed`: 수정하지 않는다. 같은 head로 한 번 다시 돌리고, 또 실패하면 5번으로 넘긴다.
   - `max_rounds`: 남은 지적을 하위 이슈로 넘긴다(2번 "큰 일은 단계로 쪼개", 본문에 PR 번호와 브랜치).
   - `head_moved`: 지금 head로 한 번 다시 돌린다. 또 바뀌면 5번으로 넘긴다.
+  - 어느 경우든 이슈에 `[루틴]` 코멘트로 결과(상태, head, 라운드 수, 판정 코멘트 링크, `gate_files_touched`)를 남긴다.
+- **높음 등급 PR 이어 가기**: 사람이 머지를 정하는 답을 하고 `agent:ready`로 바꾸면, 답을 결정 코멘트로 남긴 뒤 PR head가 넘길 때 적은 sha와 같은지, 그 head에 판정 코멘트(리뷰, 보안 검토, 검증을 더했으면 검증)가 모두 통과인지 다시 확인한다. 맞으면 리뷰어 설정대로 머지한다(`director`면 이 세션이 머지 명령, `reviewer role`이면 reviewer에게 사람의 답을 지시문에 넣어 머지 명령을 맡긴다, `사람`이면 사람이 머지한다). head가 바뀌었으면 판정 Workflow를 다시 돌리고 다시 5번으로 넘긴다. 사람이 직접 머지했으면 `gh pr view <PR> -R {{REPO}} --json state,mergeCommit`으로 확인한 뒤 task를 이어 처리한다(승인 답이 함께 있으면 닫는다).
 - 머지 명령은 같은 head sha에 리뷰 통과 코멘트와 `보안 검토: 통과 (<sha>)` 코멘트(검증을 더했으면 `검증: 통과 (<sha>)`도)가 모두 있을 때만 낸다: `gh pr merge <PR> --match-head-commit <sha>`. `--admin`은 쓰지 않는다.
 - PR 본문에 `Closes #N`을 쓰지 않는다(`Refs #N`). task는 사람의 승인 뒤에 닫는다.
 

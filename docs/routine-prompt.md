@@ -71,8 +71,8 @@ role을 부를 때 넣는다: 저장소 `autelon/company`, 이슈 번호, 목표
    - `tier`: BREAKING이거나 루틴의 안전 장치 파일을 바꾸는 PR이면 `'high'`(반박 보안 검토를 더한다), 아니면 `'standard'`
    - `decisions`: 그 이슈의 소유 계정 결정 코멘트 요약. `context`: 이슈의 목표·하지 말 것. `coAuthor`·`roleRules`: 위 "role 지시문"의 공동 작성자 줄과 공통 문장
    - Workflow가 같은 head에 reviewer, 보안 검토(일반 agent에 `plugin/agents/security-reviewer.md` 본문), verifier(`verify`일 때)를 병렬로 부르고, 수정 필요면 plugin-developer가 자기 worktree에서 고쳐 같은 브랜치에 push한 뒤 새 head로 다시 판정한다. 판정 agent가 각자 PR 코멘트를 검사 스크립트로 올린다.
-   - Workflow를 쓸 수 없으면 같은 순서를 포그라운드 subagent로 한다(위 판정 셋을 같은 sha에 병렬로, 하나라도 수정 필요면 plugin-developer에게 판정 코멘트를 주고 고치게 한 뒤 새 head로 다시, 최대 3번). 마지막 요약의 "확인하지 못한 도구 동작"에 적는다.
-3. 결과(`status`)에 따라: `all_pass`면 4번. `needs_user`·`fix_failed`면 남은 지적(`remaining`)을 결정할 것과 선택지로 정리해 5번 `agent:needs-user`로 넘긴다. `max_rounds`면 남은 지적을 하위 이슈로 넘긴다(2번 "큰 일은 단계로 쪼개", 본문에 PR 번호와 브랜치). `head_moved`면 지금 head로 한 번 다시 돌리고, 또 바뀌면 5번으로 넘긴다. 어느 경우든 이슈에 `[루틴]` 코멘트로 결과(상태, head, 라운드 수, 판정 코멘트 링크, 높음 등급이면 반박 검토 결과)를 남긴다.
+   - Workflow를 쓸 수 없거나 호출이 실패하면(스크립트 오류, 결과 없음) 같은 순서를 포그라운드 subagent로 한다(위 판정 셋을 같은 sha에 병렬로, 하나라도 수정 필요면 plugin-developer에게 판정 코멘트를 주고 고치게 한 뒤 새 head로 다시, 최대 3번). 마지막 요약의 "확인하지 못한 도구 동작"에 적는다.
+3. 결과(`status`)에 따라: `all_pass`면 먼저 최종 head의 바뀐 파일(`gh pr view <PR> -R autelon/company --json files,commits`), 커밋 제목의 `!`·본문의 `BREAKING:`, 결과의 `gate_files_touched`로 BREAKING·안전 장치 파일 변경인지 다시 본다. 시작 때 `tier: 'standard'`였는데 해당하게 됐으면 `tier: 'high'`로 판정 Workflow를 한 번 다시 돌리거나 5번 `agent:needs-user`로 넘긴다. 그다음 4번. `needs_user`·`fix_failed`면 남은 지적(`remaining`)을 결정할 것과 선택지로 정리해 5번 `agent:needs-user`로 넘긴다. `judge_failed`면 수정하지 않고 같은 head로 한 번 다시 돌리고, 또 실패하면 5번으로 넘긴다. `max_rounds`면 남은 지적을 하위 이슈로 넘긴다(2번 "큰 일은 단계로 쪼개", 본문에 PR 번호와 브랜치). `head_moved`면 지금 head로 한 번 다시 돌리고, 또 바뀌면 5번으로 넘긴다. 어느 경우든 이슈에 `[루틴]` 코멘트로 결과(상태, head, 라운드 수, 판정 코멘트 링크, `gate_files_touched`, 높음 등급이면 반박 검토 결과)를 남긴다.
 4. 모두 통과하고 BREAKING도 안전 장치 파일 변경도 아니면 reviewer에게 머지 명령을 맡긴다: `gh pr merge <PR> -R autelon/company --match-head-commit <sha>`. `--admin`은 쓰지 않는다. 머지 큐를 거치므로 `gh pr view <PR> -R autelon/company --json state,mergeCommit`으로 머지됐는지 확인한다. 이 실행 안에 머지되지 않으면 처리 요약에 "머지 대기(auto-merge)"로 적고, 다음 실행이 확인한다.
 
 ### 머지 뒤
