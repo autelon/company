@@ -9,7 +9,7 @@
 - 공개 범위: 옮기는 기록은 이미 저장소에 커밋돼 공개돼 있으므로, public 저장소의 이슈로 옮겨도 공개 범위는 같다(사용자 판단 2026-10-04). private 저장소면 이슈도 private이다.
 - 권한: `gh auth status`에 `project` 권한이 있어야 한다(playbook 0절).
 - 진행 중인 일을 마무리한다: 열린 PR, `in_progress` task, 승인 대기 handoff. 이전 중에 role을 부르지 않는다.
-- API 한도: REST·GraphQL 각각 시간당 5,000. 이슈 하나에 생성, 코멘트 몇 개, Project 필드 서너 번이 든다. task·handoff·결정 행 수를 먼저 세고, 많으면 나눠서 한다.
+- API 한도: REST·GraphQL 각각 시간당 5,000. task·handoff·결정 행 수를 먼저 세고 playbook 0절의 가늠식으로 GraphQL 포인트를 셈한다. `gh project` 하위 명령은 호출당 약 100 포인트라, 이름 방식(`item-edit --url`)으로 이슈 40개 남짓에 필드 두세 개씩 고치면 한 시간 한도를 넘는다(logistics-hub 사례, autelon/company#43. 같은 계정의 다른 세션 사용이 섞였을 수 있다). 그래서 이전의 Project 필드는 id 방식(playbook 3절 "Project 필드 고치기")으로 고치고, `gh project` 하위 명령은 확인용으로만 몇 번 쓴다. 그래도 많으면 나눠서 한다.
 - 대응표: 예전 ID(T-0001, PRD-001, M-01)와 새 이슈 번호의 대응을 `local/migration/ids.json`(커밋하지 않음)에 쌓는다. 본문·코멘트 속의 예전 ID를 이슈 번호로 바꿀 때 쓴다.
 
 ## 순서
@@ -17,7 +17,7 @@
 1. **준비** (playbook 2절): 라벨, Project(필드 `Role`은 `director`와 프로젝트 role), Status 선택지(기본 선택지 셋은 id를 유지한 채 이름만 바꾼다), 화면(기본 "View 1"은 지운다). 보드 열 기준·로드맵 날짜 필드와 기본 워크플로는 API로 정할 수 없어 director가 브라우저 도구로 설정한다(playbook 2절 "웹 설정"). 새 Project가 켠 채로 시작하는 워크플로는 일정하지 않으므로, 만든 직후 GraphQL로 `enabled`를 읽고 기준표와 다른 것을 끄고 켠다(playbook 2절 "기본 워크플로"). Status 선택지를 바꾸기 전에 켜진 워크플로의 대상을 봐 두고, 바꾼 뒤 워크플로 화면에서 대상이 그대로인지 본다.
 2. **마일스톤**: `board/milestones.json`의 항목마다 저장소 마일스톤을 만든다(제목 `M-01 <title>`, `target`이 있으면 `due_on`). done이면 마일스톤을 닫는다.
 3. **PRD**: `prds/*.md`마다 Feature 이슈를 만든다. 본문은 `templates/issues/prd.md` 형식으로, 섹션은 원래 PRD 본문을 그대로 옮기고 "현재 결론"에 frontmatter `status`(단계)를 적는다. 마일스톤을 단다. 모두 만든 뒤 `derived_from`을 `파생: #N`으로 채운다. `closed`면 닫는다.
-4. **task**: `board/tasks.json`의 task마다 Task 이슈를 만든다. 본문 `templates/issues/task.md`, "현재 결론"에 `예전 ID: T-0001`을 적는다. `--parent <PRD 이슈>`, 마일스톤, `depends_on` → `--blocked-by`. Project 필드 `Status`·`Role`·`Size`를 채운다. `done`은 `--reason completed`, `rejected`는 `--reason "not planned"`로 닫고 **닫은 뒤에** Status를 `rejected`로 고친다(Item closed 워크플로가 닫힘 사유를 가리지 않아 `done`으로 덮일 수 있다. playbook 3절 "닫기").
+4. **task**: `board/tasks.json`의 task마다 Task 이슈를 만든다. 본문 `templates/issues/task.md`, "현재 결론"에 `예전 ID: T-0001`을 적는다. `--parent <PRD 이슈>`, 마일스톤, `depends_on` → `--blocked-by`. Project 필드 `Status`·`Role`·`Size`를 id 방식으로 채운다(playbook 3절. Project·필드·선택지 id는 이전을 시작할 때 한 번 받아 둔다). `done`은 `--reason completed`, `rejected`는 `--reason "not planned"`로 닫고 **닫은 뒤에** Status를 `rejected`로 고친다(Item closed 워크플로가 닫힘 사유를 가리지 않아 `done`으로 덮일 수 있다. playbook 3절 "닫기").
 5. **handoff**: `handoffs/<task-id>.md`마다 그 task 이슈에 코멘트로 올린다. 첫 줄에 `예전 handoff: handoffs/T-0001.md (커밋 <짧은 sha>)`를 붙이고 본문은 그대로 둔다. 본문 속 예전 ID는 대응표로 `#N`을 덧붙인다(`T-0003 (#41)`). task가 없는 handoff(first-run, notion-sync 등)는 관련 이슈(first-run 이슈, 현재 스프린트 이슈)에 올린다.
 6. **결정**: `decisions/log.md`(와 프로젝트의 결정 문서) 행마다, 대상이 task·PRD면 그 이슈에 결정 코멘트(`templates/issues/comment-decision.md`, 날짜는 원래 날짜)로 올린다. 대상이 없는 행은 결정 이슈로 만든다. 행이 많으면 주제별로 묶을지 사람에게 묻는다. 결정 이슈는 결론이 정해진 것이면 닫는다.
 7. **로드맵**: 로드맵 문서의 단계·기한을 마일스톤과 Project `Start date`·`Target date`로 옮긴다. 로드맵 문서가 "지금 기준"으로 계속 읽히는 계획이면 사람에게 남길지 묻는다.
