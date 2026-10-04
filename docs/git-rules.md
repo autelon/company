@@ -93,6 +93,7 @@ git 은 작성자(author)와 커밋한 사람(committer)을 따로 기록한다.
 - `docs/git-rules.md` 전체, `docs/routine-prompt.md`, `.claude/agents/`의 role
 - `plugin/agents/security-reviewer.md`
 - `plugin/scripts/privacy-check.mjs`, `plugin/scripts/privacy-check.test.mjs`, `plugin/hooks/hooks.json`
+- `plugin/workflows/` (표준 판정·설계 Workflow 스크립트)
 - CI와 커밋 검사: `.github/`, `.githooks/`, `scripts/`, `package.json`(`check` 스크립트)
 
 ### 머지 명령
