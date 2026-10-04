@@ -383,14 +383,34 @@ const WRAPPERS = new Set([
   'time',
   'sudo',
   'env',
-  'xargs',
   'caffeinate',
   'stdbuf',
 ]);
-// 값을 받는 감싸는 명령의 플래그
+// 값을 받는 감싸는 명령의 플래그. 값을 띄워 쓰면 다음 단어가 값이다(붙여 쓴 -n1, --max-args=1 은 한 단어).
+// xargs 는 BSD(macOS)와 GNU 의 값을 받는 플래그를 모두 넣는다. GNU 의 값이 선택인 긴 플래그(--eof, --replace,
+// --max-lines)는 = 로만 값을 받으므로 넣지 않는다.
 const WRAPPER_VALUE_FLAGS = {
   timeout: new Set(['-s', '--signal', '-k', '--kill-after']),
   nice: new Set(['-n']),
+  xargs: new Set([
+    '-E',
+    '-I',
+    '-J',
+    '-L',
+    '-n',
+    '-P',
+    '-R',
+    '-S',
+    '-s',
+    '-a',
+    '-d',
+    '--arg-file',
+    '--delimiter',
+    '--max-args',
+    '--max-chars',
+    '--max-procs',
+    '--process-slot-var',
+  ]),
 };
 function stripWrappers(words) {
   let i = 0;
@@ -400,7 +420,7 @@ function stripWrappers(words) {
     else if (WRAPPERS.has(w)) {
       i++;
       while (i < words.length && words[i].startsWith('-')) i++;
-    } else if (w === 'timeout' || w === 'nice') {
+    } else if (w === 'timeout' || w === 'nice' || w === 'xargs') {
       const valueFlags = WRAPPER_VALUE_FLAGS[w];
       i++;
       while (i < words.length && words[i].startsWith('-')) i += valueFlags.has(words[i]) ? 2 : 1;

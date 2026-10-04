@@ -479,3 +479,32 @@ test('훅·gh 모드: 그룹과 하위 명령 사이의 -R 을 걷어 내고 판
     ['a', '설명'],
   );
 });
+
+// autelon/company#58: xargs 의 값을 받는 플래그 뒤의 gh 도 찾는다.
+test('훅: 값을 받는 플래그가 붙은 xargs 뒤의 gh 글쓰기를 막는다', () => {
+  const S = 'node plugin/scripts/privacy-check.mjs';
+  for (const bad of [
+    'echo 1 | xargs -n 1 gh issue comment -b x',
+    'echo 1 | xargs -I {} gh issue comment {} -b x',
+    'xargs -L 1 gh issue comment -b x < local/n.txt',
+    'xargs -P 2 -n 1 gh pr comment -b x < local/n.txt',
+    'xargs -0 -I % -n 1 gh issue comment % -b x < local/n.txt',
+    'xargs -E END -s 100 gh issue comment -b x < local/n.txt',
+    'xargs -a local/n.txt -d , gh issue comment -b x',
+    'xargs --max-args 1 gh issue comment -b x < local/n.txt',
+    'xargs -n1 gh issue comment -b x < local/n.txt',
+    'xargs -I{} gh issue comment {} -b x < local/n.txt',
+    'xargs --max-args=1 gh issue comment -b x < local/n.txt',
+    'xargs -n 1 timeout 5 gh issue comment -b x < local/n.txt',
+    'xargs -n 1 gh issue comment 1 --help < local/n.txt',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+  for (const ok of [
+    'echo 1 | xargs -n 1 gh issue view',
+    'echo 1 | xargs -I {} gh issue view {} --comments',
+    `echo local/c.md | xargs -I {} ${S} gh issue comment 1 -F {}`,
+  ]) {
+    assert.equal(bashViolation(ok), null, ok);
+  }
+});
