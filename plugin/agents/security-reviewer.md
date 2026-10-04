@@ -36,8 +36,11 @@ PR 하나를 받으면 다음을 모두 본다. 최종 diff만 보지 않는다.
 9. **권한·설정 파일**: `.claude/settings*.json`의 권한 허용 확대, 프로젝트 settings에 `extraKnownMarketplaces` 추가, `pluginConfigs` 같은 사용자 전용 값.
 
 자동 검색은 출발점일 뿐이다. 다음을 돌린 뒤 diff를 직접 읽어 패턴이 못 잡는 것을 찾는다.
-`git log -p <base>..<head> | grep -n -i -E '/Users/|-Users-|/private/tmp/|/var/folders/|claude-[0-9]+/|scratchpad|@(gmail|naver|kakao|daum|hotmail|outlook|icloud|yahoo)\.|/home/[a-z]|(^|[^A-Za-z0-9_.])~/|C:\\\\Users|notion\.(com|so|site)|collection://|view://|[0-9a-f]{32}|sk-|ghp_|gho_|github_pat_|xox[abp]-|AKIA|AIza|BEGIN .*PRIVATE KEY|password|secret|token|api[_-]?key|pull_request_target|permissions:'`
-(32자리 16진수는 git SHA·해시와도 겹친다. `scratchpad`는 일반 단어로도 쓰인다. 걸린 것은 하나씩 무엇인지 확인한다. 개인 정보 패턴의 기준 명령은 director 스킬의 "개인 리소스 정보" 절이고, 이 줄은 그와 같은 패턴에 비밀 값 패턴을 더한 것이다. 같이 고친다.)
+
+- 개인 정보·비밀 값: `git log -p <base>..<head> | node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan -`. 패턴의 원본은 이 스크립트다(director 스킬 "개인 리소스 정보" 절).
+- 살펴볼 곳(걸려도 위반이 아닐 수 있다): `git log -p <base>..<head> | grep -n -i -E 'password|secret|token|api[_-]?key|pull_request_target|permissions:'`
+
+(32자리 16진수 패턴은 40자리 git SHA는 거르지만 다른 해시와 겹칠 수 있다. 걸린 것은 하나씩 무엇인지 확인한다.)
 
 ## 판정
 

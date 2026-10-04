@@ -94,11 +94,11 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - 이런 값은 로컬 설정에만 둔다: 사용자 설정 `pluginConfigs`(플러그인 userConfig), 프로젝트 `notion/`(Notion ID), 프로젝트 `local/`(그 외 로컬 매핑, 예: `local/paths.json`의 `{"autelon/logistics-hub": "<로컬 경로>"}`). `notion/`과 `local/`은 `.gitignore`에 있다.
 - 커밋되는 파일은 이름으로만 가리킨다(예: 저장소는 `autelon/logistics-hub`). 경로는 repo 루트 기준 상대 경로로 쓰고, repo 밖의 것은 저장소나 문서 이름으로 가리킨다. 홈 기준 경로(`~/...`)도 쓰지 않는다.
 - 의심스러운 것은 push 전에 막는다. 한 번 push하면 브랜치를 다시 써도 지워지지 않는다. PR 타임라인이 이전 head의 SHA를 붙잡고 있어 SHA로 계속 조회된다.
-- **이 절의 검사가 기준 명령이다.** found-company·adopt-project·security-reviewer는 여기를 가리키고 패턴을 따로 복사하지 않는다. 패턴을 바꿀 때는 이 절과 `autelon:security-reviewer`의 자동 검색 줄을 함께 고친다.
+- **패턴의 원본은 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs` 하나다.** 이 절, found-company·adopt-project·security-reviewer는 이 스크립트를 부르고 패턴을 따로 복사하지 않는다. 패턴을 바꿀 때는 스크립트와 그 테스트만 고친다.
 - 커밋 전에 다음 둘이 비어 있어야 한다.
-  1. 내용: `git diff --cached | grep -n -i -E 'notion\.(com|so|site)|/Users/|-Users-|/private/tmp/|/var/folders/|claude-[0-9]+/|scratchpad|@(gmail|naver|kakao|daum|hotmail|outlook|icloud|yahoo)\.'`
+  1. 내용: `git diff --cached | node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan -` (걸리면 줄 번호·종류·앞 4자를 찍고 1로 끝난다)
   2. 작성자와 공동 작성자(push할 범위 `<base>..HEAD`, 첫 push면 `HEAD`): `git log --format='%ae%n%ce%n%B' <범위> | grep -o -i -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u | grep -v -i -E '@users\.noreply\.github\.com$|^noreply@github\.com$|^noreply@anthropic\.com$'` (주소를 하나씩 뽑은 뒤 허용 주소만 지운다. 출력이 남으면 위반. author와 committer를 한 줄에 찍으면 허용 주소가 섞인 줄이 통째로 지워져 committer의 개인 주소를 놓친다)
-- 이 grep은 하이픈 없는 32자리 Notion ID, 개인 도메인이 아닌 이메일, 토큰은 잡지 못하므로 diff에서 그런 값이 없는지도 눈으로 확인한다. `scratchpad`는 일반 단어로도 쓰이므로 걸린 것이 경로로 쓰였는지 하나씩 본다. 이 규칙 문서처럼 패턴을 설명하는 글은 걸려도 위반이 아니다.
+- 스크립트는 개인 도메인이 아닌 이메일과 패턴에 없는 형식의 비밀 값을 잡지 못하므로 diff를 눈으로도 확인한다. 이 규칙 문서처럼 패턴을 설명하는 글이 diff에서 걸리는 것은 위반이 아니다(걸린 줄을 하나씩 본다). 이슈·코멘트는 설명 글이어도 막히므로 "사용자 홈 경로"처럼 말로 쓴다.
 
 ## 모든 role 공통 (role 지시문에 넣을 것)
 
