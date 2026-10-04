@@ -95,6 +95,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - 머지 명령에는 리뷰한 head sha로 `--match-head-commit`을 붙인다. `--admin`은 쓰지 않는다.
 - task를 해결하는 PR 본문에는 `Closes #N`을 넣지 않는다. task는 사람의 승인을 받은 뒤 director가 닫는다. 이슈를 가리킬 때는 `Refs #N`으로 쓴다.
 - **템플릿에서 온 파일을 고치는 PR은 이유가 되는 이슈를 `Refs #N`으로 건다.** 대상: `.claude/agents/`의 role 파일, `CLAUDE.md`의 autelon 절(도입한 프로젝트는 "autelon 운영" 절, 설립한 프로젝트는 파일 전체), `docs/git-rules.md`, `.github/workflows/ci.yml`, `.claude/autelon-sync.json`처럼 설립·도입 때 `${CLAUDE_PLUGIN_ROOT}/templates/`에서 만든 파일. 이유 이슈가 없으면 먼저 만든다(task 이슈나 결정 이슈). 플러그인 템플릿이 바뀌어 프로젝트 파일과 맞출 때, 그 이슈가 프로젝트가 왜 다르게 고쳤는지 판단하는 근거가 된다(autelon/company#42 결정 6).
+  - 예외: 설립·도입 중의 PR(found-company 5단계 9번·6단계 8번, adopt-project 6단계 도입 PR·7단계)은 그 파일을 템플릿에서 처음 만들거나 자리표시자를 채우는 것이라 이유 이슈를 걸지 않는다. 설립·도입 결정은 그 스킬이 만드는 결정 이슈에 남는다.
 
 ## 사람에게 묻기
 

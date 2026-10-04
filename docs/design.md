@@ -55,7 +55,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 - role 개선의 두 층
   - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`. **커밋하지 않는다**(`.gitignore`). 무엇이 기록될지 미리 알 수 없고 finance 메모리에는 계정 사용량이 들어가서, public 저장소에 올리면 공개된다. 그래서 role 학습은 기기마다 따로 쌓인다. (사용자 결정 2026-10-04, company#9) 공용 role의 메모리 폴더는 `autelon:finance` → `autelon-finance/`처럼 콜론이 하이픈으로 바뀐다. **[확인]** poker first-run. `memory: project`는 유지한다. `.claude/agent-memory-local/`은 무시 목록에만 있는 안전 항목이다. (사용자 결정 2026-10-04)
   - 프로젝트를 넘는 개선: `plugin/templates/roles/`를 고쳐 커밋 → 다음에 설립하는 프로젝트부터 반영
-  - 프로젝트가 템플릿에서 온 파일(role 파일, `CLAUDE.md`의 autelon 절, `docs/git-rules.md` 등)을 고치는 PR은 이유가 되는 이슈를 `Refs`로 건다(director 스킬 "코드 변경과 PR"). 템플릿이 바뀌어 프로젝트 파일과 맞출 때, 프로젝트가 왜 다르게 고쳤는지를 그 이슈로 판단한다. (사용자 결정 2026-10-04, autelon/company#42 결정 6)
+  - 프로젝트가 템플릿에서 온 파일(role 파일, `CLAUDE.md`의 autelon 절, `docs/git-rules.md` 등)을 고치는 PR은 이유가 되는 이슈를 `Refs`로 건다(director 스킬 "코드 변경과 PR"). 템플릿이 바뀌어 프로젝트 파일과 맞출 때, 프로젝트가 왜 다르게 고쳤는지를 그 이슈로 판단한다. (사용자 결정 2026-10-04, autelon/company#42 결정 6) 설립·도입 중의 PR은 파일을 처음 만드는 것이라 예외다(기본안, autelon/company#66).
 - director 규칙은 플러그인 `settings.agent`(메인 대화를 director agent로 띄우기)로 넣지 않고 스킬로 둔다. 문서상 agent를 메인으로 쓰면 그 agent 프롬프트가 Claude Code 기본 시스템 프롬프트를 **통째로 대체**한다. **[확인]** sub-agents 문서. 기본 도구 사용 지침을 잃을 위험이 있어, 프로젝트 CLAUDE.md가 세션 시작 시 `autelon:director` 스킬을 부르게 했다.
 - 플러그인 agent는 `permissionMode`, `hooks`, `mcpServers`를 무시하고 `memory`, `isolation`, `tools`, `model`, `skills`, `omitClaudeMd`는 지원한다. **[확인]** plugins/components 문서
 
