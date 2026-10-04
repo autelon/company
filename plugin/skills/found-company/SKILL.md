@@ -54,10 +54,29 @@ AskUserQuestion이나 대화로 다음을 받는다. 추정해서 채우지 않�
 | `git-rules.md`       | `docs/git-rules.md` — 자리표시자는 5단계에서 채운다                                                                                                                                                 |
 | `ci.yml`             | `.github/workflows/ci.yml` — `{{GITHUB_ORG}}`를 채운다                                                                                                                                              |
 | `events.md`          | `analytics/events.md` (da가 있을 때만)                                                                                                                                                              |
+| `autelon-sync.json`  | `.claude/autelon-sync.json` — 아래 "기준 버전 파일"대로 채운다                                                                                                                                      |
 | `CLAUDE.template.md` | `CLAUDE.md` — `{{PROJECT_NAME}}`, `{{PROJECT_SUMMARY}}`, `{{GITHUB_REPO}}`, `{{GITHUB_REPO_NAME}}`를 채운다. `{{PROJECT_NUMBER}}`는 6단계에서 채운다. 파일 표에서 없는 경로(예: analytics)는 지운다 |
 
 빈 폴더 `analytics/queries/`(da가 있을 때)에는 `.gitkeep`을 둔다.
 `state/quota.json`은 만들지 않는다 (director가 처음 사용량을 확인할 때 생기며, 커밋하지 않는다).
+
+### 기준 버전 파일
+
+`.claude/autelon-sync.json`은 이 프로젝트가 마지막으로 맞춘 autelon 플러그인 버전(autelon/company main 커밋)을 기록한다. 설립 커밋에 들어가는 파일이라 아래 세 필드 말고는 쓰지 않는다.
+
+| 필드        | 값                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------- |
+| `pluginSha` | 설치된 플러그인 버전. 커밋 SHA 앞 12자(소문자 16진수). 읽지 못하면 `미정`                                     |
+| `syncedAt`  | 맞춘 날짜 `YYYY-MM-DD`                                                                                        |
+| `note`      | 짧은 메모. 설립이면 `설립`, 도입이면 `도입`. 이슈·PR을 가리킬 때는 번호(`#N`)만. 경로·이름·링크는 넣지 않는다 |
+
+설치된 버전을 읽는 방법:
+
+1. 이 스킬의 플러그인 루트는 `${CLAUDE_PLUGIN_ROOT}`다. 마켓플레이스에서 설치한 플러그인이면 이 경로의 마지막 폴더 이름이 설치 버전(커밋 SHA 앞 12자)이다 **[추정]**: 설치 기록의 `installPath`가 `.../cache/autelon/autelon/<12자 SHA>` 꼴이고 그 12자가 설치 `version`인 것은 확인했다(2026-10-05, 한 기기). 그러나 스킬 본문의 플러그인 루트 변수(`CLAUDE_PLUGIN_ROOT`)가 이 설치 폴더 경로로 치환되는지는 확인하지 않았다.
+2. 마지막 폴더 이름이 12자 16진수가 아니면(예: `--plugin-dir`로 띄운 개발본) 설치 버전으로 쓰지 않는다. 사용자 설정 쪽 설치 기록(`installed_plugins.json`)의 `autelon@autelon` 항목 `version`(12자)을 읽어도 된다. 둘 다 읽을 수 없으면 `pluginSha`를 `미정`으로 두고, 사람에게 "기준 버전을 읽지 못했다"고 알리고 보고에 적는다.
+3. 읽은 값이 autelon/company의 커밋인지 확인한다: `gh api repos/autelon/company/commits/<12자> --jq .sha`가 40자 SHA를 돌려주면 맞다. 실패하면 2번처럼 `미정`으로 둔다.
+
+GitHub API는 12자 SHA를 받는다(`gh api repos/autelon/company/compare/<12자>...<12자>`, `commits/<12자>` 확인). 그래서 40자로 늘려 쓰지 않는다.
 
 프로젝트 `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다. 파일이 없으면 만들고, 있으면 없는 줄만 더한다. 항목: `notion/`, `local/`, `.env*`, `state/quota.json`, `.claude/agent-memory/`, `.claude/agent-memory-local/`, `.claude/settings.local.json`, `.claude/worktrees/`. 저장소가 public이면 이것들이 그대로 공개되기 때문이다. `local/`에는 이슈 본문·코멘트 초안과 이슈 백업이 생긴다. role 메모리(`memory: project`)는 프로젝트 `.claude/agent-memory/<role>/`에 생기지만 커밋하지 않는다.
 
@@ -101,6 +120,6 @@ GitHub 단계가 실패하면 로컬 커밋은 그대로 두고, 실패한 지�
 
 ## 7. 보고
 
-사람에게 보고한다: role 구성, 만든 파일, GitHub 저장소와 적용된 규칙, PR 리뷰어, 만든 라벨·Project·이슈(번호), 웹 화면에서 설정한 것과, 브라우저 도구가 없어 사람이 해야 할 일이 남았으면 그 조작(playbook 2절 "웹 설정"), 다음 단계(목표·지표 체계 수립 또는 first-run, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`).
+사람에게 보고한다: role 구성, 만든 파일, 기준 버전 파일의 `pluginSha`(`미정`이면 그 이유), GitHub 저장소와 적용된 규칙, PR 리뷰어, 만든 라벨·Project·이슈(번호), 웹 화면에서 설정한 것과, 브라우저 도구가 없어 사람이 해야 할 일이 남았으면 그 조작(playbook 2절 "웹 설정"), 다음 단계(목표·지표 체계 수립 또는 first-run, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`).
 
 보고에 `/reload-plugins`를 입력해 달라는 요청을 넣는다. 프로젝트 role은 reload 뒤에 부를 수 있다. first-run은 director가 시작 때 진행한다(`${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`).

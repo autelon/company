@@ -64,10 +64,11 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 - `docs/goals.md`: 2단계에서 승인한 내용으로 만든다(이미 같은 경로에 파일이 있으면 덮어쓰지 않고 사람에게 묻는다).
 - `board/`, `prds/`, `handoffs/`, `decisions/`, `state/sprint.md`는 만들지 않는다. 그 기록은 7단계에서 이슈로 준비한다.
 - `.claude/settings.json`: `"enabledPlugins": {"autelon@autelon": true}`가 없으면 넣는다. 파일이 있으면 다른 키는 그대로 두고 이 항목만 더한다. 전역에서는 꺼 두고 프로젝트에서만 켜는 구조라 이 항목이 없으면 다음 세션에서 플러그인이 로드되지 않는다.
+- `.claude/autelon-sync.json`(기준 버전 파일): `${CLAUDE_PLUGIN_ROOT}/templates/project/autelon-sync.json`으로 만든다. 필드와 설치 버전을 읽는 방법, 읽지 못할 때의 처리는 `autelon:found-company` 스킬 3단계 "기준 버전 파일"과 같고, `note`는 `도입`이다. 이미 같은 경로에 파일이 있으면 덮어쓰지 않고 사람에게 묻는다.
 - `CLAUDE.md`: 덮어쓰지 않는다. 끝에 "autelon 운영" 절을 덧붙인다.
   - 세션 시작 시 `autelon:director` 스킬을 부른다.
   - 4단계에서 확인받은 것: 기존 작업 방식 문서 중 director 규칙과 충돌해 director 규칙을 따르는 부분.
-  - `${CLAUDE_PLUGIN_ROOT}/templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표와 프로젝트 파일 표(state, local), 기존 문서와의 관계. Project 번호는 7단계 뒤에 채운다(그전에는 `미정`).
+  - `${CLAUDE_PLUGIN_ROOT}/templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표와 프로젝트 파일 표(state, local, `.claude/autelon-sync.json`), 기존 문서와의 관계. Project 번호는 7단계 뒤에 채운다(그전에는 `미정`).
 - `docs/git-rules.md`가 이미 있으면 PR 리뷰어 절과 보안 검토·머지 조건만 확인·추가한다. 없으면 `${CLAUDE_PLUGIN_ROOT}/templates/project/git-rules.md`를 쓰고 자리표시자를 모두 채운다: `{{REVIEWER}}`와 `{{REVIEWER_MEANING}}`(2단계에서 고른 리뷰어와 그 뜻), `{{MERGE_COMMAND}}`(머지 큐면 `gh pr merge <PR> --match-head-commit <sha>`, 아니면 `gh pr merge <PR> --auto --merge --match-head-commit <sha>`), 저장소 표의 값.
 - CI·저장소 설정은 이미 있으면 바꾸지 않는다. 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md`와 다르면 차이를 보고만 한다. 로컬에 클론이 없으면 `gh repo clone <조직>/.github`로 임시 폴더에 받는다. 설정 스크립트는 같은 저장소의 `scripts/setup-repo.sh`다.
 - `.gitignore`에 `${CLAUDE_PLUGIN_ROOT}/templates/project/gitignore.template`의 항목을 합친다(없는 줄만 더한다). `local/`(이슈 초안·백업), `.env*`, `state/quota.json`, role 메모리(`.claude/agent-memory/`) 등이 들어 있다.
@@ -84,4 +85,4 @@ found-company 6단계와 같다(명령은 playbook 2절, 글은 모두 검사 �
 
 ## 8. 보고
 
-사람에게 보고한다: 1단계 요약, role 구성과 근거, 작업 방식 비교와 바뀌는 것, 만든 파일과 만들지 않은 파일(이유), PR, 만든 라벨·Project·이슈(번호), 웹 화면에서 설정한 것(남았으면 사람이 할 조작), 기존 기록을 이슈로 옮길지에 대한 답, 다음 단계(first-run, 목표·지표 또는 이미 있는 로드맵 이어가기, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`). `/reload-plugins`를 입력해 달라는 요청을 넣는다. first-run은 director가 시작 때 진행한다.
+사람에게 보고한다: 1단계 요약, role 구성과 근거, 작업 방식 비교와 바뀌는 것, 만든 파일과 만들지 않은 파일(이유), 기준 버전 파일의 `pluginSha`(`미정`이면 그 이유), PR, 만든 라벨·Project·이슈(번호), 웹 화면에서 설정한 것(남았으면 사람이 할 조작), 기존 기록을 이슈로 옮길지에 대한 답, 다음 단계(first-run, 목표·지표 또는 이미 있는 로드맵 이어가기, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`). `/reload-plugins`를 입력해 달라는 요청을 넣는다. first-run은 director가 시작 때 진행한다.
