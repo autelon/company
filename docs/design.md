@@ -128,13 +128,13 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
   - 그래서 코멘트를 올려야 하는 role 템플릿(po, designer, strategist)에도 Bash를 줬다. 용도는 지시문으로 검사 스크립트 실행과 지시받은 작업에 한정한다. director가 대신 올리는 안은 role이 직접 쓴다는 결정과 맞지 않아 버렸다.
 - **개인 정보 사전 검사**: 이슈·코멘트·본문 수정은 리뷰 없이 바로 공개된다. 그래서 모든 쓰기는 `plugin/scripts/privacy-check.mjs gh ...`를 거친다. 스크립트는 issue/pr의 create·edit·comment만 받아 제목·본문 파일을 검사하고, 통과할 때만 `gh`를 실행한다. 표준 입력 본문은 검사할 수 없어 거절한다. 본문·코멘트 초안은 커밋하지 않는 `local/`에 쓴다.
   - 패턴의 원본은 이 스크립트 하나다. director의 커밋 전 검사와 security-reviewer의 자동 검색도 이 스크립트를 부른다. 예전에는 같은 패턴이 두 곳에 복사돼 있었다.
-  - 올라간 본문·코멘트를 고쳐도 편집 이력이 남는 것으로 안다. 누가 볼 수 있는지, 이력에서 지울 수 있는지 **[미확인]**.
+  - 올라간 코멘트를 고쳐도 편집 이력이 남고, 저장소 읽기 권한이 있는 누구나 이력을 본다. 이력 삭제는 작성자·write 권한자가 웹에서만 한다. **[확인]** GitHub 문서 "Tracking changes in a comment". 이슈 본문도 편집 이력이 남는다 **[확인]** poker `userContentEdits`(autelon/company#30). 본문 이력을 보는 범위는 문서에 없어 코멘트와 같다고 본다 **[추정]**.
 - **저장소를 지우지 않는다.** 저장소를 지우면 이슈와 코멘트가 사라진다. poker와 logistics-hub는 개인 정보 정리 때문에 삭제 후 재생성됐는데, 이 방식이었다면 기록이 사라졌을 것이다. 정리가 필요하면 사람에게 묻는다. 작업 단위 종료 때 이슈·코멘트·마일스톤·Project 항목을 `local/backup/`에 받는다(`plugin/playbooks/issues.md` 4절).
 - PR 본문에 `Closes #N`을 쓰지 않는다. task는 사람의 승인 뒤 director가 닫는다.
 - Wiki는 쓰지 않는다(전용 API 없음, PR 리뷰 불가, `docs/`와 겹침).
 - 공개 범위: 프로젝트 저장소가 public이면 이슈도 공개된다. 이 기록들은 이미 git에 커밋돼 공개돼 있었으므로 이슈로 옮겨도 공개 범위는 같다. (사용자 판단 2026-10-04)
 
-task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`). Project `Status` 필드로 두고, done은 completed, rejected는 not planned로 닫는다.
+task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`). Project `Status` 필드로 두고, done은 completed, rejected는 not planned로 닫는다. 반려는 닫은 뒤 Status를 `rejected`로 고친다. 기본 워크플로 Item closed는 트리거에 닫힘 사유를 고르는 칸이 없어 `done`으로 덮일 수 있다(autelon/company#31, 실제 반려 task로는 **[미확인]**).
 
 ## 3. 승인/개입 지점
 
@@ -171,8 +171,9 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
 - 설립·도입 스킬이 만든다. 명령은 `plugin/playbooks/issues.md` 2절.
 - Notion 투영은 없앴다. Project의 표·보드·로드맵이 상태별·role별 보기를 맡는다. (사용자 결정 2026-10-04) 이유: 원본이 이슈로 바뀌면 notion-sync를 GitHub에서 읽도록 새로 써야 하고, 화면이 두 곳이 된다. Notion ID를 커밋하지 않으려고 둔 `notion/` gitignore 같은 장치도 필요 없어진다.
 - 확인한 것 (GitHub 문서, 2026-10-04 조사): Projects는 항목 50,000개, 필드 50개까지. 조직 Project는 조직 저장소들의 이슈·PR을 담고, Project를 private으로 해도 항목은 원래 저장소 권한을 따른다. 내장 자동화(닫힘·머지 시 Status=Done, 자동 보관, 저장소에서 자동 추가). sub-issue는 부모당 100개·8단계, 의존 관계(blocked by/blocking)는 관계당 50개.
-- `gh` 2.102.0에 `gh issue create --type/--parent/--blocked-by/--project`, `gh issue edit --add-sub-issue`, `gh issue pin`, `gh project field-create/item-edit`가 있다. **[확인]** 도움말. 실제 동작은 **[미확인]**.
-- **[미확인]** Free 조직에서 조직 Project를 쓸 수 있는가(문서 문장 못 찾음. autelon은 Free이고 `has_organization_projects`는 true). 기본 `Status`의 선택지를 API로 바꿀 수 있는가(`gh project`에는 명령이 없다). 화면을 API로 만들 수 있는가. `project` 권한 없이 `gh issue create --project`가 되는가.
+- poker 기록 이전(2026-10-04, autelon/company#30)에서 확인: Free 조직에서 조직 Project 생성·연결, `gh issue create --type/--project`, 이름으로 필드 고치기(`gh project item-edit --url --field --value`), GraphQL로 Status 선택지 바꾸기(id를 넘기면 이름만 바뀐다, autelon/company#31)와 화면 만들기. 보드 열 기준·로드맵 날짜 필드와 기본 워크플로는 API로 정할 수 없어 웹에서 한다. 플러그인 기준 워크플로 값은 `plugin/playbooks/issues.md` 2절 표다(`Refs #N`만 쓰므로 PR 연결·머지 워크플로는 끈다).
+- `Role` 필드에는 프로젝트 role과 `director`를 둔다. 결정·first-run·스프린트 이슈의 담당이 director라서다(poker에서 더함).
+- **[미확인]** `gh issue create --parent/--blocked-by`의 실제 동작, `project` 권한 없이 `--project`가 되는가, id를 유지해 이름만 바꾼 Status 선택지를 기본 워크플로가 계속 가리키는가, 날짜 필드의 item-list 키. 다음 기록 이전(autelon/logistics-hub)에서 확인한다.
 - `gh project`는 토큰에 `project` 권한이 필요하다. 지금 토큰에는 없다(2026-10-04 `gh auth status`). 추가는 `gh auth refresh -s project`(브라우저 승인)이고, 에이전트가 실행하고 사람이 승인한다.
 
 ## 6. PRD
@@ -218,4 +219,4 @@ PRD 하나 = Feature 이슈 하나. 본문 템플릿은 `plugin/templates/issues
 - [x] 실행이 겹칠 때 같은 예약 작업은 다음 주기를 건너뛰고 밀린 주기를 몰아서 실행하지 않는다 (2026-10-04 시험, company#22 코멘트). 지시문의 "이전 실행이 실행 중이면 끝낸다"는 이중 장치로 둔다
 - [ ] 서로 다른 예약 작업끼리 동시에 도는가, 앱을 다시 켰을 때 밀린 실행을 몇 번 하는가
 - [ ] subagent끼리 직접 통신이 되는가 (지금은 안 된다고 보고 메인을 거친다)
-- [ ] 이슈 기록 방식 시험 운영 (poker): Free 조직 Project 가용성, `project` 권한 추가, 기본 Status 선택지·화면을 API로 만들 수 있는지, `gh issue create --type/--parent/--blocked-by/--project` 실제 동작, `gh project item-list` JSON의 필드 키, role(subagent)이 검사 스크립트로 코멘트를 올리는지, 백업 응답에 하위 이슈·의존 관계가 들어 있는지, 본문·코멘트 편집 이력의 공개 범위 (`plugin/playbooks/issues.md`의 **[미확인]**)
+- [x] 이슈 기록 방식 시험 운영 (poker, 2026-10-04, autelon/company#30. 남은 [미확인]은 5절과 `plugin/playbooks/issues.md`): Free 조직 Project 가용성, `project` 권한 추가, 기본 Status 선택지·화면을 API로 만들 수 있는지, `gh issue create --type/--parent/--blocked-by/--project` 실제 동작, `gh project item-list` JSON의 필드 키, role(subagent)이 검사 스크립트로 코멘트를 올리는지, 백업 응답에 하위 이슈·의존 관계가 들어 있는지, 본문·코멘트 편집 이력의 공개 범위 (`plugin/playbooks/issues.md`의 **[미확인]**)

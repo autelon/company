@@ -49,7 +49,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 - task는 role 하나가 한 번의 호출로 끝낼 수 있는 크기로 쪼갠다. 끝낼 수 없으면 더 쪼갠다.
 - task마다 이슈를 만든다: 본문은 `templates/issues/task.md`, PRD의 task면 `--parent <PRD 이슈>`, 선행 task가 있으면 `--blocked-by`, 마일스톤. Project 필드 `Status`·`Role`·`Size`를 채운다(`size`: small | large, 재무 신호 CAUTION이면 small만 시작).
-- task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`). Project `Status` 필드로 두고, done은 `--reason completed`, rejected는 `--reason "not planned"`로 닫는다.
+- task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`). Project `Status` 필드로 두고, done은 `--reason completed`, rejected는 `--reason "not planned"`로 닫는다. 반려는 닫은 뒤 Status를 `rejected`로 고친다(Item closed 워크플로가 닫힘 사유를 가리지 않아 `done`으로 덮일 수 있다. playbook 3절 "닫기").
 - role을 호출할 때 지시문에 넣을 것: 저장소(`<조직>/<이름>`), task 이슈 번호, 목표, 읽을 것(저장소 상대 경로, 이슈 번호), 완료 조건, 결과 코멘트 템플릿 `${CLAUDE_PLUGIN_ROOT}/templates/issues/comment-handoff.md`, 검사 스크립트 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs`, 코멘트 초안 경로 `local/comments/<이슈 번호>-<role>.md`(프로젝트 루트 기준, 커밋하지 않는 폴더).
   - role은 초안을 쓰고 `node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`로 올린다. 검사에 걸리면 고쳐서 다시 올린다.
 - 예외: PR 리뷰와 보안 검토 task는 이슈 코멘트 대신 PR 코멘트가 기록이다.
