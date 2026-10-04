@@ -19,13 +19,18 @@
 3. **PRD**: `prds/*.md`마다 Feature 이슈를 만든다. 본문은 `templates/issues/prd.md` 형식으로, 섹션은 원래 PRD 본문을 그대로 옮기고 "현재 결론"에 frontmatter `status`(단계)를 적는다. 마일스톤을 단다. 모두 만든 뒤 `derived_from`을 `파생: #N`으로 채운다. `closed`면 닫는다.
 4. **task**: `board/tasks.json`의 task마다 Task 이슈를 만든다. 본문 `templates/issues/task.md`, "현재 결론"에 `예전 ID: T-0001`을 적는다. `--parent <PRD 이슈>`, 마일스톤, `depends_on` → `--blocked-by`. Project 필드 `Status`·`Role`·`Size`를 id 방식으로 채운다(playbook 3절. Project·필드·선택지 id는 이전을 시작할 때 한 번 받아 둔다). `done`은 `--reason completed`, `rejected`는 `--reason "not planned"`로 닫고 **닫은 뒤에** Status를 `rejected`로 고친다(Item closed 워크플로가 닫힘 사유를 가리지 않아 `done`으로 덮일 수 있다. playbook 3절 "닫기").
 5. **handoff**: `handoffs/<task-id>.md`마다 그 task 이슈에 코멘트로 올린다. 첫 줄에 `예전 handoff: handoffs/T-0001.md (커밋 <짧은 sha>)`를 붙이고 본문은 그대로 둔다. 본문 속 예전 ID는 대응표로 `#N`을 덧붙인다(`T-0003 (#41)`). task가 없는 handoff(first-run, notion-sync 등)는 관련 이슈(first-run 이슈, 현재 스프린트 이슈)에 올린다.
+   - **handoff에 frontmatter(`---`로 감싼 머리말)가 있으면 frontmatter를 `yaml` 코드 블록으로 감싼다.** 그대로 두면 첫 줄 `예전 handoff: …` 바로 아래의 `---` 때문에 그 줄이 제목(Markdown setext 제목)으로 바뀌고, frontmatter 마지막 줄도 닫는 `---` 때문에 제목이 된다. 내용은 바꾸지 않는다(logistics-hub 사례).
 6. **결정**: `decisions/log.md`(와 프로젝트의 결정 문서) 행마다, 대상이 task·PRD면 그 이슈에 결정 코멘트(`templates/issues/comment-decision.md`, 날짜는 원래 날짜)로 올린다. 대상이 없는 행은 결정 이슈로 만든다. 행이 많으면 주제별로 묶을지 사람에게 묻는다. 결정 이슈는 결론이 정해진 것이면 닫는다.
 7. **로드맵**: 로드맵 문서의 단계·기한을 마일스톤과 Project `Start date`·`Target date`로 옮긴다. 로드맵 문서가 "지금 기준"으로 계속 읽히는 계획이면 사람에게 남길지 묻는다.
+   - 로드맵 문서가 단계·날짜 없는 우선순위 목록이면 마일스톤으로 옮길 것이 없다. 어떻게 할지 아래 선택지를 보여 주고 사람에게 묻는다.
+     - 항목마다 Task 이슈로 옮긴다(제목 앞에 `[로드맵]`, 본문에 원래 순서). 라벨을 달지 않으면 사람이 다듬을 초안으로 남아 루틴이 처리하지 않는다. 같은 목록이 문서와 이슈 두 곳에 남지 않게 원래 문서도 아래 "원래 파일 처리" 선택지로 정한다. logistics-hub는 이렇게 14항목을 옮겼다(사용자 결정).
+     - 문서를 "지금 기준" 문서로 저장소에 남기고 이슈로 옮기지 않는다. 항목을 시작할 때 task 이슈를 만든다. 계획은 문서, 진행은 이슈로 나뉜다.
 8. **first-run**: `docs/first-run.md`를 first-run 이슈 본문 표로 옮긴다. 모두 확인된 항목이면 닫는다.
 9. **인계**: `state/sprint.md`를 현재 스프린트 이슈 본문으로 옮기고 고정한다.
-10. **Notion**: notion-sync는 없어졌다. Notion 페이지·DB는 그대로 두고, 보관하거나 지울지는 사람이 정한다. 로컬 `notion/`은 gitignore된 채로 둔다.
-11. **확인**: 개수를 맞춘다(task 수 = Task 이슈 수, handoff 파일 수 = 옮긴 코멘트 수, 결정 행 수 = 결정 코멘트 + 결정 이슈 수, `depends_on`·PRD 소속 수 = 백업 `relations.json`의 `blockedBy`·`parent` 수). 차이가 있으면 목록으로 보고한다. security-reviewer에게 이전 시작 시각부터의 이슈·코멘트 검토를 맡기고, 백업한다(playbook 4절, 관계 목록 `relations.json` 포함).
-12. **저장소 정리 PR**: 아래 선택지대로 원래 파일을 처리하고, `CLAUDE.md`를 `templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표 형식으로 고친다. 같은 PR에서 role 파일도 고친다. PR 절차와 보안 검토는 평소와 같다.
+10. **인계 후속**: 예전 인계(`state/sprint.md`, 마지막 handoff들)에 남은 "다음 후보"와 "답 대기"를 이슈로 만든다. 옮긴 인계 본문에만 두면 할 일 목록에서 빠진다. 본문에 출처(`예전 인계: state/sprint.md`)를 적는다. 라벨은 director 스킬 "후속 이슈"를 따른다: 사람이나 외부(거래처 등)의 답을 기다리는 것은 `agent:needs-user`, 바로 할 수 있는 것은 `agent:ready`. 한꺼번에 만든 `agent:ready` 이슈는 다음 루틴 실행부터 처리되므로, 만들기 전에 목록과 라벨을 사람에게 보여 준다. logistics-hub는 후속 12개를 만들고 거래처 답 대기를 `agent:needs-user`로 두었다.
+11. **Notion**: notion-sync는 없어졌다. Notion 페이지·DB는 그대로 두고, 보관하거나 지울지는 사람이 정한다. 로컬 `notion/`은 gitignore된 채로 둔다.
+12. **확인**: 개수를 맞춘다(task 수 = Task 이슈 수, handoff 파일 수 = 옮긴 코멘트 수, 결정 행 수 = 결정 코멘트 + 결정 이슈 수, `depends_on`·PRD 소속 수 = 백업 `relations.json`의 `blockedBy`·`parent` 수). 차이가 있으면 목록으로 보고한다. security-reviewer에게 이전 시작 시각부터의 이슈·코멘트 검토를 맡기고, 백업한다(playbook 4절, 관계 목록 `relations.json` 포함).
+13. **저장소 정리 PR**: 아래 선택지대로 원래 파일을 처리하고, `CLAUDE.md`를 `templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표 형식으로 고친다. 같은 PR에서 role 파일도 고친다. PR 절차와 보안 검토는 평소와 같다.
     - **role 출력 규칙**: `.claude/agents/*.md`의 "출력" 절을 플러그인 `templates/roles/<role>.md`와 줄 단위로 맞춘다("결과는 자기 task 이슈에 코멘트로만 올린다", "Bash는 검사 스크립트로 코멘트를 올릴 때와 지시받은 작업에만 쓴다" 등). 예전 role 파일에는 handoff 파일에 쓰라는 규칙이 남아 있다. 템플릿에 없는 프로젝트 role(도메인 전문가 등)은 가장 가까운 템플릿의 출력 절을 쓴다. poker는 문장 하나(designer의 PRD 디자인 변경안 초안)를 빠뜨려 리뷰에서 되돌아왔다.
     - **role `tools:`**: 결과 코멘트를 올리는 모든 role의 `tools:`에 `Bash`가 있어야 한다. 없으면 검사 스크립트를 실행할 수 없다(poker는 role 4개에 없었다).
     - **예전 기록을 가리키는 줄**: `git grep -n -E 'decisions/log\.md|board/|handoffs/|prds/|state/sprint\.md|docs/first-run\.md'`로 모두 찾는다. role 파일의 전제 문서 줄, 작업 방식 문서(`.claude/agents/*.md`, 프로젝트 `docs/`의 agent 작업 방식)가 대상이다. 결정 기록은 결정 이슈(`--label decision`)로, 나머지는 해당 이슈·라벨로 바꾼다.
