@@ -15,8 +15,9 @@
 // 본문은 -F/--body-file 파일이나 -b/--body 문자열로만 받는다. 검사할 수 없는 곳에서 글을 가져오는 플래그
 // (표준 입력 -F -, 편집기, 브라우저, 템플릿, --fill, --recover), 코멘트 삭제(--delete-last), 묶어 쓴 짧은 플래그는 거절한다.
 // create·comment 는 본문이 없으면 대화형 입력으로 넘어가므로 본문을 꼭 받고, create 는 제목(-t)도 받는다.
-import { readFileSync, realpathSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { resolve as pathResolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 // 널리 쓰는 예시 UUID. 세션 UUID 와 구별되지 않는 무작위 값은 그대로 막는다.
@@ -109,10 +110,13 @@ const ACCEPTED =
   'issue create|edit|comment, pr create|edit|comment, label create|edit, api(마일스톤, 이슈 코멘트 고치기)';
 
 // gh 인자에서 검사할 글을 뽑는다: [{ source, text }]. 검사를 거치지 않는 형태면 Error.
-export function textsFromGhArgs(args) {
+// readFile: 본문 파일을 읽는 함수. 훅은 크기·종류를 제한한 함수를 넘긴다.
+export function textsFromGhArgs(rawArgs, readFile = (f) => readFileSync(f, 'utf8')) {
+  // gh 는 하위 명령 앞의 -R/--repo 도 받는다. 검사는 그 뒤부터 하고, 실행은 받은 인자 그대로 한다.
+  const args = stripGhRepo(rawArgs);
   const [group, sub] = args;
   if (group === 'label' && (sub === 'create' || sub === 'edit')) return labelTexts(args);
-  if (group === 'api') return apiTexts(args);
+  if (group === 'api') return apiTexts(args, readFile);
   if (!GH_ALLOWED[group]?.includes(sub)) {
     throw new Error(`받지 않는 명령: gh ${group ?? ''} ${sub ?? ''}. ${ACCEPTED} 만 받는다`);
   }
@@ -121,7 +125,7 @@ export function textsFromGhArgs(args) {
     if (value === undefined) throw new Error(`${flag} 뒤에 값이 없다`);
     if (flag === '--body-file') {
       if (value === '-') throw new Error('표준 입력 본문(-F -)은 검사할 수 없다. 파일로 넘긴다');
-      texts.push({ source: value, text: readFileSync(value, 'utf8') });
+      texts.push({ source: value, text: readFile(value) });
     } else {
       texts.push({ source: flag, text: value });
     }
@@ -247,7 +251,7 @@ const COMMENT_PATH = /^\/?repos\/[\w.-]+\/[\w.-]+\/issues\/comments\/\d+$/;
 
 // gh api: 마일스톤 만들기·고치기와 이슈 코멘트 고치기만 받는다. 필드 값을 모두 검사한다.
 // -F key=@파일 은 파일 내용을 검사하고, 표준 입력(@-)과 --input 은 받지 않는다.
-function apiTexts(args) {
+function apiTexts(args, readFile) {
   const { flags, positional } = parseStrict(args.slice(1), API_SPEC, 'gh api');
   if (positional.length !== 1) throw new Error('gh api 는 엔드포인트 하나를 받는다');
   const endpoint = positional[0];
@@ -285,7 +289,7 @@ function apiTexts(args) {
       const file = value.slice(1);
       if (file === '-' || file === '')
         throw new Error('표준 입력 값(@-)은 검사할 수 없다. 파일로 넘긴다');
-      texts.push({ source: file, text: readFileSync(file, 'utf8') });
+      texts.push({ source: file, text: readFile(file) });
     } else {
       texts.push({ source: key, text: value });
     }
@@ -367,7 +371,7 @@ export function splitCommands(command) {
   return commands;
 }
 
-// 명령 앞의 변수 대입과 감싸는 명령(command, env, xargs, mise exec -- 등)을 걷어 실제 명령을 찾는다.
+// 명령 앞의 변수 대입과 감싸는 명령(command, env, xargs, timeout, mise exec -- 등)을 걷어 실제 명령을 찾는다.
 const WRAPPERS = new Set([
   'command',
   'exec',
@@ -378,7 +382,14 @@ const WRAPPERS = new Set([
   'sudo',
   'env',
   'xargs',
+  'caffeinate',
+  'stdbuf',
 ]);
+// 값을 받는 감싸는 명령의 플래그
+const WRAPPER_VALUE_FLAGS = {
+  timeout: new Set(['-s', '--signal', '-k', '--kill-after']),
+  nice: new Set(['-n']),
+};
 function stripWrappers(words) {
   let i = 0;
   while (i < words.length) {
@@ -387,12 +398,29 @@ function stripWrappers(words) {
     else if (WRAPPERS.has(w)) {
       i++;
       while (i < words.length && words[i].startsWith('-')) i++;
+    } else if (w === 'timeout' || w === 'nice') {
+      const valueFlags = WRAPPER_VALUE_FLAGS[w];
+      i++;
+      while (i < words.length && words[i].startsWith('-')) i += valueFlags.has(words[i]) ? 2 : 1;
+      if (w === 'timeout') i++; // 시간 값
     } else if (w === 'mise' && words[i + 1] === 'exec') {
       const dd = words.indexOf('--', i);
       i = dd < 0 ? words.length : dd + 1;
     } else break;
   }
   return words.slice(i);
+}
+
+// gh 는 하위 명령 앞의 -R/--repo 도 받는다(gh -R o/r issue list). 판정 전에 걷어 낸다.
+function stripGhRepo(args) {
+  let i = 0;
+  while (i < args.length) {
+    const w = args[i];
+    if (w === '-R' || w === '--repo') i += 2;
+    else if (/^(-R.|--repo=)/.test(w)) i++;
+    else break;
+  }
+  return args.slice(i);
 }
 
 const basename = (w) => w.slice(w.lastIndexOf('/') + 1);
@@ -404,7 +432,10 @@ const hasFlag = (args, longs, shorts) =>
   );
 // 글이 담긴 REST 자원. 이 경로로 쓰는(GET 이 아닌) 호출은 검사 스크립트를 거쳐야 한다.
 const TEXT_REST =
-  /^repos\/[^/]+\/[^/]+\/(issues(\/\d+)?|issues\/\d+\/comments|issues\/comments\/\d+|pulls(\/\d+)?|pulls\/\d+\/(comments|reviews)(\/\d+)?|pulls\/comments\/\d+|milestones(\/\d+)?|labels(\/[^/]+)?|releases(\/\d+)?)$/;
+  /^repos\/[^/]+\/[^/]+\/(issues\/\d+\/comments|issues\/comments\/\d+|pulls\/\d+\/(comments|reviews)(\/\d+)?|pulls\/comments\/\d+|milestones(\/\d+)?|labels(\/[^/]+)?|releases(\/\d+)?)$/;
+// 이슈·PR 자체는 제목·본문을 쓸 때만 글이다(state·labels·assignees 같은 필드만 바꾸면 통과).
+const ISSUE_REST = /^repos\/[^/]+\/[^/]+\/(issues|pulls)(\/\d+)?$/;
+const ISSUE_TEXT_KEYS = new Set(['title', 'body']);
 // gh api 의 값을 받지 않는 플래그. 엔드포인트를 찾을 때 쓴다.
 const API_BOOL = new Set([
   '--paginate',
@@ -419,37 +450,81 @@ const API_BOOL = new Set([
 const TEXT_MUTATION =
   /\b(addComment|updateIssueComment|createIssue|updateIssue|createPullRequest|updatePullRequest|addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|submitPullRequestReview|updatePullRequestReview|updatePullRequestReviewComment|createDiscussion|updateDiscussion|addDiscussionComment|updateDiscussionComment|createLabel|updateLabel|createRelease|updateRelease)\b/;
 
-// gh 인자 하나(gh 다음부터)가 막을 호출이면 이유를, 아니면 null 을 돌려준다.
-export function ghViolation(args, readFile = (f) => readFileSync(f, 'utf8')) {
+// 훅이 판정에 읽는 파일. 일반 파일만, 1MB 까지 읽는다(FIFO·장치 파일에서 멈추지 않게).
+function readSmallFile(f) {
+  const st = statSync(f);
+  if (!st.isFile() || st.size > 1024 * 1024)
+    throw Object.assign(new Error(`일반 파일이 아니거나 너무 크다: ${f}`), {
+      code: 'NOT_SMALL_FILE',
+    });
+  return readFileSync(f, 'utf8');
+}
+
+// 막는 이유와 안내. via: script(같은 인자로 검사 스크립트), other(스크립트가 받지 않음, 안내 문구),
+// unreadable(판정에 필요한 파일을 못 읽음).
+const toScript = (what) => ({ what, via: 'script' });
+const other = (what, hint) => ({ what, via: 'other', hint });
+const NO_SCRIPT = '검사 스크립트가 받지 않는 호출이다. 다른 길을 찾지 말고 사람에게 알린다';
+
+// api 필드 인자(-f/-F/--field/--raw-field)의 키 목록
+function apiFieldKeys(a) {
+  const keys = [];
+  for (let i = 0; i < a.length; i++) {
+    const w = a[i];
+    let v;
+    if (w === '-f' || w === '-F' || w === '--field' || w === '--raw-field') v = a[++i];
+    else if (/^--(raw-)?field=/.test(w)) v = w.slice(w.indexOf('=') + 1);
+    else if (/^-[fF]./.test(w)) v = w.slice(2);
+    if (v !== undefined) keys.push(v.split('=')[0].replace(/\[\]$/, ''));
+  }
+  return keys;
+}
+
+// gh 인자 하나(gh 다음부터)가 막을 호출이면 { what, via, hint } 를, 아니면 null 을 돌려준다.
+export function ghViolation(rawArgs, readFile = readSmallFile, resolvePath = (f) => f) {
+  const args = stripGhRepo(rawArgs);
   const [group, sub] = args;
   const rest = args.slice(2);
   if (group === 'issue' || group === 'pr') {
-    if (sub === 'create' || sub === 'comment') return `gh ${group} ${sub}`;
+    if (sub === 'create' || sub === 'comment') return toScript(`gh ${group} ${sub}`);
     if (sub === 'edit') {
       try {
-        if (textsFromGhArgs(args).length) return `gh ${group} edit (제목·본문)`;
+        if (textsFromGhArgs(args, (f) => readFile(resolvePath(f))).length)
+          return toScript(`gh ${group} edit (제목·본문)`);
       } catch {
-        return `gh ${group} edit`;
+        return toScript(`gh ${group} edit`);
       }
       return null;
     }
     if (sub === 'close' && hasFlag(rest, ['--comment'], ['-c']))
-      return `gh ${group} close --comment`;
+      return other(
+        `gh ${group} close --comment`,
+        `코멘트는 먼저 검사 스크립트로 올리고(gh ${group} comment) close 는 --comment 없이 실행한다`,
+      );
     if (
       group === 'pr' &&
       sub === 'review' &&
       hasFlag(rest, ['--body', '--body-file'], ['-b', '-F'])
     )
-      return 'gh pr review (본문)';
+      return other(
+        'gh pr review (본문)',
+        '리뷰 글은 검사 스크립트로 PR 코멘트에 올리고 review 는 본문 없이 실행한다',
+      );
     if (
       group === 'pr' &&
       sub === 'merge' &&
       hasFlag(rest, ['--body', '--body-file', '--subject'], ['-b', '-F', '-t'])
     )
-      return 'gh pr merge (커밋 제목·본문)';
+      return other('gh pr merge (커밋 제목·본문)', '머지는 제목·본문 플래그 없이 실행한다');
     return null;
   }
-  if (group === 'label' && (sub === 'create' || sub === 'edit')) return `gh label ${sub}`;
+  if (group === 'label' && (sub === 'create' || sub === 'edit')) return toScript(`gh label ${sub}`);
+  if (
+    group === 'release' &&
+    (sub === 'create' || sub === 'edit') &&
+    hasFlag(rest, ['--notes', '--notes-file', '--title'], ['-n', '-F', '-t'])
+  )
+    return other(`gh release ${sub} (제목·노트)`, NO_SCRIPT);
   if (group === 'api') {
     const a = args.slice(1);
     let endpoint = '';
@@ -465,7 +540,7 @@ export function ghViolation(args, readFile = (f) => readFileSync(f, 'utf8')) {
     }
     const isMethod = (w) => w === '-X' || w === '--method' || /^(-X.|--method=)/.test(w);
     // gh 는 -X 를 여러 번 주면 마지막 값을 쓴다. 판정이 갈리지 않게 여러 번이면 막는다(gh 모드도 거절한다).
-    if (a.filter(isMethod).length > 1) return 'gh api (-X 여러 번)';
+    if (a.filter(isMethod).length > 1) return other('gh api (-X 여러 번)', '-X 는 한 번만 쓴다');
     const methodIdx = a.findIndex(isMethod);
     const method = (
       methodIdx < 0
@@ -474,43 +549,99 @@ export function ghViolation(args, readFile = (f) => readFileSync(f, 'utf8')) {
           ? (a[methodIdx + 1] ?? '')
           : a[methodIdx].replace(/^(-X=?|--method=)/, '')
     ).toUpperCase();
-    const hasFields = hasFlag(a, ['--field', '--raw-field', '--input'], ['-f', '-F']);
+    const hasInput = hasFlag(a, ['--input'], []);
+    const hasFields = hasInput || hasFlag(a, ['--field', '--raw-field'], ['-f', '-F']);
     if (endpoint === 'graphql') {
       let body = a.join(' ');
+      const files = [];
       const inputIdx = a.findIndex((w) => w === '--input' || w.startsWith('--input='));
-      if (inputIdx >= 0) {
-        const file = a[inputIdx] === '--input' ? a[inputIdx + 1] : a[inputIdx].slice(8);
+      if (inputIdx >= 0)
+        files.push(a[inputIdx] === '--input' ? a[inputIdx + 1] : a[inputIdx].slice(8));
+      for (const w of a) {
+        const m = w.match(/^[A-Za-z_]+=@(.+)$/);
+        if (m && m[1] !== '-') files.push(m[1]);
+      }
+      for (const file of files) {
         try {
           body += ` ${readFile(file)}`;
         } catch {
-          return 'gh api graphql --input (읽을 수 없는 파일)';
+          return {
+            what: `gh api graphql (파일 ${file} 을 읽지 못함)`,
+            via: 'unreadable',
+            hint: '글을 쓰는 mutation 인지 판정하지 못했다. 파일 경로를 확인하고(같은 명령 안의 cd 는 따라간다) 다시 실행한다',
+          };
         }
       }
-      for (const w of a) {
-        const m = w.match(/^[A-Za-z_]+=@(.+)$/);
-        if (m && m[1] !== '-') {
-          try {
-            body += ` ${readFile(m[1])}`;
-          } catch {
-            return 'gh api graphql (읽을 수 없는 파일)';
-          }
-        }
-      }
-      return TEXT_MUTATION.test(body) ? 'gh api graphql (글을 쓰는 mutation)' : null;
+      return TEXT_MUTATION.test(body)
+        ? other('gh api graphql (글을 쓰는 mutation)', NO_SCRIPT)
+        : null;
     }
     const writes = method ? method !== 'GET' : hasFields;
-    if (writes && TEXT_REST.test(endpoint.replace(/^\//, '').replace(/\?.*$/, '')))
-      return `gh api ${method || 'POST'} ${endpoint}`;
+    if (!writes) return null;
+    const path = endpoint.replace(/^\//, '').replace(/\?.*$/, '');
+    const what = `gh api ${method || 'POST'} ${endpoint}`;
+    if (TEXT_REST.test(path)) {
+      // 검사 스크립트 gh 모드가 받는 두 가지(마일스톤, 이슈 코멘트 고치기)는 스크립트로 안내한다.
+      // -F key=@파일 은 같은 명령의 cd 를 따른 경로로 바꿔 모양만 본다(파일을 못 읽는 것과 받지 않는 호출을 가른다).
+      const resolved = args.map((w) => {
+        const m = w.match(/^([^=@-][^=]*)=@(.+)$/);
+        return m && m[2] !== '-' ? `${m[1]}=@${resolvePath(m[2])}` : w;
+      });
+      try {
+        textsFromGhArgs(resolved, readFile);
+        return toScript(what);
+      } catch (err) {
+        if (err?.code === 'ENOENT' || err?.code === 'EISDIR' || err?.code === 'NOT_SMALL_FILE')
+          return {
+            what: `${what} (본문 파일을 읽지 못함)`,
+            via: 'unreadable',
+            hint: '본문 파일 경로를 확인한다(같은 명령 안의 cd 는 따라간다). 그다음 같은 인자로 검사 스크립트를 실행한다',
+          };
+        return other(what, NO_SCRIPT);
+      }
+    }
+    // 필드와 쿼리 문자열로 준 키(title·body, 커밋 제목·본문)를 본다.
+    const queryKeys = [
+      ...new URLSearchParams(
+        endpoint.includes('?') ? endpoint.slice(endpoint.indexOf('?') + 1) : '',
+      ).keys(),
+    ];
+    // PR 머지 API 의 커밋 제목·본문(gh pr merge --subject/--body 와 같다)
+    if (
+      /^repos\/[^/]+\/[^/]+\/pulls\/\d+\/merge$/.test(path) &&
+      (hasInput ||
+        [...apiFieldKeys(a), ...queryKeys].some(
+          (k) => k === 'commit_title' || k === 'commit_message',
+        ))
+    )
+      return other(
+        `${what} (커밋 제목·본문)`,
+        '머지는 gh pr merge 로 제목·본문 플래그 없이 실행한다',
+      );
+    if (
+      ISSUE_REST.test(path) &&
+      (hasInput || [...apiFieldKeys(a), ...queryKeys].some((k) => ISSUE_TEXT_KEYS.has(k)))
+    )
+      return other(
+        `${what} (제목·본문)`,
+        '이슈·PR 제목·본문은 검사 스크립트의 gh issue|pr create|edit 로 쓴다',
+      );
     return null;
   }
   return null;
 }
 
-// Bash 명령 문자열에서 막을 gh 호출을 찾는다. 없으면 null.
-export function bashViolation(command) {
+// Bash 명령 문자열에서 막을 gh 호출을 찾는다. 없으면 null. 같은 명령 안의 cd 를 따라가 상대 경로 파일을 읽는다.
+export function bashViolation(command, cwd = process.cwd()) {
+  let dir = cwd;
   for (const words of splitCommands(command)) {
     const cmd = stripWrappers(words);
     if (!cmd.length) continue;
+    if (cmd[0] === 'cd') {
+      const to = cmd[1];
+      if (to && to !== '-' && !to.startsWith('~')) dir = pathResolve(dir, to);
+      continue;
+    }
     // 검사 스크립트를 거치는 호출은 통과한다(스크립트가 안에서 띄우는 gh 는 Bash 도구 호출이 아니다).
     if (
       basename(cmd[0]) === 'node' &&
@@ -518,8 +649,12 @@ export function bashViolation(command) {
     )
       continue;
     if (basename(cmd[0]) !== 'gh') continue;
-    const reason = ghViolation(cmd.slice(1));
-    if (reason) return reason;
+    const found = ghViolation(
+      cmd.slice(1),
+      (f) => readSmallFile(pathResolve(dir, f)),
+      (f) => pathResolve(dir, f),
+    );
+    if (found) return found;
   }
   return null;
 }
@@ -533,18 +668,19 @@ function hook() {
   }
   const command = input?.tool_input?.command;
   if (typeof command !== 'string') return 0;
-  const reason = bashViolation(command);
-  if (!reason) return 0;
+  const found = bashViolation(command, typeof input.cwd === 'string' ? input.cwd : process.cwd());
+  if (!found) return 0;
   const script = fileURLToPath(import.meta.url);
+  const how =
+    found.via === 'script'
+      ? `공개 글을 쓰므로 검사 스크립트로 실행한다: node "${script}" gh <같은 인자>. 본문은 local/ 아래 파일로 넘긴다(-F).`
+      : `${found.hint}.`;
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
         permissionDecision: 'deny',
-        permissionDecisionReason:
-          `autelon: ${reason} 는 공개 글을 쓰므로 검사 스크립트로 실행한다: node "${script}" gh <같은 인자>. ` +
-          '본문은 local/ 아래 파일로 넘긴다(-F). 스크립트가 받지 않는 호출이면 다른 방법을 찾지 말고 사람에게 알린다. ' +
-          '규칙: director 스킬 "이슈 쓰기 규칙", playbooks/issues.md 1절.',
+        permissionDecisionReason: `autelon: ${found.what} 를 막았다. ${how} 규칙: director 스킬 "이슈 쓰기 규칙", playbooks/issues.md 1절.`,
       },
     }),
   );
