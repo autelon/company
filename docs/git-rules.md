@@ -23,7 +23,7 @@ Refs: docs/design.md
 - **type**: `feat` 동작 추가 · `fix` 잘못된 동작 수정 · `refactor` 동작 변화 없는 구조 변경 · `perf` · `test` · `docs` · `build` 의존성·빌드·도구 · `ci` · `chore` 그 외
 - **scope**: 바뀐 영역 — `skills`(`plugin/skills/`) `agents`(`plugin/agents/`, 공용 role) `templates`(`plugin/templates/`) `playbooks`(`plugin/playbooks/`) `scripts`(`plugin/scripts/`) `plugin`(`plugin/.claude-plugin/`, `.claude-plugin/` 매니페스트) `docs` `ci`(`.github/`). 리포 전역 설정은 `repo`. 여러 개면 쉼표로 (`skills,templates`).
 - 요약은 **동작이나 결과**로 쓴다. "units.service 수정"이 아니라 "배송 완료 이벤트에 출고 때의 주문 참조를 이어 붙임".
-- 파일 형식(board, handoff, PRD frontmatter)이나 프로젝트가 부르는 이름(플러그인·스킬·role 이름)을 호환되지 않게 바꾸면 `!` 를 붙이고, 본문에 `BREAKING:` 으로 무엇을 고쳐야 하는지 적는다.
+- 기존 프로젝트가 옮겨야 하는 변경이면 `!` 를 붙이고, 본문에 `BREAKING:` 으로 프로젝트마다 무엇을 고쳐야 하는지 적는다. 파일 형식(이슈 본문·코멘트 템플릿 형식 포함)이나 프로젝트가 부르는 이름(플러그인·스킬·role 이름)을 호환되지 않게 바꾸는 것, 프로젝트에 복사된 role·템플릿·문서나 등록된 루틴 지시문과 어긋나는 규칙 변경이 해당한다(autelon/company#34).
 
 ### 본문
 
@@ -84,7 +84,7 @@ git 은 작성자(author)와 커밋한 사람(committer)을 따로 기록한다.
 - 리뷰 결과는 PR 코멘트로 남긴다. 계정이 하나라 GitHub 승인(approve)은 쓰지 않는다.
 - 리뷰어 에이전트는 company role `reviewer`(`.claude/agents/reviewer.md`), 검증은 `verifier`(읽기 기반 모의 실행)다. role을 만든 세션에서는 이름으로 부를 수 없으면 일반 에이전트에게 그 파일 본문을 지시문으로 준다. 리뷰 판정 첫 줄은 `리뷰: 통과 (<sha>)` 또는 `리뷰: 수정 필요 (<sha>)`다.
 - BREAKING PR은 리뷰·보안 검토·검증을 통과해도 사람이 머지를 정하기 전에는 머지 명령을 내지 않는다(autelon/company#34).
-- **보안 검토는 리뷰어와 별도로 모든 PR에 항상 한다.** 이 리포는 플러그인을 켜지 않으므로 `autelon:security-reviewer`를 이름으로 부를 수 없다. 대신 별도 에이전트에게 `plugin/agents/security-reviewer.md` 본문을 지시문으로 주고 PR 번호를 넘긴다. 머지 명령은 같은 head sha에 대해 리뷰 통과와 `보안 검토: 통과` 코멘트가 둘 다 있을 때만 낸다.
+- **보안 검토는 리뷰어와 별도로 모든 PR에 항상 한다.** 이 리포는 플러그인을 켜지 않으므로 `autelon:security-reviewer`를 이름으로 부를 수 없다. 대신 별도 에이전트에게 `plugin/agents/security-reviewer.md` 본문을 지시문으로 주고 PR 번호를 넘긴다. 머지 조건은 아래 "머지 명령"이다.
 
 ### 머지 명령
 
