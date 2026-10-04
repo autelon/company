@@ -4,7 +4,7 @@
      그래서 이 이슈에서 이어지는 단계 이슈와 사람 확인 이슈의 제목은 `autelon sync:`로 시작하지 않는다.
      맞출 대상 SHA는 처리할 때 판정표 코멘트 첫 줄(`대상 SHA: <12자>`)에 고정한다(`autelon:sync-project` 스킬).
      라벨: compare 상태가 ahead면 agent:ready, 그 밖(behind, diverged, 비교 실패, 기준 없음)이면 agent:needs-user.
-     열린 이슈에 ahead가 아닌 `설치 SHA:` 줄이 더해지면 director가 agent:ready를 agent:needs-user로 바꾼다.
+     열린 `<기록 SHA> 이후` 이슈에 ahead가 아닌 `설치 SHA:` 줄이 더해지면 director가 agent:ready를 agent:needs-user로 바꾼다(`기준 버전 정하기` 이슈는 줄만 더하고 라벨을 그대로 둔다).
      해당하지 않는 절("사람에게 묻기" 또는 "할 일")은 지운다. -->
 
 ## 현재 결론
@@ -44,6 +44,8 @@ gh api repos/autelon/company/compare/<기록 SHA>...<설치 SHA> --jq '.files[].
 
 <!-- 기준 없음: 기준 버전 파일이 없거나 pluginSha가 미정이다. 다음 중 하나를 골라 달라고 쓴다.
      ① 지금 설치 SHA를 기준으로 기록한다(프로젝트 파일이 이미 이 버전에 맞는다고 본다) ② 다른 SHA를 기준으로 준다(그 SHA부터 sync) ③ 프로젝트를 다시 만들 때까지 둔다(이 이슈를 닫지 않고 agent:needs-user로 열어 둔다. 닫으면 다음 세션이 같은 이슈를 다시 만든다)
+     ①②를 고르고 기준 버전 파일이 없으면, 이 프로젝트가 설립(found-company)인지 도입(adopt-project)인지도 함께 적어 달라고 쓴다(기준 버전 파일 첫 판의 note에 기록해 이후 sync가 대응표 정책을 고른다).
+     답한 뒤 agent:ready로 바꿔 달라고 쓴다. 답 처리는 autelon:sync-project 스킬 12번이다(①② 기록 PR, ③ 열어 둠)
      behind / diverged / 비교 실패: 설치된 플러그인이 기록보다 오래됐거나 갈라졌다. 플러그인 업데이트는 사람이 한다. 업데이트할지, 기록이 틀렸는지 묻는다 -->
 
 ## 완료 조건

@@ -28,6 +28,8 @@
 
 같은 head sha에 리뷰 통과 코멘트와 `보안 검토: 통과 (<sha>)` 코멘트가 둘 다 있어야 한다. 하나라도 없으면 머지 명령을 내지 않는다.
 
+플러그인 버전 맞추기(sync) PR이 관문 파일(`.claude/agents/`, `docs/git-rules.md`, `.github/workflows/`, `.claude/settings.json`)을 바꾸면, 리뷰·보안 검토를 모두 통과해도 사람이 머지를 정한다. 절차는 `autelon:sync-project` 스킬 9번이다(autelon/company#67 결정 4).
+
 ## 머지 명령
 
 ```
