@@ -1,6 +1,6 @@
 # 기존 프로젝트의 기록을 이슈로 옮기기
 
-이 플러그인 버전 전에 설립·도입한 프로젝트(board/, prds/, handoffs/, decisions/, state/sprint.md, docs/first-run.md를 쓰던 곳)를 GitHub 이슈와 Project로 옮기는 절차다. 이전은 그 프로젝트의 director 세션이 작업 단위 하나로 한다. poker에서 처음 시험했다(2026-10-04, autelon/company#30). 그때 확인하지 못한 것(`--parent`, `--blocked-by`, 마일스톤, 관계 백업)은 playbook의 **[미확인]** 표시를 보고 처음 쓸 때 확인한다.
+이 플러그인 버전 전에 설립·도입한 프로젝트(board/, prds/, handoffs/, decisions/, state/sprint.md, docs/first-run.md를 쓰던 곳)를 GitHub 이슈와 Project로 옮기는 절차다. 이전은 그 프로젝트의 director 세션이 작업 단위 하나로 한다. poker에서 처음 시험했고(2026-10-04, autelon/company#30), logistics-hub에서 두 번째로 했다(2026-10-04, autelon/company#43·#44). 아직 확인하지 못한 것(`--parent`, 마일스톤, 부모 관계 백업)은 playbook의 **[미확인]** 표시를 보고 처음 쓸 때 확인한다.
 명령은 `playbooks/issues.md`, 기록 위치는 director 스킬 "기록은 어디에 두는가"를 따른다. 이슈에 올리는 글은 모두 검사 스크립트를 거친다.
 
 ## 시작 전에
@@ -14,7 +14,7 @@
 
 ## 순서
 
-1. **준비** (playbook 2절): 라벨, Project(필드 `Role`은 `director`와 프로젝트 role), Status 선택지(기본 선택지 셋은 id를 유지한 채 이름만 바꾼다), 화면(기본 "View 1"은 지운다). 보드 열 기준·로드맵 날짜 필드와 기본 워크플로는 API로 정할 수 없어 director가 브라우저 도구로 설정한다(playbook 2절 "웹 설정"). Status 선택지를 바꾼 뒤 워크플로 화면에서 대상이 깨지지 않았는지 본다.
+1. **준비** (playbook 2절): 라벨, Project(필드 `Role`은 `director`와 프로젝트 role), Status 선택지(기본 선택지 셋은 id를 유지한 채 이름만 바꾼다), 화면(기본 "View 1"은 지운다). 보드 열 기준·로드맵 날짜 필드와 기본 워크플로는 API로 정할 수 없어 director가 브라우저 도구로 설정한다(playbook 2절 "웹 설정"). 새 Project가 켠 채로 시작하는 워크플로는 일정하지 않으므로, 만든 직후 GraphQL로 `enabled`를 읽고 기준표와 다른 것을 끄고 켠다(playbook 2절 "기본 워크플로"). Status 선택지를 바꾸기 전에 켜진 워크플로의 대상을 봐 두고, 바꾼 뒤 워크플로 화면에서 대상이 그대로인지 본다.
 2. **마일스톤**: `board/milestones.json`의 항목마다 저장소 마일스톤을 만든다(제목 `M-01 <title>`, `target`이 있으면 `due_on`). done이면 마일스톤을 닫는다.
 3. **PRD**: `prds/*.md`마다 Feature 이슈를 만든다. 본문은 `templates/issues/prd.md` 형식으로, 섹션은 원래 PRD 본문을 그대로 옮기고 "현재 결론"에 frontmatter `status`(단계)를 적는다. 마일스톤을 단다. 모두 만든 뒤 `derived_from`을 `파생: #N`으로 채운다. `closed`면 닫는다.
 4. **task**: `board/tasks.json`의 task마다 Task 이슈를 만든다. 본문 `templates/issues/task.md`, "현재 결론"에 `예전 ID: T-0001`을 적는다. `--parent <PRD 이슈>`, 마일스톤, `depends_on` → `--blocked-by`. Project 필드 `Status`·`Role`·`Size`를 채운다. `done`은 `--reason completed`, `rejected`는 `--reason "not planned"`로 닫고 **닫은 뒤에** Status를 `rejected`로 고친다(Item closed 워크플로가 닫힘 사유를 가리지 않아 `done`으로 덮일 수 있다. playbook 3절 "닫기").

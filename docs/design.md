@@ -183,7 +183,8 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
 - 확인한 것 (GitHub 문서, 2026-10-04 조사): Projects는 항목 50,000개, 필드 50개까지. 조직 Project는 조직 저장소들의 이슈·PR을 담고, Project를 private으로 해도 항목은 원래 저장소 권한을 따른다. 내장 자동화(닫힘·머지 시 Status=Done, 자동 보관, 저장소에서 자동 추가). sub-issue는 부모당 100개·8단계, 의존 관계(blocked by/blocking)는 관계당 50개.
 - poker 기록 이전(2026-10-04, autelon/company#30)에서 확인: Free 조직에서 조직 Project 생성·연결, `gh issue create --type/--project`, 이름으로 필드 고치기(`gh project item-edit --url --field --value`), GraphQL로 Status 선택지 바꾸기(id를 넘기면 이름만 바뀐다, autelon/company#31)와 화면 만들기. 보드 열 기준·로드맵 날짜 필드와 기본 워크플로는 API로 정할 수 없어 웹에서 한다. 이 웹 설정은 director가 브라우저 도구(사람의 로그인 세션)로 직접 하고, 도구가 없을 때만 사람에게 조작을 안내한다(사용자 결정 2026-10-04). 플러그인은 public이라 특정 사용자의 브라우저 스킬 이름에 기대지 않고 "있으면 쓴다"고만 적었다. 플러그인 기준 워크플로 값은 `plugin/playbooks/issues.md` 2절 표다(`Refs #N`만 쓰므로 PR 연결·머지 워크플로는 끈다).
 - `Role` 필드에는 프로젝트 role과 `director`를 둔다. 결정·first-run·스프린트 이슈의 담당이 director라서다(poker에서 더함).
-- **[미확인]** `gh issue create --parent/--blocked-by`의 실제 동작, `project` 권한 없이 `--project`가 되는가, id를 유지해 이름만 바꾼 Status 선택지를 기본 워크플로가 계속 가리키는가, 날짜 필드의 item-list 키. 다음 기록 이전(autelon/logistics-hub)에서 확인한다.
+- logistics-hub 기록 이전(2026-10-04, autelon/company#43)에서 확인: `gh issue create --blocked-by`와 관계 백업의 `blockedBy` 목록, id를 유지해 이름만 바꾼 Status 선택지를 기본 워크플로가 계속 가리킴, 날짜 필드를 이름으로 고치기와 item-list 키, Status `done`과 닫기의 양방향 연동. 새 Project가 켠 채로 시작하는 워크플로는 Project마다 달랐다(poker 1개, logistics-hub 6개). 그래서 만든 직후 `enabled`를 읽고 맞춘다(`plugin/playbooks/issues.md` 2절).
+- **[미확인]** `gh issue create --parent`의 실제 동작과 부모 관계 백업, 마일스톤 만들기, `project` 권한 없이 `--project`가 되는가, 반려 task를 닫은 뒤 워크플로가 Status를 다시 덮는가.
 - `gh project`는 토큰에 `project` 권한이 필요하다. 지금 토큰에는 없다(2026-10-04 `gh auth status`). 추가는 `gh auth refresh -s project`(브라우저 승인)이고, 에이전트가 실행하고 사람이 승인한다.
 
 ## 6. PRD
