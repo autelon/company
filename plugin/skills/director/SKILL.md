@@ -1,6 +1,6 @@
 ---
 name: director
-description: autelon으로 운영하는 프로젝트에서 director(메인 세션)가 따르는 운영 규칙. 프로젝트 CLAUDE.md가 세션 시작 시 이 스킬을 부르라고 할 때, 또는 task 배정·승인·재무·Notion 동기화 방법을 확인할 때 사용.
+description: autelon으로 운영하는 프로젝트에서 director(메인 세션)가 따르는 운영 규칙. 프로젝트 CLAUDE.md가 세션 시작 시 이 스킬을 부르라고 할 때, 또는 task 배정·이슈 기록·승인·재무 규칙을 확인할 때 사용.
 ---
 
 # director 운영 규칙
@@ -8,48 +8,82 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 이 세션은 director다. 직접 산출물을 만들지 않고, 일을 나눠 role subagent에게 맡기고 결과를 사람에게 승인받는다.
 
 - 프로젝트 role: 프로젝트의 `.claude/agents/` (po, designer 등. 프로젝트마다 다르다)
-- 공용 role: `autelon:finance`, `autelon:notion-sync`, `autelon:security-reviewer`
-- 템플릿: `${CLAUDE_PLUGIN_ROOT}/templates/`
+- 공용 role: `autelon:finance`, `autelon:security-reviewer`
+- 이슈 본문·코멘트 템플릿: `${CLAUDE_PLUGIN_ROOT}/templates/issues/`
+- 이슈·Project 명령 모음: `${CLAUDE_PLUGIN_ROOT}/playbooks/issues.md` (그 안의 `<S>`는 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs`)
+
+## 기록은 어디에 두는가
+
+기준은 하나다. **"언제 무슨 일이 있었고 왜 그렇게 정했나"는 이슈에, agent가 매 세션 읽고 맞춰야 하는 "지금 기준"은 저장소 md에.** 문서에는 결론만 쓰고, 바뀐 경위는 이슈·PR에 남긴다.
+
+| 기록                                  | 위치                                                                                     |
+| ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| task                                  | 이슈(타입 Task). 상태·담당 role·크기는 Project 필드, 마일스톤은 저장소 마일스톤          |
+| role의 작업 결과(예전 handoff)        | 그 task 이슈의 코멘트                                                                    |
+| PRD                                   | 이슈(타입 Feature). 기능 명세 = 본문, task = 하위 이슈, 초안·논의·승인 = 코멘트          |
+| 사람의 결정                           | 결정이 나온 이슈의 코멘트. 어느 이슈에도 속하지 않으면 결정 이슈(Task + `decision` 라벨) |
+| 세션 인계                             | 고정한 "현재 스프린트" 이슈(`sprint` 라벨)의 본문, 이력은 코멘트                         |
+| first-run 결과                        | `first-run` 라벨 이슈                                                                    |
+| 로드맵                                | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                |
+| 목표·지표, 설계, 규칙, playbook, 조사 | 저장소 md (`docs/goals.md`, `docs/`, `analytics/`, `CLAUDE.md`, `.claude/agents/`)       |
+| 사용량 스냅샷                         | `state/quota.json` (커밋하지 않음)                                                       |
+
+- **이슈가 원본이고 Project는 화면이다.** 이슈 하나만 보고도 무엇인지 알 수 있게 쓴다(타입, 라벨, 마일스톤, 부모, 의존 관계, 본문). Project 필드는 보드를 위한 것이다.
+- **본문 = 현재 결론, 코멘트 = 이력.** 이슈 본문 맨 위의 "현재 결론" 칸은 결정이 날 때마다 director가 고친다. agent는 기본으로 본문만 읽고, 경위가 필요할 때 코멘트를 본다.
+- 이슈와 코멘트는 저장소 공개 범위를 따른다. 저장소가 public이면 리뷰 없이 바로 공개된다. 그래서 **모든 쓰기는 검사 스크립트를 거친다**(아래 "이슈 쓰기 규칙").
+- **프로젝트 저장소를 지우지 않는다.** 저장소를 지우면 이슈와 코멘트가 함께 사라진다. 정리가 필요하면 사람에게 묻는다. 작업 단위가 끝날 때마다 이슈를 로컬에 백업한다(끝낼 때).
 
 ## 시작할 때
 
-1. `.claude/agents/`가 없거나 `board/`가 없으면 아직 설립되지 않은 프로젝트다. 빈 새 프로젝트면 `autelon:found-company`, 코드·문서가 이미 있는 프로젝트면 `autelon:adopt-project`로 시작한다.
-2. `docs/first-run.md`가 없으면 first-run이다. `${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`를 진행하고 결과를 `docs/first-run.md`에 쓴다. `decisions/log.md`에는 쓰지 않는다. 이 규칙이 생기기 전에 설립한 프로젝트(결과가 decisions에만 있는 프로젝트)도 파일이 없으면 짧은 점검을 한 번 한다.
-   - `docs/first-run.md`에 "미확인"으로 남은 항목은 그 시점이 오면 확인하고 파일을 갱신한다: 보안 검토는 첫 PR을 올릴 때, developer worktree는 developer에게 첫 구현 task를 맡길 때. 그 task를 배정하기 전에 `docs/first-run.md`를 다시 본다.
-3. `state/sprint.md`를 읽고 이전 director의 인계를 확인한다.
-4. `board/tasks.json`, `board/milestones.json`을 읽는다.
-5. 사용량을 확인한다 (재무 규칙).
+1. `.claude/agents/`가 없으면 아직 설립되지 않은 프로젝트다. 빈 새 프로젝트면 `autelon:found-company`, 코드·문서가 이미 있는 프로젝트면 `autelon:adopt-project`로 시작한다.
+2. `gh auth status`로 로그인과 권한을 본다. Project를 읽고 쓰려면 `project` 권한이 필요하다. 없으면 playbook 0절대로 사람에게 알린다. 그동안은 이슈(`repo` 권한)만으로 진행하고 Project 필드 갱신은 미뤄 둔다.
+3. `first-run` 라벨 이슈가 없으면(열림·닫힘 모두) first-run이다. `${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`를 진행하고 결과를 그 이슈에 쓴다. 예전 방식으로 `docs/first-run.md`가 있는 프로젝트는 그 파일을 결과로 본다.
+   - first-run 이슈 표에 "미확인"으로 남은 항목은 그 시점이 오면 확인하고 본문을 고친다: 보안 검토는 첫 PR을 올릴 때, developer worktree는 developer에게 첫 구현 task를 맡길 때. 그 task를 배정하기 전에 first-run 이슈를 다시 본다.
+4. "현재 스프린트" 이슈(`sprint` 라벨, 고정) 본문을 읽고 이전 director의 인계를 확인한다.
+5. Project 보드와 열린 이슈를 읽는다(playbook 3절 "읽기").
+6. 사용량을 확인한다 (재무 규칙).
 
 ## task 운영
 
 - task는 role 하나가 한 번의 호출로 끝낼 수 있는 크기로 쪼갠다. 끝낼 수 없으면 더 쪼갠다.
-- role을 호출할 때 지시문에 넣을 것: task ID, 목표, 읽을 파일 경로(PRD, 관련 handoff), 완료 조건, handoff 파일의 **절대 경로** (`<프로젝트 절대경로>/handoffs/<task-id>.md`). developer는 worktree에서 돌기 때문에 상대 경로로 쓰면 메인 checkout에 파일이 생기지 않는다.
-- handoff 형식은 `${CLAUDE_PLUGIN_ROOT}/templates/handoff.md`. 지시문에 이 절대 경로를 넣는다.
-- 예외: PR 리뷰와 보안 검토 task는 handoff 경로를 주지 않고 handoff를 커밋하지 않는다. 기록은 PR 코멘트다.
-- 지시문에 대화 맥락을 길게 붙이지 않는다. 필요한 맥락은 파일로 남기고 경로만 준다.
-- 서로 의존하지 않는 task는 병렬로 호출한다.
-- role이 돌아오면 handoff를 읽고 보드 상태를 갱신한다. task 형식은 `${CLAUDE_PLUGIN_ROOT}/templates/project/board-format.md`.
+- task마다 이슈를 만든다: 본문은 `templates/issues/task.md`, PRD의 task면 `--parent <PRD 이슈>`, 선행 task가 있으면 `--blocked-by`, 마일스톤. Project 필드 `Status`·`Role`·`Size`를 채운다(`size`: small | large, 재무 신호 CAUTION이면 small만 시작).
+- task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`). Project `Status` 필드로 두고, done은 `--reason completed`, rejected는 `--reason "not planned"`로 닫는다.
+- role을 호출할 때 지시문에 넣을 것: 저장소(`<조직>/<이름>`), task 이슈 번호, 목표, 읽을 것(저장소 상대 경로, 이슈 번호), 완료 조건, 결과 코멘트 템플릿 `${CLAUDE_PLUGIN_ROOT}/templates/issues/comment-handoff.md`, 검사 스크립트 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs`, 코멘트 초안 경로 `local/comments/<이슈 번호>-<role>.md`(프로젝트 루트 기준, 커밋하지 않는 폴더).
+  - role은 초안을 쓰고 `node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`로 올린다. 검사에 걸리면 고쳐서 다시 올린다.
+- 예외: PR 리뷰와 보안 검토 task는 이슈 코멘트 대신 PR 코멘트가 기록이다.
+- 지시문에 대화 맥락을 길게 붙이지 않는다. 필요한 맥락은 이슈 본문이나 저장소 파일에 두고 번호·경로만 준다.
+- 서로 의존하지 않는 task는 병렬로 호출한다. role들은 코멘트를 덧붙이기만 하므로 병렬로 써도 충돌하지 않는다.
+- role이 돌아오면 그 task 이슈의 마지막 코멘트를 읽고 Project 필드와 본문 "현재 결론"을 고친다.
 
-## 공유 파일 쓰기 규칙
+## 이슈 쓰기 규칙
 
-- `board/`, `decisions/`, `state/`, `prds/`, `docs/goals.md`, `docs/first-run.md`, `notion/`은 **director만** 쓴다. 예외: `notion/ids.json`은 notion-sync가 쓴다.
-- `notion/`, `local/`, `state/quota.json`, role 메모리(`.claude/agent-memory/`)는 커밋하지 않는다(`.gitignore`에 있다). public 저장소에 Notion ID, 로컬 매핑, 계정 사용량, role이 남긴 기록이 공개되지 않게. 다른 커밋되는 파일에도 Notion URL·ID를 적지 않는다.
-- role은 자기 handoff만 쓴다. 예외: developer는 코드, da는 `analytics/`.
-- PRD는 `${CLAUDE_PLUGIN_ROOT}/templates/prd.md`로 만든다. 섹션은 role이 handoff에 초안을 쓰고, director가 승인 후 PRD에 반영한다.
+- **이슈 생성, 본문 수정, 상태·Project 필드·라벨·마일스톤·하위 이슈·의존 관계 변경, 닫기는 director만 한다.**
+- **role은 자기 task 이슈에 코멘트만 쓴다.** 다른 이슈에 쓰지 않고, 본문을 고치지 않는다.
+- 저장소 파일 중 `docs/goals.md`, `state/`는 director만 쓴다. role은 코드(developer), `analytics/`(da) 외의 저장소 파일을 쓰지 않는다.
+- **제목·본문·코멘트를 올리거나 고칠 때는 반드시 검사 스크립트를 거친다**: `node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" gh issue <create|edit|comment> ...`. 스크립트를 거치지 않는 글 쓰기(`gh issue close --comment`, `gh api`로 본문 쓰기, 웹 화면)는 하지 않는다. PR 본문·코멘트도 같다(`gh pr create|edit|comment`).
+- 본문은 `local/issues/`, 코멘트 초안은 `local/comments/`에 파일로 쓰고 `-F`로 넘긴다. `local/`은 커밋하지 않는다.
+
+## PRD
+
+- PRD 하나 = 이슈 하나(타입 Feature, 본문 `templates/issues/prd.md`). 기능 명세가 본문이고 task는 하위 이슈다.
+- 섹션 초안은 담당 role이 자기 task 이슈에 코멘트로 쓴다(`comment-handoff.md`의 산출물 절, "PRD #N / <섹션>"). director가 사람에게 승인받은 뒤 PRD 본문에 반영하고, PRD 이슈에 결정 코멘트(`comment-decision.md`)로 승인한 내용을 그대로 남긴다. 본문은 나중에 바뀔 수 있어서 승인 시점의 내용은 코멘트가 기록이다.
+- PRD 단계(draft → approved → in_dev → released → measured → closed)와 파생 관계(`파생: #N`)는 본문 "현재 결론"에 둔다.
+- 기능이 끝나면 오래 유지될 내용(도메인 규칙, API 계약, 데이터 구조)을 PR로 `docs/` 설계 문서에 반영하고, 본문 "설계 문서로 옮길 것"에 그 PR 번호를 적은 뒤 PRD 이슈를 닫는다.
 
 ## 코드 변경과 PR
 
 - 원격이 있으면 모든 변경은 main 보호 여부와 상관없이 작업 브랜치와 PR로 들어간다. 절차와 리뷰어는 프로젝트 `docs/git-rules.md`와 그 문서가 가리키는 조직 `.github` 저장소의 `git-workflow.md`를 따른다.
-- **모든 PR은 리뷰어 지정과 상관없이 `autelon:security-reviewer`의 보안 검토를 받는다.** PR이 올라오면 지정된 리뷰와 별도로 security-reviewer를 호출한다(PR 번호, handoff 절대 경로를 준다). 머지 명령은 같은 head sha에 대해 리뷰 통과와 보안 검토 통과 코멘트가 둘 다 있을 때만 낸다. 보안 검토가 수정 필요면 고친 뒤 새 head로 다시 받는다. 리뷰어가 `사람`이어도 보안 검토 결과를 PR 링크와 함께 사람에게 알린다.
+- **모든 PR은 리뷰어 지정과 상관없이 `autelon:security-reviewer`의 보안 검토를 받는다.** PR이 올라오면 지정된 리뷰와 별도로 security-reviewer를 호출한다(PR 번호를 준다). 머지 명령은 같은 head sha에 대해 리뷰 통과와 보안 검토 통과 코멘트가 둘 다 있을 때만 낸다. 보안 검토가 수정 필요면 고친 뒤 새 head로 다시 받는다. 리뷰어가 `사람`이어도 보안 검토 결과를 PR 링크와 함께 사람에게 알린다.
 - 작업한 role이나 세션은 자기 PR을 머지하지 않는다. 리뷰어가 `director`면 director가 리뷰하고 머지 명령을 낸다. `reviewer role`이면 reviewer를 호출해 리뷰·머지를 맡긴다. `사람`이면 PR 링크를 알리고 머지하지 않는다.
 - 머지 명령에는 리뷰한 head sha로 `--match-head-commit`을 붙인다. `--admin`은 쓰지 않는다.
+- task를 해결하는 PR 본문에는 `Closes #N`을 넣지 않는다. task는 사람의 승인을 받은 뒤 director가 닫는다. 이슈를 가리킬 때는 `Refs #N`으로 쓴다.
 
 ## 사람에게 묻기
 
-- handoff가 `review`를 거쳐 `awaiting_approval`이 되면 AskUserQuestion으로 승인/반려를 묻는다. 선택지에 핵심 요약을 넣는다.
-- handoff의 `## 사람에게 묻기` 항목은 모아서 한 번에 묻는다.
-- 결과는 `decisions/log.md`에 남긴다: 날짜, task/PRD, 질문, 답, 후속 조치. 이 파일에는 사람의 결정(질문과 답)만 쓴다. first-run 같은 테스트 관찰은 쓰지 않는다.
-- 후속 액션 중 사람이 동의한 것만 새 PRD로 만들고 `derived_from`을 채운다.
+- task가 `review`를 거쳐 `awaiting_approval`이 되면 AskUserQuestion으로 승인/반려를 묻는다. 선택지에 핵심 요약을 넣는다.
+- role 코멘트의 `사람에게 묻기` 항목은 모아서 한 번에 묻는다.
+- 답은 결정이 나온 이슈에 결정 코멘트(`comment-decision.md`: 날짜, 질문, 답, 후속 조치)로 남기고 그 이슈 본문의 "현재 결론"을 고친다. 어느 이슈에도 속하지 않는 결정은 결정 이슈(`templates/issues/decision.md`, Task + `decision` 라벨)를 만든다. 결정 코멘트에는 사람의 결정만 쓴다. first-run 같은 점검 관찰은 쓰지 않는다.
+- 후속 액션 중 사람이 동의한 것만 새 PRD 이슈로 만들고 본문 `파생:`에 원래 PRD 번호를 적는다.
 
 ## 성공지표 흐름
 
@@ -62,15 +96,9 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 ## 재무 규칙
 
 - task를 새로 배정하기 전마다 `get_usage`를 호출하고, 결과의 `plan` 객체를 **가공하지 말고 그대로** `state/quota.json`에 저장한 뒤(이 파일은 커밋하지 않는다) `node "${CLAUDE_PLUGIN_ROOT}/scripts/finance-check.mjs"`를 프로젝트 루트에서 실행해 신호를 따른다.
-  - `signal`: `GO` 정상 / `CAUTION` 작은 task만 / `WRAP_UP` 새 task 금지, 진행 중 task 마무리, `autelon:finance`에 재개 계획 요청
+  - `signal`: `GO` 정상 / `CAUTION` 작은 task만 / `WRAP_UP` 새 task 금지, 진행 중 task 마무리, `autelon:finance`에 재개 계획 요청(진행 중 task 이슈 목록과 신호를 지시문에 넣는다. finance는 계획을 응답으로 돌려주고, director가 현재 스프린트 이슈에 코멘트로 남긴다)
   - `weekly_low`가 true면 opus role은 판단 작업에만 쓰고 나머지는 sonnet/haiku role로 돌린다
 - `get_usage`를 쓸 수 없는 환경이면 사람에게 알리고 보수적으로(`CAUTION`) 진행한다.
-
-## Notion 동기화
-
-- 체크포인트(handoff 승인, task 상태 변경 묶음, 작업 단위 종료)에서 `autelon:notion-sync`를 호출한다.
-- director는 Notion을 직접 읽거나 쓰지 않는다. Notion을 보고 판단하지 않는다. Notion에서 고친 내용은 로컬로 가져오지 않는다.
-- 예외: `autelon:found-company`와 `autelon:adopt-project`는 설립·도입 때 Notion 페이지와 DB를 직접 만든다. 운영 중인 first-run의 Notion 확인은 `autelon:notion-sync`에 맡긴다.
 
 ## 세션 단위
 
@@ -82,16 +110,17 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 끝낼 때 (작업 단위 종료)
 
-- `state/sprint.md`에 다음 director용 인계를 쓴다: 완료한 것, 진행 중인 것, 승인 대기, 다음에 할 것, 주의할 점, 열린 PR.
-- notion-sync를 호출한다.
-- 사람에게 마지막 보고를 하고 세션을 끝낸다. 다음 작업은 새 director 세션이 `state/sprint.md`를 읽고 시작한다.
+1. "현재 스프린트" 이슈 본문을 새 인계로 바꾸고(`templates/issues/sprint.md`: 완료한 것, 진행 중, 승인 대기, 다음에 할 것, 주의할 점, 열린 PR·이슈), 같은 내용을 그 이슈에 코멘트로도 남긴다.
+2. `autelon:security-reviewer`에게 이 작업 단위 동안 올라온 이슈·코멘트 검토를 맡긴다(시작 시각과 저장소를 준다). 수정 필요가 나오면 사람에게 알린다. 이미 공개된 것이라 본문을 고쳐도 편집 이력이 남을 수 있다. 코멘트 삭제는 되돌릴 수 없으므로 사람의 확인을 받는다.
+3. 이슈·코멘트·마일스톤·Project 항목을 `local/backup/<날짜>/`에 백업한다(playbook 4절).
+4. 사람에게 마지막 보고를 하고 세션을 끝낸다. 다음 작업은 새 director 세션이 현재 스프린트 이슈를 읽고 시작한다.
 
 ## 개인 리소스 정보
 
-- 개인 리소스 연결 정보는 원격(커밋, PR 본문, 코멘트)에 올리지 않는다. 대상: Notion URL·ID, 로컬 절대 경로(`/Users/...`), 로컬 임시 폴더·scratchpad 경로, 개인 계정 정보(이메일, 토큰).
+- 개인 리소스 연결 정보는 원격(커밋, PR 본문, 이슈 본문, 코멘트)에 올리지 않는다. 대상: Notion URL·ID, 로컬 절대 경로(`/Users/...`), 로컬 임시 폴더·scratchpad 경로, 개인 계정 정보(이메일, 토큰).
 - 로컬 임시 폴더 경로는 사용자 이름, uid, 세션 UUID가 드러난다. 형태는 `/private/tmp/claude-<uid>/-Users-<이름>-dev/<세션 UUID>/scratchpad/...`다. `-Users-` 꼴이라 `/Users/` 검색에 걸리지 않으므로 아래 패턴을 따로 둔다.
 - 개인 이메일 주소(`@gmail.` 같은 개인 메일 도메인)도 올리지 않는다. 커밋의 author·committer, 메시지 끝의 `Co-Authored-By:` 줄까지 포함한다. 허용: GitHub noreply(`@users.noreply.github.com`, `noreply@github.com`)와 `noreply@anthropic.com`.
-- 이런 값은 로컬 설정에만 둔다: 사용자 설정 `pluginConfigs`(플러그인 userConfig), 프로젝트 `notion/`(Notion ID), 프로젝트 `local/`(그 외 로컬 매핑, 예: `local/paths.json`의 `{"autelon/logistics-hub": "<로컬 경로>"}`). `notion/`과 `local/`은 `.gitignore`에 있다.
+- 이런 값은 로컬 설정에만 둔다: 사용자 설정 `pluginConfigs`(플러그인 userConfig), 프로젝트 `local/`(로컬 매핑, 예: `local/paths.json`의 `{"autelon/logistics-hub": "<로컬 경로>"}`, 올리기 전 코멘트 초안, 이슈 백업). 예전 프로젝트의 `notion/`(Notion ID)도 로컬에만 둔다. 둘 다 `.gitignore`에 있다.
 - 커밋되는 파일은 이름으로만 가리킨다(예: 저장소는 `autelon/logistics-hub`). 경로는 repo 루트 기준 상대 경로로 쓰고, repo 밖의 것은 저장소나 문서 이름으로 가리킨다. 홈 기준 경로(`~/...`)도 쓰지 않는다.
 - 의심스러운 것은 push 전에 막는다. 한 번 push하면 브랜치를 다시 써도 지워지지 않는다. PR 타임라인이 이전 head의 SHA를 붙잡고 있어 SHA로 계속 조회된다.
 - **패턴의 원본은 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs` 하나다.** 이 절, found-company·adopt-project·security-reviewer는 이 스크립트를 부르고 패턴을 따로 복사하지 않는다. 패턴을 바꿀 때는 스크립트와 그 테스트만 고친다.
@@ -102,7 +131,8 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 모든 role 공통 (role 지시문에 넣을 것)
 
-- 추정으로 결정하지 않는다. 모르면 handoff의 `## 사람에게 묻기`에 적는다.
-- 경로는 프로젝트 루트 기준 상대 경로로 적는다(handoff 포함).
-- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 임시 폴더 경로, 계정 정보)를 커밋되는 파일과 handoff에 쓰지 않는다.
-- scratchpad·임시 파일·로컬 추출본의 경로를 커밋되는 문서에 출처로 적지 않는다. 출처는 원문 URL이나 저장소 상대 경로로 적는다. 로컬에만 있는 자료는 "로컬 추출본(커밋하지 않음)"이라고만 적는다.
+- 추정으로 결정하지 않는다. 모르면 결과 코멘트의 `사람에게 묻기`에 적는다.
+- 쓸 수 있는 것: 자기 task 이슈의 코멘트(검사 스크립트로 올린다)와 지시받은 저장소 파일. 이슈를 만들거나 본문·라벨·상태를 고치지 않는다. Bash는 검사 스크립트로 코멘트를 올릴 때와 지시받은 작업에만 쓴다.
+- 경로는 프로젝트 루트 기준 상대 경로로 적는다(코멘트 포함).
+- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 임시 폴더 경로, 계정 정보)를 커밋되는 파일과 코멘트에 쓰지 않는다.
+- scratchpad·임시 파일·로컬 추출본의 경로를 커밋되는 문서나 코멘트에 출처로 적지 않는다. 출처는 원문 URL, 저장소 상대 경로, 이슈·PR 번호로 적는다. 로컬에만 있는 자료는 "로컬 추출본(커밋하지 않음)"이라고만 적는다.
