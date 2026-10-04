@@ -508,3 +508,29 @@ test('훅: 값을 받는 플래그가 붙은 xargs 뒤의 gh 글쓰기를 막는
     assert.equal(bashViolation(ok), null, ok);
   }
 });
+
+// autelon/company#58: 감싸는 명령을 전체 경로로 써도 알아본다.
+test('훅: 전체 경로로 쓴 감싸는 명령 뒤의 gh 글쓰기를 막는다', () => {
+  const S = 'node plugin/scripts/privacy-check.mjs';
+  for (const bad of [
+    '/usr/bin/xargs gh issue comment 1 -b x < local/n.txt',
+    '/usr/bin/xargs -n 1 gh issue comment -b x < local/n.txt',
+    '/usr/bin/env gh pr create -t a -b b',
+    '/usr/bin/env FOO=1 /usr/local/bin/gh issue comment 1 -b x',
+    '/usr/bin/timeout 5 gh issue comment 1 -b x',
+    '/usr/bin/nice -n 5 gh issue comment 1 -b x',
+    '/usr/bin/time gh issue comment 1 -b x',
+    '/usr/bin/sudo gh issue comment 1 -b x',
+    '/opt/bin/mise exec -- gh pr create -t a -b b',
+    '/usr/bin/xargs gh issue comment 1 --help < local/n.txt',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+  for (const ok of [
+    '/usr/bin/env gh issue list',
+    '/usr/bin/timeout 5 gh issue create --help',
+    `/usr/bin/env ${S} gh issue comment 1 -F local/c.md`,
+  ]) {
+    assert.equal(bashViolation(ok), null, ok);
+  }
+});

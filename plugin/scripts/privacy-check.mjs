@@ -412,11 +412,13 @@ const WRAPPER_VALUE_FLAGS = {
     '--process-slot-var',
   ]),
 };
+// 감싸는 명령은 전체 경로로 써도(/usr/bin/xargs) 이름으로 알아본다.
 function stripWrappers(words) {
   let i = 0;
   while (i < words.length) {
-    const w = words[i];
-    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(w)) i++;
+    const raw = words[i];
+    const w = basename(raw);
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(raw)) i++;
     else if (WRAPPERS.has(w)) {
       i++;
       while (i < words.length && words[i].startsWith('-')) i++;
