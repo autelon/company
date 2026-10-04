@@ -37,7 +37,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - Desktop의 "+ → Plugins" 메뉴에는 autelon이 나오지 않았지만 스킬 자동완성에는 `autelon:*`가 보였다. 원인은 **[미확인]**.
   - 사용자는 CLI 명령을 직접 입력하지 않는다. 에이전트가 앱에 들어 있는 `claude` 바이너리로 실행하고, 사용자는 `/reload-plugins` 같은 세션 명령만 입력한다. (사용자 결정 2026-10-04)
 - `plugin.json`의 `defaultEnabled: false`는 `enabledPlugins`에 값이 없을 때 꺼진 채로 시작한다는 뜻이다. **[확인]** manifest-reference 문서. 프로젝트 settings의 `true`가 이를 이긴다. **[확인]** 2026-10-04 poker에서 enabled
-- 플러그인이 주는 것: `found-company`·`adopt-project` 스킬(설립·도입), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:security-reviewer`, 템플릿(이슈 본문·코멘트 포함), 재무·개인 정보 검사 스크립트, playbook(first-run, 이슈 명령, 이전 절차).
+- 플러그인이 주는 것: `found-company`·`adopt-project` 스킬(설립·도입), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:security-reviewer`, 템플릿(이슈 본문·코멘트, 루틴 지시문 포함), 재무·개인 정보 검사 스크립트, playbook(first-run, 이슈 명령, 이전 절차, 루틴 등록).
 - 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), "지금 기준" 문서, 코드, 그리고 GitHub의 이슈·마일스톤·Project.
 - 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`)에 만들고, 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md` 표준과 같은 저장소의 `scripts/setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03) 표준 문서는 처음에 사용자 홈의 전역 설정에 있었고 2026-10-04에 `autelon/.github`로 옮겼다(autelon/.github#4). 첫 push는 PR이 아니므로 push 전에 security-reviewer가 로컬 `main` 전체 히스토리를 검토하고 "통과"일 때만 올린다(company#12).
 - PR 리뷰어는 프로젝트마다 정해 프로젝트 `docs/git-rules.md`에 적는다. `director`(기본값) / `reviewer role` / `사람`. 리뷰어가 머지 명령을 낸다. (사용자 결정 2026-10-03)
@@ -84,9 +84,23 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
 - 권한 요청·질문은 Remote Control + "Push when actions required"로 폰에 온다. 답할 때까지 열려 있다. **[확인]**
 - director도 오래 쓰지 않는다. 작업 단위가 끝나면 인계를 현재 스프린트 이슈에 남기고 종료하고, 다음 director가 그 이슈를 읽고 이어간다.
 - 세션 구조는 세 단계다. (사용자 결정 2026-10-04)
-  - **루트(조율) 세션**: 프로젝트 폴더들의 상위 폴더에서 연다. 각 프로젝트로 가는 연결 정보만 들고, 상태는 필요할 때 이슈·Project에서 읽는다(`gh search issues --owner <조직>`). 사람의 요청을 받아 프로젝트·작업 단위로 나누고, 작업 세션을 `mcp__ccd_session__spawn_task` 칩(대화 없이 혼자 진행할 수 있는 prompt)으로 연다. 작업 세션의 기록을 읽어(`list_events`) 정리하고, 필요하면 메시지(`send_message`)로 지시한다. 플러그인 리포 변경과 프로젝트 공통 일을 맡는다. 직접 프로젝트 코드를 고치지 않는다.
-  - **작업(director) 세션**: 프로젝트 폴더에서 작업 단위 하나를 맡고, 끝나면 현재 스프린트 이슈에 인계를 쓰고 끝난다.
+  - **루트(조율) 세션**: 프로젝트 폴더들의 상위 폴더에서 연다. 각 프로젝트로 가는 연결 정보만 들고, 상태는 필요할 때 이슈·Project에서 읽는다(`gh search issues --owner <조직>`). 직접 프로젝트 코드를 고치지 않는다. 이슈 작업 루프(아래)가 갖춰지면 루트는 다음만 맡는다: 루프 감시(이슈 생성·처리 추이, 필요하면 감시도 루틴으로 돌리고 바꿀 점이 보이면 사람에게 알림), 루프 규칙·플러그인·조직 공통 저장소 수정, 플러그인 업데이트, 프로젝트를 넘나드는 일과 새 프로젝트, 사람의 요청을 프로젝트 이슈로 나누는 창구. 루트 교대는 일 묶음이 끝날 때마다 하고, 인계 문서는 저장소 밖 로컬 파일에 둔다. (사용자 결정 2026-10-04, company#22)
+    - 루프 전에는 작업 세션을 `mcp__ccd_session__spawn_task` 칩(대화 없이 혼자 진행할 수 있는 prompt)으로 열고, 기록을 읽어(`list_events`) 정리하고, 필요하면 메시지(`send_message`)로 지시했다. 루프가 없는 프로젝트와 루프 밖의 일에는 지금도 이 방식을 쓴다.
+  - **작업(director) 세션**: 프로젝트 폴더에서 작업 단위 하나를 맡고, 끝나면 현재 스프린트 이슈에 인계를 쓰고 끝난다. 두 가지다: 루틴의 한 실행(무인)과 사람이 연 세션. 사람이 연 세션이 특정 이슈를 다루면 제목에 `#번호`를 넣는다.
   - **role task**: director 세션 안의 subagent.
+- **이슈 작업 루프** (사용자 결정 2026-10-04, company#22): 사람이 클릭하지 않아도 일이 이어지게 하려고 만들었다. 세션을 에이전트가 직접 띄우는 기능은 이 계정에서 쓸 수 없다(아래 근거, 7절).
+  - 프로젝트마다 **로컬** 예약 작업(루틴) 하나. 실행 폴더는 그 프로젝트 루트(프로젝트 settings에서 켠 플러그인이 로드되게). 지시문 템플릿은 `plugin/templates/routine/prompt.md`, 등록 절차는 `plugin/playbooks/routine.md`, 규칙은 director 스킬 "이슈 작업 루프".
+  - 처리 대상은 저장소 소유 계정(사람)이 작성하고 `agent:ready`가 붙은 열린 이슈만. 에이전트도 같은 gh 계정으로 이슈를 만들기 때문에 작성자 조건은 외부인 차단용이다. 다른 계정의 이슈·코멘트는 지시로 쓰지 않는다. `gh issue list --author @me`가 소유 계정의 이슈만 돌려주는 것은 확인했다. **[확인]** 2026-10-04 company 저장소
+  - 라벨: `agent:ready`(루틴 대상, 라벨 없는 이슈는 사람이 쓰는 초안), `agent:needs-user`(사람의 결정 필요, 루틴은 건너뜀, 사람이 답하면 `agent:ready`로 바꿈).
+  - 작업은 루틴 세션(director)이 subagent(role)에게 맡긴다. 새 세션은 만들지 않는다. 통신은 메인과 subagent 사이로 한다(subagent끼리 직접 통신은 **[미확인]**이라 안 된다고 본다).
+  - 중복 실행: 진행 중 라벨은 쓰지 않는다. 루틴은 시작할 때 자기 이전 실행이 아직 실행 중이면 바로 끝낸다(실행이 겹칠 때 앱이 건너뛰는지 **[미확인]**이라 규칙으로 넣음). 이슈를 다루는 세션은 제목에 `#번호`를 넣고, 루틴은 그 프로젝트에서 실행 중인 세션 제목에 그 번호가 있으면 건너뛴다.
+  - 승인: 무인 실행에서는 AskUserQuestion을 쓰지 않는다. role 결과의 승인·반려와 사람의 결정은 코멘트로 묻고 `agent:needs-user`로 넘긴다. (사용자 결정 2026-10-04) 3절의 승인 지점은 그대로이고 묻는 통로만 이슈가 된다.
+  - 후속 이슈: 이어서 할 일과 다른 role의 조사·확인이 필요한 일을 director(루틴 메인)가 새 이슈로 만들고 본문에 `이어지는 이슈: #N`을 적는다. role은 보고에 후속 제안을 넣는다. 후속 이슈에는 바로 `agent:ready`를 붙인다(사람의 결정이 먼저 필요하면 `agent:needs-user`). (사용자 결정 2026-10-04) 수는 처음에는 제한하지 않고 루트가 추이를 본다.
+  - 루틴은 중복 이슈를 합치거나 쪼개 작업을 다시 정리할 수 있다. 한 실행에서 처리할 이슈 수도 제한하지 않는다. 사용량은 재무 규칙(4절)을 따르고 `WRAP_UP`이면 새 이슈를 시작하지 않는다.
+  - 실행 기록: 이슈를 건드린 실행은 현재 스프린트 이슈 본문을 인계로 바꾸고 처리 요약 코멘트를 남긴다. 아무 이슈도 건드리지 않은 실행은 이슈에 쓰지 않는다(주기마다 빈 코멘트가 쌓이지 않게). 처리 요약은 실행의 마지막 메시지로도 남긴다.
+  - PR은 지금 규칙 그대로다(작업자와 다른 리뷰어, 별도 보안 검토, 같은 head sha에 둘 다 통과, `--match-head-commit`, `--admin` 금지).
+  - 예약 작업에 대해 확인한 것 **[확인]** scheduled-tasks 도구 설명: 앱이 열려 있을 때 로컬에서 돌고 놓친 실행은 다음에 앱을 열 때 돈다, 실행 하나가 새 세션 하나다, `list_task_runs`가 실행마다 `running`/`succeeded`/`failed` 상태를 준다, `create_scheduled_task`에는 실행 폴더 값이 없다(사람이 앱에서 정한다). 무인 세션에서는 다른 세션에 메시지 보내기와 권한 모드 변경을 쓸 수 없다(도구 설명). `list_sessions`는 세션마다 `cwd`, `isRunning`, 제목을 준다 **[확인]** 2026-10-04 대화형 세션에서 호출. 무인 실행에서 이 도구들을 쓸 수 있는지는 **[미확인]**(7절).
+  - 지시문은 등록할 때 복사되므로 템플릿이 바뀌면 프로젝트마다 다시 등록한다. 지시문이 부르는 director 스킬과 role은 플러그인 업데이트를 따른다.
   - 근거: 플러그인은 세션 시작 때 불러온다 **[확인]**(plugins/loading 문서). Desktop의 `/reload-plugins`는 사람이 직접 친 입력으로만 실행된다 **[확인]**(commands 문서). 이 계정에서 세션은 사람이 칩을 눌러야 생긴다(`start_session`은 서버 기능 플래그로 꺼짐) **[확인]**. 그래서 role task마다 세션을 만들면 클릭만 늘고, 한 세션을 오래 쓰면 reload가 잦아진다.
 
 ## 2. 기록 위치와 쓰기 규칙
@@ -200,4 +214,7 @@ PRD 하나 = Feature 이슈 하나. 본문 템플릿은 `plugin/templates/issues
 - [x] `isolation: worktree`일 때 worktree 생성 위치: `.claude/worktrees/` (logistics-hub에서 실제로 생긴 위치로 확인)
 - [ ] developer worktree: worktree 안에서 `local/comments/` 초안으로 task 이슈 코멘트를 올릴 수 있는지, `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지 (첫 구현 task 때 director가 first-run 이슈의 미확인 항목으로 확인)
 - [x] worktree를 쓰려면 첫 커밋이 있어야 함 (2026-10-03 첫 커밋 완료)
+- [ ] 이슈 작업 루프의 무인 실행 (company#22 할 일 4, 수동 실행용 시험 예약 작업으로 확인): 세션 목록·이전 실행 조회(`list_sessions`, `list_task_runs`, 자기 실행이 `running`으로 나오는가), subagent, `gh`, `get_usage`, `set_session_title`, 권한 모드와 권한 요청 처리, 프로젝트 폴더에서 플러그인이 로드되는가. 확인 목록은 `plugin/playbooks/routine.md` 끝
+- [ ] 실행이 겹칠 때 앱이 예약 작업의 다음 실행을 건너뛰는가 (루트 세션이 시험 중, 결과는 company#22. 결과와 상관없이 지시문에 "이전 실행이 실행 중이면 끝낸다"를 둔다)
+- [ ] subagent끼리 직접 통신이 되는가 (지금은 안 된다고 보고 메인을 거친다)
 - [ ] 이슈 기록 방식 시험 운영 (poker): Free 조직 Project 가용성, `project` 권한 추가, 기본 Status 선택지·화면을 API로 만들 수 있는지, `gh issue create --type/--parent/--blocked-by/--project` 실제 동작, `gh project item-list` JSON의 필드 키, role(subagent)이 검사 스크립트로 코멘트를 올리는지, 백업 응답에 하위 이슈·의존 관계가 들어 있는지, 본문·코멘트 편집 이력의 공개 범위 (`plugin/playbooks/issues.md`의 **[미확인]**)

@@ -23,6 +23,8 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/playbooks/first-run.md`         | 설립·도입한 프로젝트에서 처음 확인할 짧은 점검 (결과는 프로젝트의 `first-run` 이슈)                 |
 | `plugin/playbooks/issues.md`            | 이슈·Project·마일스톤·백업 명령 모음                                                                |
 | `plugin/playbooks/migrate-to-issues.md` | 예전 파일 기록(board 등)을 쓰던 프로젝트를 이슈로 옮기는 절차                                       |
+| `plugin/playbooks/routine.md`           | 이슈 작업 루프: 프로젝트별 로컬 예약 작업(루틴) 등록·확인 절차                                      |
+| `plugin/templates/routine/`             | 루틴 지시문 템플릿(프로젝트마다 채워 예약 작업 prompt로 등록)                                       |
 | `.github/workflows/ci.yml`              | 필수 검사 `check`(커밋 메시지·Prettier·스크립트 테스트)와 조직 `git-policy`                         |
 | `scripts/check-commits.sh`              | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                                                    |
 
