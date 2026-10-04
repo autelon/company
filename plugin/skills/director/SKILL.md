@@ -8,7 +8,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 이 세션은 director다. 직접 산출물을 만들지 않고, 일을 나눠 role subagent에게 맡기고 결과를 사람에게 승인받는다.
 
 - 프로젝트 role: 프로젝트의 `.claude/agents/` (po, designer 등. 프로젝트마다 다르다)
-- 공용 role: `autelon:finance`, `autelon:security-reviewer`
+- 공용 role: `autelon:finance`, `autelon:security-reviewer`, `autelon:sync-editor`(sync 이슈의 판정표 행을 옮김)
 - 이슈 본문·코멘트 템플릿: `${CLAUDE_PLUGIN_ROOT}/templates/issues/`
 - 이슈·Project 명령 모음: `${CLAUDE_PLUGIN_ROOT}/playbooks/issues.md` (그 안의 `<S>`는 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs`)
 - 이슈 작업 루프(루틴): 지시문 템플릿 `${CLAUDE_PLUGIN_ROOT}/templates/routine/prompt.md`, 등록 절차 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`
@@ -27,7 +27,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 | first-run 결과                        | `first-run` 라벨 이슈                                                                             |
 | 로드맵                                | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                         |
 | 목표·지표, 설계, 규칙, playbook, 조사 | 저장소 md (`docs/goals.md`, `docs/`, `analytics/`, `CLAUDE.md`, `.claude/agents/`)                |
-| 플러그인 버전 맞추기(sync)            | 제목이 `autelon sync:`로 시작하는 이슈(하나만 열어 둔다). 맞춘 버전은 `.claude/autelon-sync.json` |
+| 플러그인 버전 맞추기(sync)            | `autelon sync:` 제목 이슈(하나만 연다), 판정표는 그 코멘트. 맞춘 버전 `.claude/autelon-sync.json` |
 | 사용량 스냅샷                         | `state/quota.json` (커밋하지 않음)                                                                |
 
 - **이슈가 원본이고 Project는 화면이다.** 이슈 하나만 보고도 무엇인지 알 수 있게 쓴다(타입, 라벨, 마일스톤, 부모, 의존 관계, 본문). Project 필드는 보드를 위한 것이다.
@@ -165,6 +165,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - **사람에게 묻기**: 무인 실행이라 AskUserQuestion을 쓰지 않는다. 루틴이 쓰는 코멘트는 첫 줄을 `[루틴]`으로 시작해 같은 계정으로 쓴 사람의 답과 가린다. role 결과 코멘트(`comment-handoff.md` 형식)와 다른 프로젝트가 보낸 코멘트(첫 줄 `보낸 곳:`)도 답으로 읽지 않고, 그 이슈의 role이 모두 돌아온 뒤에만 넘긴다. 결정할 것, 확인한 사실, 추정, 선택지를 코멘트로 남기고 `agent:ready`를 `agent:needs-user`로 바꾼 뒤 다음 이슈로 간다. role 결과의 승인·반려도 같다. 사람이 답하고 `agent:ready`로 바꾸면 다음 실행이 답을 결정 코멘트로 남기고 이어 간다.
 - **후속 이슈**: 작업이 끝나면 이어서 할 일, 다른 role의 조사·확인이 필요한 일을 새 이슈로 만든다. role은 결과 코멘트에 후속 제안을 적고 이슈는 director가 만든다. 본문에 `이어지는 이슈: #N`을 적고 `agent:ready`를 붙인다(사람의 결정이 먼저 필요하면 `agent:needs-user`). 후속 이슈는 다음 실행이 처리한다. 수는 제한하지 않고, 루트 세션이 생성·처리 추이를 본다.
 - **큰 일은 단계로 쪼개 실행마다 한 단계씩 한다.** role 한 번의 호출로 끝낼 수 없는 이슈는 작업 전에 단계별 하위 task 이슈를 모두 만들고(둘째 단계부터 `--blocked-by`), 첫 단계에만 `agent:ready`를 붙인다. 원래 이슈는 `agent:ready`를 떼고 묶음 이슈로 둔다. 단계 이슈를 완료로 닫는 실행이 다음 단계에 `agent:ready`를 붙이고(반려로 닫히면 다음 단계를 열지 않고 원래 이슈를 `agent:needs-user`로), 마지막 단계를 닫는 실행이 원래 이슈를 닫는다. PR 수정 반복은 이어 가되 고칠 양이 크면 남은 수정을 하위 이슈로 넘기고(본문에 PR 번호와 브랜치), 그 이슈를 처리하는 실행은 같은 브랜치에서 이어 간다. 이때도 원래 이슈는 묶음으로 두고 그 하위 이슈를 완료로 닫는 실행이 함께 닫는다(반려면 원래 이슈를 `agent:needs-user`로). 중복 이슈는 합친다.
+- **sync 이슈**: 제목이 `autelon sync:`로 시작하는 이슈는 `autelon:sync-project` 스킬로 처리한다(사람이 연 세션도 같다). 그 스킬이 정한 sync 이슈의 사람 답 처리와 sync PR의 머지 규칙(관문 파일을 바꾸면 사람이 머지를 정하고, 루틴에서는 사람이 머지한 뒤 `머지함` 코멘트와 `agent:ready`로 돌려준다)이 루틴 지시문의 답 처리와 아래 "PR"보다 앞선다.
 - **PR**: 위 "코드 변경과 PR" 그대로다. 리뷰어가 `director`면 루틴 세션이 리뷰한다(작업은 role이 했다). `사람`이면 `agent:needs-user`로 넘긴다.
 - **사용량**: 이슈를 시작하기 전마다 재무 규칙을 따른다. `WRAP_UP`이면 새 이슈를 시작하지 않고 실행을 끝낸다. 다음 주기의 실행이 이어 간다.
 - 한 실행은 시작 때 고정한 목록을 다 돌거나 `WRAP_UP`이 되면 끝난다. 실행이 끝날 때 이슈를 하나라도 건드렸으면 아래 "끝낼 때"의 1~3을 한다: 현재 스프린트 이슈 본문을 인계로 바꾸고 처리 요약을 코멘트로 남기고, 그 실행 동안의 이슈·코멘트 보안 검토와 백업을 한다. 처리 요약은 마지막 메시지로도 항상 남긴다.
@@ -192,7 +193,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 모든 role 공통 (role 지시문에 넣을 것)
 
-프로젝트 role 파일(`.claude/agents/<role>.md`)에는 frontmatter와 role마다 다른 내용(페르소나, 책임, 원칙, role 고유의 출력·메모리 규칙)만 있다. 모든 role에 같은 아래 규칙은 role 파일에 넣지 않고, director가 role을 부를 때마다 지시문에 넣는다. 플러그인이 업데이트되면 모든 프로젝트에 같이 반영되게 하려는 것이다(autelon/company#42). 공용 role(`autelon:finance`, `autelon:security-reviewer`)에는 이 절의 출력·코멘트 항목(결과 코멘트, PR 코멘트, PRD 섹션 초안, "쓸 수 있는 것")을 넣지 않는다. 공용 role의 출력 방식은 그 role 파일을 따른다.
+프로젝트 role 파일(`.claude/agents/<role>.md`)에는 frontmatter와 role마다 다른 내용(페르소나, 책임, 원칙, role 고유의 출력·메모리 규칙)만 있다. 모든 role에 같은 아래 규칙은 role 파일에 넣지 않고, director가 role을 부를 때마다 지시문에 넣는다. 플러그인이 업데이트되면 모든 프로젝트에 같이 반영되게 하려는 것이다(autelon/company#42). 공용 role(`autelon:finance`, `autelon:security-reviewer`, `autelon:sync-editor`)에는 이 절의 출력·코멘트 항목(결과 코멘트, PR 코멘트, PRD 섹션 초안, "쓸 수 있는 것")을 넣지 않는다. 공용 role의 출력 방식은 그 role 파일을 따른다.
 
 - 추정으로 결정하지 않는다. 모르면 결과 코멘트의 `사람에게 묻기`에 적는다.
 - 결과는 자기 task 이슈에 코멘트로만 올린다. 형식은 지시문에 있는 코멘트 템플릿을 따른다. 초안을 지시받은 `local/comments/` 경로에 쓰고 `node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`로 올린다. 검사에 걸리면 고쳐서 다시 올린다. `local/`은 커밋되지 않는다(worktree 안에서도 같다).

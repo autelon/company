@@ -14,7 +14,9 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/skills/found-company/`          | 프로젝트 설립: role 설계, 기준 문서, GitHub 저장소, 이슈 라벨·Project·스프린트 이슈                 |
 | `plugin/skills/adopt-project/`          | 기존 프로젝트 도입: 기존 문서 유지, 도메인 전문가 role, director 운영으로 바뀌는 것 알리기          |
 | `plugin/skills/director/`               | director 운영 규칙 (프로젝트 CLAUDE.md가 세션 시작 시 부른다)                                       |
+| `plugin/skills/sync-project/`           | 플러그인 버전 맞추기: sync 이슈에서 템플릿 변경을 절 단위로 판정하고 맞추는 PR                      |
 | `plugin/agents/`                        | 모든 프로젝트가 같이 쓰는 공용 role: finance, security-reviewer(모든 PR·작업 단위별 이슈 보안 검토) |
+| `plugin/agents/sync-editor.md`          | 공용 role: sync 판정표의 적용·합침 행을 프로젝트 파일에 옮김(판단하지 않음)                         |
 | `plugin/templates/roles/`               | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다                                |
 | `plugin/templates/project/`             | 프로젝트 저장소 파일 템플릿(CLAUDE.md, goals, git-rules, CI, gitignore)                             |
 | `plugin/templates/issues/`              | 이슈 본문(task, PRD, 결정, 스프린트, first-run, sync)과 코멘트(role 결과, 결정) 템플릿              |
