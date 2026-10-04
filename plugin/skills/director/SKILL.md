@@ -111,7 +111,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 - 원격이 있으면 모든 변경은 main 보호 여부와 상관없이 작업 브랜치와 PR로 들어간다. 절차와 리뷰어는 프로젝트 `docs/git-rules.md`와 그 문서가 가리키는 조직 `.github` 저장소의 `git-workflow.md`를 따른다.
 - **모든 PR은 리뷰어 지정과 상관없이 `autelon:security-reviewer`의 보안 검토를 받는다.** PR이 올라오면 지정된 리뷰와 별도로 security-reviewer를 호출한다(PR 번호를 준다). 머지 명령은 같은 head sha에 대해 리뷰 통과와 보안 검토 통과 코멘트가 둘 다 있을 때만 낸다. director가 검증을 더한 PR(아래 "Workflow로 처리하기"의 "검증을 더하는 PR")은 `검증: 통과 (<sha>)` 코멘트도 있어야 한다. 보안 검토가 수정 필요면 고친 뒤 새 head로 다시 받는다. 리뷰어가 `사람`이어도 보안 검토 결과를 PR 링크와 함께 사람에게 알린다.
-- PR 판정(리뷰·보안 검토·검증)과 수정 반복은 아래 "Workflow로 처리하기"의 표준 판정 Workflow로 한다.
+- PR 판정(리뷰·보안 검토·검증)과 수정 반복은 아래 "Workflow로 처리하기"의 표준 판정 Workflow로 한다. 예외: sync PR(`autelon:sync-project`)은 판정만 Workflow로 하고(`maxRounds: 1`) 수정은 그 스킬 9번대로 한다.
 - 작업한 role이나 세션은 자기 PR을 머지하지 않는다. 리뷰어가 `director`면 director가 리뷰하고 머지 명령을 낸다. `reviewer role`이면 reviewer를 호출해 리뷰·머지를 맡긴다. `사람`이면 PR 링크를 알리고 머지하지 않는다.
 - 머지 명령에는 리뷰한 head sha로 `--match-head-commit`을 붙인다. `--admin`은 쓰지 않는다.
 - task를 해결하는 PR 본문에는 `Closes #N`을 넣지 않는다. task는 사람의 승인을 받은 뒤 director가 닫는다. 이슈를 가리킬 때는 `Refs #N`으로 쓴다.
@@ -154,7 +154,8 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
   - `checkScript`: `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs`(이 줄의 치환된 값)
   - `preset: 'project'`. 리뷰 role 이름이 `reviewer`가 아니면 `reviewerAgent`. 프로젝트에 리뷰 role이 없으면 `judges`로 리뷰(일반 agent와 리뷰 지시)와 보안 검토(`autelon:security-reviewer`)를 직접 준다. `judges`를 줘도 `verify: true`면 검증 판정은 스크립트가 붙인다. 높음 등급의 반박 검토는 `autelon:security-reviewer`에 반박 지시를 더해 부른다
   - `fixer`: 구현한 role이 `developer`가 아니면 `{ agentType: '<role>', instruction: '<그 role이 따를 규칙>' }`
-  - `verify`(위 "검증을 더하는 PR"), `tier`(높음이면 `'high'`), `maxRounds`(기본 3), `scenarios`(검증 시나리오)
+  - `verify`(위 "검증을 더하는 PR"), `tier`(높음이면 `'high'`), `maxRounds`(기본 3. sync PR은 `1`), `scenarios`(검증 시나리오)
+  - sync PR은 `maxRounds: 1`로 넘겨 Workflow 안에서 고치지 않게 한다. Workflow의 수정 role(`fixer`)은 판정표 밖의 템플릿 유래 파일을 고칠 수 있고, sync-editor는 모드와 고칠 행이 지시문에 없으면 고치지 않는다(`autelon:sync-project` 9번, autelon/company#67 결정 1). 1라운드에 수정 필요가 남으면 결과가 `max_rounds`다
   - `roleRules`: 이 스킬 "모든 role 공통" 절 본문. `decisions`: 그 이슈의 결정 코멘트 요약. `context`: 읽을 것, 하지 말 것. `coAuthor`: 사람이 방향을 정한 이슈면 프로젝트 git 규칙의 공동 작성자 줄
 - 설계안 경쟁 args: `repo`, `issue`, `subject`(설계할 것 한 줄), `angles`(관점 3개), `criteria`(평가 기준 3개), `readList`, `premises`(사람이 이미 정한 것), `context`. 결과의 `synthesis`를 이슈에 검사 스크립트로 올리고 사람에게 확인받는다.
 - PR 판정 결과(`status`)에 따라:
@@ -166,7 +167,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
   - `needs_user`: `remaining`의 지적을 사람에게 묻는다(결정할 것, 선택지).
   - `judge_failed`: 판정·반박 검토 agent가 결과를 돌려주지 못했다. 수정하지 않는다. 같은 head로 한 번 다시 돌리고, 또 실패하면 사람에게 알린다(루틴은 `agent:needs-user`).
   - `fix_failed`: 수정 agent가 결과를 돌려주지 못했거나 새 커밋을 올리지 않았다. `remaining`을 붙여 사람에게 묻는다.
-  - `max_rounds`: `remaining`을 하위 이슈로 넘긴다(본문에 PR 번호, 브랜치, 남은 지적과 판정 코멘트 링크). 그 이슈를 처리하는 실행은 같은 브랜치에서 이어 가고 판정 Workflow를 다시 돌린다("큰 일은 단계로 쪼개").
+  - `max_rounds`: sync PR이면 이 줄 대신 `autelon:sync-project` 9번대로 director가 고칠 행을 정해 sync-editor를 `이어서`로 부르고 새 head로 다시 판정한다. 그 밖에는 `remaining`을 하위 이슈로 넘긴다(본문에 PR 번호, 브랜치, 남은 지적과 판정 코멘트 링크). 그 이슈를 처리하는 실행은 같은 브랜치에서 이어 가고 판정 Workflow를 다시 돌린다("큰 일은 단계로 쪼개").
   - `head_moved`: 누가 브랜치를 바꿨는지 보고, 지금 head로 한 번 다시 돌린다. 또 바뀌면 사람에게 묻는다.
   - 어느 경우든 이슈에 결과 요약(상태, head, 라운드 수, 판정 코멘트 링크, `gate_files_touched`)을 코멘트로 남긴다.
 - **높음 등급 PR 이어 가기**: 사람이 머지를 정하는 답(결정 코멘트로 남긴다)을 하면, 다음 director(루틴이면 다음 실행)가 PR head가 넘길 때 적은 sha와 같은지, 그 head에 판정 코멘트(리뷰, 보안 검토, 검증을 더했으면 검증)가 모두 통과인지 다시 확인한 뒤 리뷰어 설정대로 머지 명령을 낸다(`director`면 director, `reviewer role`이면 reviewer에게 사람의 답을 지시문에 넣어 맡긴다, `사람`이면 사람이 머지한다). head가 바뀌었으면 판정 Workflow를 다시 돌리고 다시 사람에게 넘긴다. 사람이 직접 머지했으면 `gh pr view <PR> --json state,mergeCommit`으로 머지를 확인한 뒤 task를 이어 처리한다. 머지를 정하지 않은 답(수정 요청, 반려)이면 그 답대로 한다.

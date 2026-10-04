@@ -50,7 +50,7 @@ gh issue list -R {{REPO}} --author @me --label agent:ready --state open --json n
 
 ### PR
 
-- **판정과 수정 반복은 표준 판정 Workflow로 한다**(director 스킬 "Workflow로 처리하기"). 그 절대로 등급(기본·높음·가벼움)과 검증을 더할지 정하고, `pr-judge-fix-loop.js`를 Read로 읽어 `script`로, 그 절의 PR 판정 args를 채워 넘긴다. 기본 판정은 리뷰(프로젝트 reviewer role)와 `autelon:security-reviewer`의 보안 검토다. **모든 PR은 리뷰와 별도로 보안 검토를 받는다.** Workflow를 쓸 수 없거나 호출이 실패하면(스크립트 오류, 결과 없음) 같은 순서를 포그라운드 subagent로 하고 마지막 요약에 적는다.
+- **판정과 수정 반복은 표준 판정 Workflow로 한다**(director 스킬 "Workflow로 처리하기"). 그 절대로 등급(기본·높음·가벼움)과 검증을 더할지 정하고, `pr-judge-fix-loop.js`를 Read로 읽어 `script`로, 그 절의 PR 판정 args를 채워 넘긴다. 기본 판정은 리뷰(프로젝트 reviewer role)와 `autelon:security-reviewer`의 보안 검토다. **모든 PR은 리뷰와 별도로 보안 검토를 받는다.** Workflow를 쓸 수 없거나 호출이 실패하면(스크립트 오류, 결과 없음) 같은 순서를 포그라운드 subagent로 하고 마지막 요약에 적는다. sync PR은 판정만 한다(`maxRounds: 1`). 수정은 `autelon:sync-project` 9번대로 한다.
 - 결과(`status`)에 따라(director 스킬 "Workflow로 처리하기"의 결과 처리):
   - `all_pass`: 먼저 최종 head의 바뀐 파일, 커밋의 `!`·`BREAKING:`, 결과의 `gate_files_touched`로 등급을 다시 정한다. 높음이 되면 `tier: 'high'`로 판정 Workflow를 한 번 다시 돌리거나 5번 `agent:needs-user`로 넘긴다. 그다음 프로젝트 `docs/git-rules.md`의 리뷰어를 따른다. 작업한 role은 자기 PR을 머지하지 않는다.
     - 리뷰어가 `director`: 이 세션이 같은 head에 판정 코멘트가 모두 있는지 보고 머지 명령을 낸다.
@@ -59,7 +59,7 @@ gh issue list -R {{REPO}} --author @me --label agent:ready --state open --json n
     - 높음 등급(관문 파일·검사·판정·머지 조건 파일, BREAKING)은 리뷰어와 상관없이 머지하지 않고 head sha와 반박 검토 결과를 코멘트로 남겨 5번 `agent:needs-user`로 넘긴다.
   - `needs_user`, `fix_failed`: 남은 지적(`remaining`)을 결정할 것과 선택지로 정리해 5번 `agent:needs-user`로 넘긴다.
   - `judge_failed`: 수정하지 않는다. 같은 head로 한 번 다시 돌리고, 또 실패하면 5번으로 넘긴다.
-  - `max_rounds`: 남은 지적을 하위 이슈로 넘긴다(2번 "큰 일은 단계로 쪼개", 본문에 PR 번호와 브랜치).
+  - `max_rounds`: sync PR이면 `autelon:sync-project` 9번대로 고치고 다시 판정한다. 그 밖에는 남은 지적을 하위 이슈로 넘긴다(2번 "큰 일은 단계로 쪼개", 본문에 PR 번호와 브랜치).
   - `head_moved`: 지금 head로 한 번 다시 돌린다. 또 바뀌면 5번으로 넘긴다.
   - 어느 경우든 이슈에 `[루틴]` 코멘트로 결과(상태, head, 라운드 수, 판정 코멘트 링크, `gate_files_touched`)를 남긴다.
 - **높음 등급 PR 이어 가기**: 사람이 머지를 정하는 답을 하고 `agent:ready`로 바꾸면, 답을 결정 코멘트로 남긴 뒤 PR head가 넘길 때 적은 sha와 같은지, 그 head에 판정 코멘트(리뷰, 보안 검토, 검증을 더했으면 검증)가 모두 통과인지 다시 확인한다. 맞으면 리뷰어 설정대로 머지한다(`director`면 이 세션이 머지 명령, `reviewer role`이면 reviewer에게 사람의 답을 지시문에 넣어 머지 명령을 맡긴다, `사람`이면 사람이 머지한다). head가 바뀌었으면 판정 Workflow를 다시 돌리고 다시 5번으로 넘긴다. 사람이 직접 머지했으면 `gh pr view <PR> -R {{REPO}} --json state,mergeCommit`으로 확인한 뒤 task를 이어 처리한다(승인 답이 함께 있으면 닫는다).

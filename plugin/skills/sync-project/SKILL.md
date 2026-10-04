@@ -261,7 +261,7 @@ director가 직접 판단한다(#42 결정 3). 세 가지를 읽는다.
 - `.claude/autelon-sync.json`의 `pluginSha`가 `<target>`이다.
 - diff에 `{{`가 0건이다.
 
-그다음 프로젝트의 리뷰(`docs/git-rules.md`의 리뷰어)와 `autelon:security-reviewer` 판정을 같은 head sha로 받는다. 판정·수정 반복을 Workflow로 돌릴지는 director 규칙을 따른다. 수정할 것이 나오면 director가 고칠 행을 정해 sync-editor를 다시 부르고(모드 `이어서`, 같은 브랜치에 이어서 커밋), 새 head로 검증·판정을 다시 받는다. 이미 옮긴 행을 되돌려야 하면(판정이 바뀐 행) 아래 "브랜치 다시 만들기"로 한다.
+그다음 프로젝트의 리뷰(`docs/git-rules.md`의 리뷰어)와 `autelon:security-reviewer` 판정을 같은 head sha로 받는다. 판정은 director 규칙의 표준 판정 Workflow로 하되 `maxRounds: 1`로 넘겨 Workflow 안에서 고치지 않게 한다(Workflow의 수정 role은 판정표 밖의 파일을 고칠 수 있다). Workflow를 쓸 수 없으면 같은 판정을 포그라운드로 받는다. 결과가 `max_rounds`(수정 필요)면 Workflow의 결과 처리 대신 여기대로 한다. 수정할 것이 나오면 director가 고칠 행을 정해 sync-editor를 다시 부르고(모드 `이어서`, 같은 브랜치에 이어서 커밋), 새 head로 검증·판정을 다시 받는다. 이미 옮긴 행을 되돌려야 하면(판정이 바뀐 행) 아래 "브랜치 다시 만들기"로 한다.
 
 **브랜치 다시 만들기**: PR을 연 뒤 main이 움직이면 브랜치가 옛 main 위에 남는다. 다음 경우에는 director가 마지막 판정표로 sync-editor에게 브랜치를 `origin/main` 위에 처음부터 다시 만들게 한다(8번 3, 모드 `다시 만들기`). 작업 브랜치의 rebase와 `--force-with-lease`는 조직 `.github` 저장소의 `git-workflow.md`가 허용하는 일이다. sync-editor는 이 모드에서만 예상 head sha를 붙인 `--force-with-lease`로 push한다. PR 번호는 그대로 두고, 새 head로 위 검증과 두 판정을 다시 받는다.
 
