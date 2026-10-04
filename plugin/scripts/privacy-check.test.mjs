@@ -442,3 +442,40 @@ test('훅: 셸 전개·명령 치환·xargs 가 붙은 도움말은 막는다', 
   assert.equal(bashViolation('gh issue create -R "o/r" --help'), null);
   assert.equal(bashViolation('gh api repos/o/r/milestones/3 --help'), null);
 });
+
+// autelon/company#58: gh 는 그룹과 하위 명령 사이의 -R 도 받는다(gh issue -R o/r list).
+test('훅·gh 모드: 그룹과 하위 명령 사이의 -R 을 걷어 내고 판정한다', () => {
+  for (const bad of [
+    'gh issue -R o/r comment 1 -b x',
+    'gh issue --repo o/r comment 1 -b x',
+    'gh issue --repo=o/r create -t a -b b',
+    'gh issue -Ro/r comment 1 -b x',
+    'gh pr -R o/r comment 3 --body x',
+    'gh pr -R o/r merge 2 --subject x',
+    'gh label -R o/r create a --description d',
+    'gh release -R o/r create v1 --notes x',
+    'gh -R o/r issue -R o/r comment 1 -b x',
+    'gh issue -R o/r comment 1 --help $V',
+    'gh issue -R $X comment 1 --help',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+  for (const ok of [
+    'gh issue -R o/r list -L 1',
+    'gh issue -R o/r comment 1 --help',
+    'gh pr --repo=o/r merge 2 --match-head-commit abc',
+  ]) {
+    assert.equal(bashViolation(ok), null, ok);
+  }
+  // 막힌 호출은 같은 인자로 검사 스크립트가 받는다
+  const args = ['issue', '-R', 'o/r', 'comment', '1', '-b', '본문'];
+  assert.deepEqual(
+    textsFromGhArgs(args).map((t) => t.text),
+    ['본문'],
+  );
+  assert.equal(bashViolation(`gh ${args.join(' ')}`).via, 'script');
+  assert.deepEqual(
+    textsFromGhArgs(['label', '--repo=o/r', 'create', 'a', '-d', '설명']).map((t) => t.text),
+    ['a', '설명'],
+  );
+});

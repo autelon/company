@@ -113,7 +113,7 @@ const ACCEPTED =
 // gh 인자에서 검사할 글을 뽑는다: [{ source, text }]. 검사를 거치지 않는 형태면 Error.
 // readFile: 본문 파일을 읽는 함수. 훅은 크기·종류를 제한한 함수를 넘긴다.
 export function textsFromGhArgs(rawArgs, readFile = (f) => readFileSync(f, 'utf8')) {
-  // gh 는 하위 명령 앞의 -R/--repo 도 받는다. 검사는 그 뒤부터 하고, 실행은 받은 인자 그대로 한다.
+  // gh 는 그룹 앞과 그룹·하위 명령 사이의 -R/--repo 도 받는다. 검사는 걷어 낸 인자로 하고, 실행은 받은 인자 그대로 한다.
   const args = stripGhRepo(rawArgs);
   const [group, sub] = args;
   if (group === 'label' && (sub === 'create' || sub === 'edit')) return labelTexts(args);
@@ -413,16 +413,18 @@ function stripWrappers(words) {
   return words.slice(i);
 }
 
-// gh 는 하위 명령 앞의 -R/--repo 도 받는다(gh -R o/r issue list). 판정 전에 걷어 낸다.
+// gh 는 그룹 앞과 그룹·하위 명령 사이의 -R/--repo 도 받는다(gh -R o/r issue list, gh issue -R o/r list).
+// 판정 전에 두 자리에서 걷어 내고, 하위 명령 뒤는 그대로 둔다.
 function stripGhRepo(args) {
+  const out = [];
   let i = 0;
-  while (i < args.length) {
+  while (i < args.length && out.length < 2) {
     const w = args[i];
     if (w === '-R' || w === '--repo') i += 2;
     else if (/^(-R.|--repo=)/.test(w)) i++;
-    else break;
+    else out.push(args[i++]);
   }
-  return args.slice(i);
+  return [...out, ...args.slice(i)];
 }
 
 const basename = (w) => w.slice(w.lastIndexOf('/') + 1);
@@ -482,7 +484,7 @@ function apiFieldKeys(a) {
   return keys;
 }
 
-// 도움말만 보는 호출인가(autelon/company#55). 명령에 그대로 적힌 단어가 하위 명령, --help·-h, 위치 인자,
+// 도움말만 보는 호출인가(autelon/company#55). 명령에 그대로 적힌 단어가 그룹·하위 명령, --help·-h, 위치 인자,
 // -R/--repo 와 그 값뿐이고 도움말 플래그가 하나 이상이면 true. gh 는 도움말 플래그가 있으면 도움말만 찍고 명령을
 // 실행하지 않는다. 막는 하위 명령 중 -h 를 다른 뜻으로 쓰는 것은 없다(gh 2.102.0 의 gh help <명령>).
 // 판정은 셸이 펼치기 전 글자를 본다. 그래서:
@@ -503,15 +505,21 @@ function isHelpOnly(rawArgs) {
     const m = w.match(/^(?:-R=?|--repo=)(.+)$/);
     return m && isLiteral(m[1]) ? 1 : 0;
   };
-  // 하위 명령 앞의 -R
-  while (i < rawArgs.length && /^(-R|--repo)/.test(rawArgs[i])) {
-    const n = repoValue(rawArgs[i], rawArgs[i + 1]);
-    if (!n) return false;
-    i += n;
+  // 그룹 앞과 그룹·하위 명령 사이의 -R
+  const skipRepo = () => {
+    while (i < rawArgs.length && /^(-R|--repo)/.test(rawArgs[i])) {
+      const n = repoValue(rawArgs[i], rawArgs[i + 1]);
+      if (!n) return false;
+      i += n;
+    }
+    return true;
+  };
+  for (let k = 0; k < 2; k++) {
+    if (!skipRepo() || !isLiteral(rawArgs[i])) return false;
+    i++;
   }
-  if (!isLiteral(rawArgs[i]) || !isLiteral(rawArgs[i + 1])) return false;
   let help = false;
-  for (i += 2; i < rawArgs.length;) {
+  for (; i < rawArgs.length;) {
     const w = rawArgs[i];
     if (w === '--help' || w === '-h') {
       help = true;
