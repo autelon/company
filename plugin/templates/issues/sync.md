@@ -4,7 +4,7 @@
      그래서 이 이슈에서 이어지는 단계 이슈와 사람 확인 이슈의 제목은 `autelon sync:`로 시작하지 않는다.
      맞출 대상 SHA는 처리할 때 판정표 코멘트 첫 줄(`대상 SHA: <12자>`)에 고정한다(`autelon:sync-project` 스킬).
      라벨: compare 상태가 ahead면 agent:ready, 그 밖(behind, diverged, 비교 실패, 기준 없음)이면 agent:needs-user.
-     열린 이슈에 ahead가 아닌 `설치 SHA:` 줄이 더해지면 director가 agent:ready를 agent:needs-user로 바꾼다.
+     열린 `<기록 SHA> 이후` 이슈에 ahead가 아닌 `설치 SHA:` 줄이 더해지면 director가 agent:ready를 agent:needs-user로 바꾼다(`기준 버전 정하기` 이슈는 줄만 더하고 라벨을 그대로 둔다).
      해당하지 않는 절("사람에게 묻기" 또는 "할 일")은 지운다. -->
 
 ## 현재 결론
