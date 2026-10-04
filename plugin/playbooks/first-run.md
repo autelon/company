@@ -11,7 +11,7 @@ autelon으로 설립하거나 도입한 프로젝트에서 director가 처음 �
 ## 확인
 
 1. **플러그인과 role**: 프로젝트 `.claude/settings.json`의 `enabledPlugins`에 `autelon@autelon`이 켜져 있는지, 스킬·agent 목록에 autelon 스킬(`autelon:director`, `autelon:found-company`, `autelon:adopt-project`)과 프로젝트 role, 공용 role이 보이는지 본다. `claude plugin list`를 기본 확인으로 쓰지 않는다(Desktop 세션의 셸 PATH에 `claude`가 없을 수 있다). CLI가 꼭 필요하면 앱에 들어 있는 `claude` 바이너리의 전체 경로를 쓴다. 사용자는 CLI를 직접 입력하지 않는다.
-   - 이슈·Project: `gh auth status`에 `project` 권한이 있는지, 프로젝트의 Project가 저장소에 연결돼 있는지(`gh project list --owner <조직>`), 라벨 `decision`·`sprint`·`first-run`과 고정된 현재 스프린트 이슈가 있는지 본다.
+   - 이슈·Project: `gh auth status`에 `project` 권한이 있는지, 프로젝트의 Project가 저장소에 연결돼 있는지(`gh project list --owner <조직>`), 라벨 `decision`·`sprint`·`first-run`·`agent:ready`·`agent:needs-user`와 고정된 현재 스프린트 이슈가 있는지 본다.
    - role 코멘트: 아무 role에게 first-run 이슈에 짧은 코멘트 하나를 검사 스크립트로 올리게 해서, role이 코멘트를 쓸 수 있는지 본다(이 확인에 한해 first-run 이슈를 그 role의 task 이슈로 본다).
 2. **보안 검토**: 첫 PR이 생기면 `autelon:security-reviewer`를 그 PR에 호출할 수 있는지 본다. PR 코멘트가 기록이다.
 3. **developer worktree**: 첫 구현 task 때 확인한다. worktree 안에서 `local/comments/`에 쓴 초안으로 task 이슈 코멘트를 올릴 수 있는가, `.claude/agent-memory/developer/`가 어디에 생기는가.

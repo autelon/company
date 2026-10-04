@@ -79,8 +79,8 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 
 ## 7. 이슈·Project 준비 (도입 PR이 머지된 뒤)
 
-found-company 6단계와 같다(명령은 playbook 2절, 글은 모두 검사 스크립트로 올린다): 이슈 타입 확인, 라벨 `decision`·`sprint`·`first-run`, Project(`project` 권한이 있을 때, 필드 `Role`은 3단계에서 승인한 role), 기존 로드맵에 기한이 있는 단계가 있으면 마일스톤, 현재 스프린트 이슈(고정), first-run 이슈, 도입 중에 사람이 한 결정을 담은 결정 이슈 하나. Project 번호를 `CLAUDE.md`에 채우는 변경은 PR로 올린다. 사람이 웹 화면에서 해야 할 일(Status 선택지, 화면, 자동화)을 모아 둔다.
+found-company 6단계와 같다(명령은 playbook 2절, 글은 모두 검사 스크립트로 올린다): 이슈 타입 확인, 라벨 `decision`·`sprint`·`first-run`·`agent:ready`·`agent:needs-user`, Project(`project` 권한이 있을 때, 필드 `Role`은 3단계에서 승인한 role), 기존 로드맵에 기한이 있는 단계가 있으면 마일스톤, 현재 스프린트 이슈(고정), first-run 이슈, 도입 중에 사람이 한 결정을 담은 결정 이슈 하나. Project 번호를 `CLAUDE.md`에 채우는 변경은 PR로 올린다. 사람이 웹 화면에서 해야 할 일(Status 선택지, 화면, 자동화)을 모아 둔다.
 
 ## 8. 보고
 
-사람에게 보고한다: 1단계 요약, role 구성과 근거, 작업 방식 비교와 정한 것, 만든 파일과 만들지 않은 파일(이유), PR, 만든 라벨·Project·이슈(번호), 사람이 웹 화면에서 해야 할 일, 기존 기록을 이슈로 옮길지에 대한 답, 다음 단계(first-run, 목표·지표 또는 이미 있는 로드맵 이어가기). `/reload-plugins`를 입력해 달라는 요청을 넣는다. first-run은 director가 시작 때 진행한다.
+사람에게 보고한다: 1단계 요약, role 구성과 근거, 작업 방식 비교와 정한 것, 만든 파일과 만들지 않은 파일(이유), PR, 만든 라벨·Project·이슈(번호), 사람이 웹 화면에서 해야 할 일, 기존 기록을 이슈로 옮길지에 대한 답, 다음 단계(first-run, 목표·지표 또는 이미 있는 로드맵 이어가기, 이슈 작업 루프를 쓸 때는 루틴 등록 `${CLAUDE_PLUGIN_ROOT}/playbooks/routine.md`). `/reload-plugins`를 입력해 달라는 요청을 넣는다. first-run은 director가 시작 때 진행한다.

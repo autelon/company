@@ -39,7 +39,11 @@ node <S> gh issue edit <N> -R <o>/<r> -F local/issues/<N>.md
 gh label create decision  -R <o>/<r> --color 5319E7 --description "어느 이슈에도 속하지 않는 결정"
 gh label create sprint    -R <o>/<r> --color 0E8A16 --description "현재 스프린트(director 인계)"
 gh label create first-run -R <o>/<r> --color FBCA04 --description "설립·도입 뒤 첫 점검"
+gh label create agent:ready      -R <o>/<r> --color 1D76DB --description "루틴이 처리할 이슈"
+gh label create agent:needs-user -R <o>/<r> --color D93F0B --description "사람의 결정이 필요함(루틴은 건너뜀)"
 ```
+
+- `agent:ready`·`agent:needs-user`는 이슈 작업 루프의 라벨이다(director 스킬 "이슈 작업 루프", `playbooks/routine.md`). 라벨이 없는 이슈는 사람이 쓰는 중인 초안으로 본다. 사람이 `agent:needs-user` 이슈에 답하면 `agent:ready`로 바꾼다.
 
 ### Project (프로젝트마다 하나)
 
@@ -83,6 +87,8 @@ gh api repos/<o>/<r>/milestones -f title="M-01 <이름>" -f due_on="2026-11-01T0
 | 이슈 본문(현재 결론)      | `gh issue view <N> -R <o>/<r> --json title,body,labels,milestone,parent,subIssues,blockedBy`    |
 | 경위(코멘트)              | `gh issue view <N> -R <o>/<r> --comments`                                                       |
 | 결정 이슈                 | `gh issue list -R <o>/<r> --label decision --state all`                                         |
+| 루틴 처리 대상            | `gh issue list -R <o>/<r> --author @me --label agent:ready --state open`                        |
+| 사람의 답을 기다리는 이슈 | `gh issue list -R <o>/<r> --label agent:needs-user --state open`                                |
 | 여러 프로젝트 (루트 세션) | `gh search issues --owner <조직> --state open`                                                  |
 
 `gh project item-list`의 JSON에서 필드 값이 어떤 키로 나오는지 **[미확인]**. 처음 쓸 때 출력을 보고 이 표를 고친다.
