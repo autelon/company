@@ -130,3 +130,83 @@ test('UUID: nil·예시 값은 통과, 같은 줄의 다른 UUID 는 막는다',
 test('32자 해시는 Notion ID 와 가를 수 없어 막는다', () => {
   assert.ok(kinds('md5 ' + '0123456789abcdef'.repeat(2)).includes('32자리 ID'));
 });
+
+// autelon/company#27: 라벨 이름·설명, 마일스톤, 코멘트 고치기도 검사 뒤 실행한다.
+test('gh label: 이름·새 이름·설명을 뽑고 다른 하위 명령과 모르는 플래그는 거절한다', () => {
+  assert.deepEqual(
+    textsFromGhArgs([
+      'label',
+      'create',
+      'agent:ready',
+      '-R',
+      'o/r',
+      '-c',
+      '1D76DB',
+      '--description=설명',
+    ]).map((t) => t.text),
+    ['agent:ready', '설명'],
+  );
+  assert.deepEqual(
+    textsFromGhArgs(['label', 'edit', 'a', '-n', 'b', '-d', '설명']).map((t) => t.text),
+    ['a', 'b', '설명'],
+  );
+  for (const bad of [
+    ['label', 'delete', 'a'],
+    ['label', 'create', 'a', '--web'],
+    ['label', 'create', 'a', '-fd', 'x'],
+    ['label', 'create'],
+    ['label', 'create', 'a', '-n', 'b'],
+    ['label', 'create', 'a', '--', '-d', 'x'],
+  ]) {
+    assert.throws(() => textsFromGhArgs(bad), undefined, bad.join(' '));
+  }
+});
+
+test('gh api: 마일스톤 만들기·고치기와 코멘트 고치기만 받고 필드 값을 모두 뽑는다', () => {
+  assert.deepEqual(
+    textsFromGhArgs([
+      'api',
+      'repos/o/r/milestones',
+      '-f',
+      'title=M-01 첫',
+      '-f',
+      'description=한 줄',
+    ]).map((t) => t.text),
+    ['M-01 첫', '한 줄'],
+  );
+  assert.equal(
+    textsFromGhArgs(['api', 'repos/o/r/milestones/3', '-X', 'PATCH', '-f', 'state=closed']).length,
+    1,
+  );
+  const dir = mkdtempSync(path.join(tmpdir(), 'pc-'));
+  const file = path.join(dir, 'body.md');
+  writeFileSync(file, '고친 코멘트');
+  assert.deepEqual(
+    textsFromGhArgs([
+      'api',
+      '-X',
+      'PATCH',
+      'repos/o/r/issues/comments/9',
+      '-F',
+      `body=@${file}`,
+    ]).map((t) => t.text),
+    ['고친 코멘트'],
+  );
+  for (const bad of [
+    ['api', 'repos/o/r/milestones'],
+    ['api', 'repos/o/r/milestones/3', '-f', 'state=closed'],
+    ['api', 'repos/o/r/issues/comments/9', '-f', 'body=x'],
+    ['api', '-X', 'PATCH', 'repos/o/r/issues/comments/9', '-F', 'body=@-'],
+    ['api', '-X', 'DELETE', 'repos/o/r/issues/comments/9', '-f', 'a=b'],
+    ['api', 'repos/o/r/milestones', '--input', file],
+    ['api', 'graphql', '-f', 'query=x'],
+    ['api', 'repos/o/r/issues', '-f', 'title=x'],
+    ['api', 'repos/o/r/milestones', '-f', 'title'],
+    ['api', 'repos/o/r/milestones', '--paginate', '-f', 'title=x'],
+    ['api', '-X', 'PATCH', '-X', 'DELETE', 'repos/o/r/issues/comments/9', '-f', 'body=x'],
+    ['api', '-X', 'PATCH', 'repos/o/r?/milestones/1', '-f', 'title=x'],
+    ['api', 'repos/o/r#x/milestones', '-f', 'title=x'],
+  ]) {
+    assert.throws(() => textsFromGhArgs(bad), undefined, bad.join(' '));
+  }
+});
