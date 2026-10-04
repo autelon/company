@@ -2,7 +2,7 @@
 // 탐지 대상 문자열은 조각을 이어 붙여 만든다. 이 파일 자체가 개인 정보 검사(diff grep, 보안 검토)에 걸리지 않게 하기 위해서다.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { writeFileSync, mkdtempSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { scan, textsFromGhArgs, bashViolation, splitCommands } from './privacy-check.mjs';
@@ -266,4 +266,101 @@ test('훅: 스크립트 경유, 읽기, 글 없는 쓰기, 글 속의 명령 문
 test('훅: here-document 뒤의 명령은 다시 본다', () => {
   assert.ok(bashViolation('cat > a <<EOF\nx\nEOF\ngh issue comment 1 -b x'));
   assert.deepEqual(splitCommands('a "b c" | d'), [['a', 'b c'], ['d']]);
+});
+
+// autelon/company#40: 훅 판정 보완
+test('훅: 감싸는 명령·하위 명령 앞 -R·릴리스 글·이슈 제목 PATCH 를 막는다', () => {
+  for (const bad of [
+    'timeout 30 gh issue comment 1 -b x',
+    'timeout -s KILL 30 gh pr create -t a -b b',
+    'nice -n 5 gh issue create -t a -b b',
+    'gh -R o/r issue comment 1 -b x',
+    'gh --repo=o/r pr comment 1 -b x',
+    'gh release create v1 --notes 노트',
+    'gh release edit v1 -t 제목',
+    'gh api -X PATCH repos/o/r/issues/3 -f title=x',
+    'gh api -X PATCH repos/o/r/pulls/3 -f body=x',
+    'gh api repos/o/r/issues -f title=x',
+    'gh api -X PATCH repos/o/r/issues/3 --input body.json',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+});
+
+test('훅: 글 없는 이슈 PATCH, 노트 없는 릴리스, 생성 노트는 통과한다', () => {
+  for (const ok of [
+    'gh api -X PATCH repos/o/r/issues/3 -f state=closed',
+    'gh api -X PATCH repos/o/r/issues/3 -f type=Bug',
+    'gh api -X POST repos/o/r/issues/3/labels -f labels[]=decision',
+    'gh release create v1 --generate-notes',
+    'gh release list',
+    'gh -R o/r issue list',
+  ]) {
+    assert.equal(bashViolation(ok), null, ok);
+  }
+});
+
+test('훅: 스크립트가 받는 호출은 스크립트로, 받지 않는 호출은 다른 안내로 막는다', () => {
+  assert.equal(bashViolation('gh issue comment 1 -b x').via, 'script');
+  assert.equal(bashViolation('gh api repos/o/r/milestones -f title=x').via, 'script');
+  assert.equal(bashViolation('gh issue close 1 --comment x').via, 'other');
+  assert.equal(bashViolation('gh release create v1 -n x').via, 'other');
+  assert.equal(bashViolation('gh api repos/o/r/releases -f body=x').via, 'other');
+});
+
+test('훅: graphql --input 은 같은 명령 안의 cd 를 따라 읽고, 못 읽으면 따로 안내한다', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pc-'));
+  writeFileSync(
+    path.join(dir, 'q.json'),
+    '{"query":"mutation { updateProjectV2Field(input:{}) { clientMutationId } }"}',
+  );
+  writeFileSync(
+    path.join(dir, 'c.json'),
+    '{"query":"mutation { addComment(input:{}) { clientMutationId } }"}',
+  );
+  const root = path.dirname(dir);
+  const sub = path.basename(dir);
+  assert.equal(bashViolation(`cd ${sub} && gh api graphql --input q.json`, root), null);
+  assert.equal(bashViolation(`cd ${sub} && gh api graphql --input c.json`, root).via, 'other');
+  assert.equal(bashViolation('gh api graphql --input q.json', root).via, 'unreadable');
+});
+
+test('훅: 코멘트 고치기는 cd 를 따른 본문 파일로 스크립트 안내, 파일이 없으면 따로 안내한다', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pc-'));
+  writeFileSync(path.join(dir, 'b.md'), '본문');
+  const root = path.dirname(dir);
+  const sub = path.basename(dir);
+  const cmd = 'gh api -X PATCH repos/o/r/issues/comments/9 -F body=@b.md';
+  assert.equal(bashViolation(`cd ${sub} && ${cmd}`, root).via, 'script');
+  assert.equal(bashViolation(cmd, root).via, 'unreadable');
+});
+
+test('훅·gh 모드: 하위 명령 앞 -R 을 같은 인자로 받는다, 그 밖의 안내', () => {
+  const args = ['-R', 'o/r', 'issue', 'comment', '1', '-b', '본문'];
+  assert.deepEqual(
+    textsFromGhArgs(args).map((t) => t.text),
+    ['본문'],
+  );
+  assert.equal(bashViolation(`gh ${args.join(' ')}`).via, 'script');
+  assert.match(bashViolation('gh pr close 1 --comment x').hint, /gh pr comment/);
+  assert.ok(bashViolation('gh api -X PATCH "repos/o/r/issues/3?body=x"'));
+  assert.ok(bashViolation('gh api -X PUT repos/o/r/pulls/3/merge -f commit_title=x'));
+  assert.ok(bashViolation('gh api -X PUT "repos/o/r/pulls/3/merge?commit_message=x"'));
+  assert.equal(bashViolation('gh api -X PUT repos/o/r/pulls/3/merge -f merge_method=merge'), null);
+});
+
+test('훅: 판정에 읽는 파일은 일반 파일 1MB 까지만 읽는다(코멘트 PATCH, issue edit, graphql 모두)', () => {
+  const dir = mkdtempSync(path.join(tmpdir(), 'pc-'));
+  writeFileSync(path.join(dir, 'big.md'), 'x'.repeat(1024 * 1024 + 1));
+  mkdirSync(path.join(dir, 'd.md'));
+  for (const f of ['big.md', 'd.md']) {
+    assert.equal(
+      bashViolation(`gh api -X PATCH repos/o/r/issues/comments/9 -F body=@${f}`, dir).via,
+      'unreadable',
+      f,
+    );
+    assert.equal(bashViolation(`gh api graphql --input ${f}`, dir).via, 'unreadable', f);
+    // edit 는 못 읽어도 글을 쓰는 호출로 보고 스크립트로 안내한다(스크립트가 실제 파일로 다시 판정한다)
+    assert.equal(bashViolation(`gh issue edit 1 -F ${f}`, dir).via, 'script', f);
+  }
 });
