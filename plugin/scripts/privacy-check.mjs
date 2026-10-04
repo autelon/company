@@ -7,7 +7,8 @@
 //   node privacy-check.mjs gh <gh 인자...>      제목·본문을 검사하고, 통과하면 그 gh 명령을 그대로 실행한다.
 //   node privacy-check.mjs hook                  PreToolUse(Bash) 훅. 표준 입력의 명령에 스크립트를 거치지 않은
 //                                               gh 글쓰기가 있으면 deny 를 출력한다(plugin/hooks/hooks.json).
-//                                               도움말 플래그(--help, -h)만 붙은 호출은 통과한다.
+//                                               도움말 플래그(--help, -h)만 붙은 호출은 통과한다. 값을 붙인
+//                                               도움말 플래그(--help=false, -h=x)는 도움말로 보지 않는다.
 //
 // gh 모드는 이슈·PR의 제목·본문·코멘트와 그 밖의 공개 글을 올리는 유일한 통로다. 이슈와 코멘트는 리뷰 없이 바로
 // 공개되므로 올리기 전에 막아야 한다. 받는 명령: issue create|edit|comment, pr create|edit|comment,
@@ -302,6 +303,7 @@ function apiTexts(args, readFile) {
 // Bash 명령에서 검사 스크립트를 거치지 않고 공개 글을 쓰는 gh 호출을 찾아 막는다(autelon/company#29).
 // 셸을 흉내 낸 간단한 분해라 변수에 담은 명령, eval, bash -c 안의 명령 등은 잡지 못한다. 실수 방지용이다.
 // 도움말만 보는 호출(gh issue create --help)은 글을 쓰지 않으므로 통과한다(isHelpOnly).
+// 그룹 앞이나 그룹·하위 명령 사이의 -R 말고 다른 플래그(--help=false 등)는 건너뛰고 나머지로 판정한다(ghCommandWords).
 
 // 명령 문자열을 단순 명령(단어 배열)들로 나눈다. 따옴표 안은 한 단어로 묶고, 연산자(; & | ( ) 줄바꿈 백틱)에서 끊는다.
 // here-document 본문은 명령이 아니므로 건너뛴다.
@@ -449,6 +451,26 @@ function stripGhRepo(args) {
   return [...out, ...args.slice(i)];
 }
 
+// 훅이 그룹·하위 명령을 찾는다(autelon/company#62). stripGhRepo 처럼 -R/--repo 를 걷어 내고, 그 밖의 플래그도
+// 그룹·하위 명령 자리로 보지 않고 건너뛰어 flags 로 돌려준다. gh 2.102.0 은 그룹 앞이나 그룹·하위 명령 사이의
+// --help=false(=0, =f)를 받고 하위 명령을 실행한다(gh issue --help=false list 로 확인). 이 플래그를 하위 명령으로
+// 읽으면 어느 분기에도 맞지 않아 통과했다. 값이 무엇이든, 어떤 플래그든 건너뛰고 나머지 인자로 판정한다.
+// api 는 하위 명령이 없으므로 그룹 뒤의 플래그는 api 의 인자로 둔다(stripGhRepo 와 같다).
+// gh 모드(textsFromGhArgs)는 stripGhRepo 를 그대로 써서 이 꼴을 "받지 않는 명령"으로 거절한다.
+function ghCommandWords(rawArgs) {
+  const out = [];
+  const flags = [];
+  let i = 0;
+  while (i < rawArgs.length && out.length < 2) {
+    const w = rawArgs[i];
+    if (w === '-R' || w === '--repo') i += 2;
+    else if (/^(-R.|--repo=)/.test(w)) i++;
+    else if (w.startsWith('-') && out[0] !== 'api') flags.push(rawArgs[i++]);
+    else out.push(rawArgs[i++]);
+  }
+  return { args: [...out, ...rawArgs.slice(i)], flags };
+}
+
 const basename = (w) => w.slice(w.lastIndexOf('/') + 1);
 const hasFlag = (args, longs, shorts) =>
   args.some(
@@ -507,11 +529,13 @@ function apiFieldKeys(a) {
 }
 
 // 도움말만 보는 호출인가(autelon/company#55). 명령에 그대로 적힌 단어가 그룹·하위 명령, --help·-h, 위치 인자,
-// -R/--repo 와 그 값뿐이고 도움말 플래그가 하나 이상이면 true. gh 는 도움말 플래그가 있으면 도움말만 찍고 명령을
+// -R/--repo 와 그 값뿐이고 도움말 플래그가 하나 이상이면 true. --help·-h 는 그룹 앞이나 그룹·하위 명령 사이에
+// 있어도 센다(gh issue --help list 는 도움말을 찍는다, gh 2.102.0 으로 확인). gh 는 도움말 플래그가 있으면 도움말만 찍고 명령을
 // 실행하지 않는다. 막는 하위 명령 중 -h 를 다른 뜻으로 쓰는 것은 없다(gh 2.102.0 의 gh help <명령>).
 // 판정은 셸이 펼치기 전 글자를 본다. 그래서:
 // - 적힌 플래그가 도움말과 -R 말고 하나라도 있으면 false 다. 값을 받는 플래그 뒤의 --help 는 그 플래그의 값이 되어
-//   명령이 실행되고(--title --help), --help=false 도 실행된다. 플래그마다 값을 받는지 흉내 내지 않으려고 섞인
+//   명령이 실행되고(--title --help), --help=false 도 실행된다. 값을 붙인 도움말 플래그(--help=true, -h=x)는 자리와
+//   값에 관계없이 도움말로 세지 않는다(autelon/company#62). 플래그마다 값을 받는지 흉내 내지 않으려고 섞인
 //   도움말(gh issue create -t x --help)은 그대로 막는다. 묶은 짧은 플래그(-hL)와 -- 도 같다.
 // - 위치 인자와 -R 값은 셸이 펼치지 않는 글자(LITERAL)만 받는다. $V, ${V}, $'..', {a,b}, 글롭(* ? [), ~, 리다이렉트는
 //   펼친 뒤에 --help=false 같은 플래그가 될 수 있어 false 다. 따옴표를 벗긴 뒤의 글자를 보므로 따옴표로 감싼
@@ -527,9 +551,15 @@ function isHelpOnly(rawArgs) {
     const m = w.match(/^(?:-R=?|--repo=)(.+)$/);
     return m && isLiteral(m[1]) ? 1 : 0;
   };
-  // 그룹 앞과 그룹·하위 명령 사이의 -R
+  let help = false;
+  // 그룹 앞과 그룹·하위 명령 사이의 -R 과 --help·-h
   const skipRepo = () => {
-    while (i < rawArgs.length && /^(-R|--repo)/.test(rawArgs[i])) {
+    while (i < rawArgs.length && /^(-R|--repo|--help$|-h$)/.test(rawArgs[i])) {
+      if (rawArgs[i] === '--help' || rawArgs[i] === '-h') {
+        help = true;
+        i++;
+        continue;
+      }
       const n = repoValue(rawArgs[i], rawArgs[i + 1]);
       if (!n) return false;
       i += n;
@@ -540,7 +570,6 @@ function isHelpOnly(rawArgs) {
     if (!skipRepo() || !isLiteral(rawArgs[i])) return false;
     i++;
   }
-  let help = false;
   for (; i < rawArgs.length;) {
     const w = rawArgs[i];
     if (w === '--help' || w === '-h') {
@@ -566,7 +595,19 @@ export function ghViolation(
   { helpPass = true } = {},
 ) {
   if (helpPass && isHelpOnly(rawArgs)) return null;
-  const args = stripGhRepo(rawArgs);
+  const { args, flags } = ghCommandWords(rawArgs);
+  const found = commandViolation(args, readFile, resolvePath);
+  // 검사 스크립트는 이 자리의 플래그를 받지 않으므로 "같은 인자로 스크립트" 대신 플래그를 빼라고 안내한다.
+  if (found && flags.length)
+    return other(
+      `${found.what} (그룹·하위 명령 앞의 플래그 ${flags.join(' ')})`,
+      '그룹 앞과 그룹·하위 명령 사이에는 -R/--repo 말고 플래그를 두지 않는다(검사 스크립트도 받지 않는다). 그 플래그를 빼고 다시 실행한다',
+    );
+  return found;
+}
+
+// 그룹·하위 명령을 찾은 인자(ghCommandWords)로 막을 호출인지 판정한다.
+function commandViolation(args, readFile, resolvePath) {
   const [group, sub] = args;
   const rest = args.slice(2);
   if (group === 'issue' || group === 'pr') {
