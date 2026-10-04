@@ -1,6 +1,6 @@
 # autelon
 
-role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그인으로 만드는 리포. GitHub `autelon/company`. 플러그인·마켓플레이스 이름은 `autelon`이라 스킬과 공용 role은 `autelon:<이름>`으로 부른다. 설계는 `docs/design.md`, 결정 기록은 `docs/decisions.md`.
+role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그인으로 만드는 리포. GitHub `autelon/company`. 플러그인·마켓플레이스 이름은 `autelon`이라 스킬과 공용 role은 `autelon:<이름>`으로 부른다. 설계는 `docs/design.md`. 이 리포의 결정 기록은 이슈다: 어느 이슈에도 속하지 않는 결정은 `decision` 라벨 이슈, 이슈에서 나온 결정은 그 이슈의 결정 코멘트(`gh issue list -R autelon/company --label decision --state all`).
 
 이 리포는 "회사의 운영 방식"만 담는다. 실제 프로젝트는 각자 별도 repo이고, 그 repo에서 이 플러그인을 켜서 쓴다.
 프로젝트끼리는 role, repo, 이슈, Project가 모두 독립이다. 프로젝트의 기록(task, PRD, 결정, 인계)은 그 저장소의 GitHub 이슈와 Project에 두고, 저장소에는 "지금 기준" 문서만 둔다.
@@ -28,6 +28,8 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/templates/routine/`             | 루틴 지시문 템플릿(프로젝트마다 채워 예약 작업 prompt로 등록)                                       |
 | `.github/workflows/ci.yml`              | 필수 검사 `check`(커밋 메시지·Prettier·스크립트 테스트)와 조직 `git-policy`                         |
 | `scripts/check-commits.sh`              | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                                                    |
+| `.claude/agents/`                       | company 전용 role: plugin-developer, reviewer, verifier(읽기 기반 모의 실행). 이 리포에서만 쓴다    |
+| `docs/routine-prompt.md`                | company 루틴(이슈 작업 루프) 지시문 원본. 채운 사본은 `local/routine-prompt.md`                     |
 
 ## 고칠 때 주의
 
@@ -46,3 +48,12 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 파일을 고친 뒤 `pnpm check`(Prettier 검사와 `plugin/scripts/*.test.mjs`)를 돌린다. 도구 버전은 mise가 고정한다 (`mise exec --`).
 
 `README.md`만 사람이 읽는 문서라 영어로 쓴다. 나머지 문서·주석·커밋은 한국어다.
+
+## 이슈 작업 루프 (company 루틴)
+
+이 리포도 이슈로 일한다. `agent:ready`가 붙은 이슈를 company 루틴(로컬 예약 작업, 실행 폴더 = 이 리포 루트)이 처리한다. 지시문은 `docs/routine-prompt.md`, 설계 경위는 autelon/company#34.
+
+- 플러그인은 꺼 둔다. 그래서 director 스킬·`autelon:*` role·플러그인 훅 대신 `.claude/agents/`의 company role과 지시문의 규칙을 쓴다. 보안 검토는 `plugin/agents/security-reviewer.md` 본문을 지시문으로 준다.
+- 프로젝트 director도 이 리포 이슈에 `agent:ready`를 붙일 수 있다. 그래서 한 프로젝트의 사정만으로 공통 규칙을 바꾸지 않고, BREAKING 변경은 PR까지만 올리고 `agent:needs-user`로 사람이 머지를 정한다.
+- 루틴은 머지까지만 한다. 머지된 변경은 자동 업데이트로 각 프로젝트에 갈 수 있으므로(위 "고칠 때 주의", Desktop 세션에서 동작하는지는 design.md 7절 [미확인]) 머지가 마지막 관문이다. 루틴은 `claude plugin update`를 하지 않고, 루트 세션이 머지된 PR과 이슈의 `[루틴] 처리 요약` 코멘트를 읽고 이 기기의 바로 업데이트와 프로젝트별 후속 일(복사된 파일 고치기, 루틴 지시문 재등록)을 정한다.
+- 지시문을 고치면 채운 사본을 다시 만들고 `update_scheduled_task`로 바꾼다(지시문은 등록할 때 복사된다).
