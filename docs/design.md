@@ -119,6 +119,7 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
 | 사람의 결정                                 | 결정이 나온 이슈의 코멘트, 따로 난 결정은 Task + `decision` 라벨 이슈                         | director                                 |
 | 세션 인계                                   | 고정한 "현재 스프린트" 이슈(`sprint` 라벨) 본문, 이력은 코멘트                                | director                                 |
 | first-run 결과                              | `first-run` 라벨 이슈                                                                         | director                                 |
+| 플러그인 버전 맞추기(sync)                  | 제목이 `autelon sync:`로 시작하는 이슈(하나만 열어 둔다)                                      | director(세션 시작 비교)                 |
 | 로드맵                                      | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                     | director                                 |
 | `docs/goals.md`                             | 프로젝트 목표, north star, 하위 지표                                                          | director (strategist 제안 → 사람 확정)   |
 | `analytics/events.md`, `analytics/queries/` | 이벤트 수집 명세, 지표별 분석 쿼리                                                            | da                                       |
@@ -130,6 +131,11 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
   - `pluginSha`는 커밋 SHA 앞 12자다. 설치 버전(`installed_plugins.json`의 `version`, 설치 폴더 이름)이 12자이고, GitHub API가 12자 SHA를 받는다. **[확인]** 2026-10-05 `gh api repos/autelon/company/compare/<12자>...<12자>`가 비교 결과(ahead_by, files)를 돌려주고 `commits/<12자>`가 40자 SHA로 풀림
   - 스킬 본문의 `${CLAUDE_PLUGIN_ROOT}`가 설치 폴더(`.../cache/autelon/autelon/<12자>`)로 치환되어 마지막 폴더 이름으로 버전을 읽을 수 있다는 것은 **[추정]**. 읽지 못하면 `미정`으로 두고 사람에게 알린다.
   - 읽는 순서: 플러그인 루트 경로가 우선이다. 경로는 읽었는데 12자 16진수가 아니면(`--plugin-dir` 개발본) 설치 기록으로 대신하지 않고 `미정`으로 둔다. 개발본 세션이 쓴 템플릿은 설치본과 다를 수 있어 그 SHA를 기준으로 삼으면 다음 비교가 틀어진다. 설치 기록(`installed_plugins.json`)은 경로를 아예 읽지 못했을 때만 쓰고, 같은 항목의 `version`이 `gitCommitSha` 앞 12자와 같을 때만 믿는다. 설치 기록은 세션 중 자동 업데이트로 바뀔 수 있지만 로드된 플러그인은 다음 세션부터 바뀌므로(0절) 두 값이 다르면 플러그인 루트가 지금 세션의 버전이다.
+- **세션 시작 버전 비교와 sync 이슈** (사용자 결정 2026-10-04, autelon/company#42 결정 2): director는 세션을 시작할 때(루틴 실행 포함) 설치 SHA와 기준 버전 파일의 `pluginSha`를 비교하고, 다르면 바뀐 경로와 상관없이 sync 이슈(본문 `plugin/templates/issues/sync.md`)를 만든다. 절차는 director 스킬 "시작할 때" 7번. 아래는 그 결정에 더한 기본안이다(autelon/company#66, 사람 확인 대기).
+  - 열린 sync 이슈는 제목 접두어 `autelon sync:`로 찾고 하나만 둔다. 새 라벨을 쓰지 않은 것은 기존 프로젝트마다 라벨을 만들어야 해서다. 이미 열려 있으면 설치 SHA가 바뀐 때만 코멘트를 더한다. 세션을 열 때마다 이슈·코멘트가 쌓이지 않게 하려는 것이다.
+  - 기준 파일이 없거나 `pluginSha`가 `미정`이면 `agent:needs-user` sync 이슈로 기준을 묻는다. compare 상태가 `behind`·`diverged`(설치본이 기록보다 오래됨)면 내려 맞추지 않고 `agent:needs-user`로 묻는다. `ahead`만 `agent:ready`다. **[확인]** 2026-10-05 `compare/<새 SHA>...<옛 SHA>`는 `status: behind`, `files` 0개.
+  - 설치 SHA를 읽지 못하면(개발본, 치환 안 됨) 비교하지 않고 이슈를 쓰지 않는다. 개발본 세션마다 이슈가 생기지 않게 하려는 것이다.
+  - 루틴 지시문 템플릿 0번에도 이 비교가 있다. 템플릿이 바뀌기 전에 등록한 지시문은 이 줄이 없지만, director 스킬 "시작할 때" 0번이 루틴도 7번을 하라고 해서 플러그인 업데이트로 같은 동작을 받는다 **[추정]**(재등록 전 지시문으로 돌린 실행에서 확인하지 않음).
 - 이슈 타입은 조직에 이미 있는 Task·Bug·Feature를 쓰고 결정은 라벨로 구분한다. 새 타입은 조직 설정 변경이 필요해서 만들지 않았다. (사용자 결정 2026-10-04) **[확인]** autelon 조직의 타입은 Task·Bug·Feature 세 개(gh api, 2026-10-04)
 - **이슈 = 원본, Project = 화면.** 이슈 하나만 보고도 무엇인지 알 수 있게 쓰고(타입, 라벨, 마일스톤, 부모, 의존 관계, 본문), Project 필드는 보드를 위한 것이다.
 - **본문 = 현재 결론, 코멘트 = 이력.** 본문 맨 위 "현재 결론" 칸을 결정이 날 때마다 director가 고친다. agent는 기본으로 본문만 읽는다.

@@ -17,17 +17,18 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 기준은 하나다. **"언제 무슨 일이 있었고 왜 그렇게 정했나"는 이슈에, agent가 매 세션 읽고 맞춰야 하는 "지금 기준"은 저장소 md에.** 문서에는 결론만 쓰고, 바뀐 경위는 이슈·PR에 남긴다.
 
-| 기록                                  | 위치                                                                                     |
-| ------------------------------------- | ---------------------------------------------------------------------------------------- |
-| task                                  | 이슈(타입 Task). 상태·담당 role·크기는 Project 필드, 마일스톤은 저장소 마일스톤          |
-| role의 작업 결과(예전 handoff)        | 그 task 이슈의 코멘트                                                                    |
-| PRD                                   | 이슈(타입 Feature). 기능 명세 = 본문, task = 하위 이슈, 초안·논의·승인 = 코멘트          |
-| 사람의 결정                           | 결정이 나온 이슈의 코멘트. 어느 이슈에도 속하지 않으면 결정 이슈(Task + `decision` 라벨) |
-| 세션 인계                             | 고정한 "현재 스프린트" 이슈(`sprint` 라벨)의 본문, 이력은 코멘트                         |
-| first-run 결과                        | `first-run` 라벨 이슈                                                                    |
-| 로드맵                                | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                |
-| 목표·지표, 설계, 규칙, playbook, 조사 | 저장소 md (`docs/goals.md`, `docs/`, `analytics/`, `CLAUDE.md`, `.claude/agents/`)       |
-| 사용량 스냅샷                         | `state/quota.json` (커밋하지 않음)                                                       |
+| 기록                                  | 위치                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| task                                  | 이슈(타입 Task). 상태·담당 role·크기는 Project 필드, 마일스톤은 저장소 마일스톤                   |
+| role의 작업 결과(예전 handoff)        | 그 task 이슈의 코멘트                                                                             |
+| PRD                                   | 이슈(타입 Feature). 기능 명세 = 본문, task = 하위 이슈, 초안·논의·승인 = 코멘트                   |
+| 사람의 결정                           | 결정이 나온 이슈의 코멘트. 어느 이슈에도 속하지 않으면 결정 이슈(Task + `decision` 라벨)          |
+| 세션 인계                             | 고정한 "현재 스프린트" 이슈(`sprint` 라벨)의 본문, 이력은 코멘트                                  |
+| first-run 결과                        | `first-run` 라벨 이슈                                                                             |
+| 로드맵                                | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                         |
+| 목표·지표, 설계, 규칙, playbook, 조사 | 저장소 md (`docs/goals.md`, `docs/`, `analytics/`, `CLAUDE.md`, `.claude/agents/`)                |
+| 플러그인 버전 맞추기(sync)            | 제목이 `autelon sync:`로 시작하는 이슈(하나만 열어 둔다). 맞춘 버전은 `.claude/autelon-sync.json` |
+| 사용량 스냅샷                         | `state/quota.json` (커밋하지 않음)                                                                |
 
 - **이슈가 원본이고 Project는 화면이다.** 이슈 하나만 보고도 무엇인지 알 수 있게 쓴다(타입, 라벨, 마일스톤, 부모, 의존 관계, 본문). Project 필드는 보드를 위한 것이다.
 - **본문 = 현재 결론, 코멘트 = 이력.** 이슈 본문 맨 위의 "현재 결론" 칸은 결정이 날 때마다 director가 고친다. agent는 기본으로 본문만 읽고, 경위가 필요할 때 코멘트를 본다.
@@ -36,7 +37,7 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 
 ## 시작할 때
 
-0. 이 세션이 예약 작업(루틴)의 실행이면 그 지시문이 이 절차를 대신한다. 아래 "이슈 작업 루프"와 지시문을 따른다.
+0. 이 세션이 예약 작업(루틴)의 실행이면 그 지시문이 1~6번을 대신한다. 아래 "이슈 작업 루프"와 지시문을 따른다. 7번(버전 비교)은 루틴도 한다. 지시문에 7번이 없어도(템플릿이 바뀌기 전에 등록한 지시문) 이전 실행 확인 뒤, 처리 대상 목록을 읽기 전에 한다.
 1. `.claude/agents/`가 없으면 아직 설립되지 않은 프로젝트다. 빈 새 프로젝트면 `autelon:found-company`, 코드·문서가 이미 있는 프로젝트면 `autelon:adopt-project`로 시작한다.
 2. `gh auth status`로 로그인과 권한을 본다. Project를 읽고 쓰려면 `project` 권한이 필요하다. 없으면 playbook 0절대로 사람에게 알린다. 그동안은 이슈(`repo` 권한)만으로 진행하고 Project 필드 갱신은 미뤄 둔다.
 3. `first-run` 라벨 이슈가 없으면(열림·닫힘 모두) first-run이다. `${CLAUDE_PLUGIN_ROOT}/playbooks/first-run.md`를 진행하고 결과를 그 이슈에 쓴다. 예전 방식으로 `docs/first-run.md`가 있는 프로젝트는 그 파일을 결과로 본다.
@@ -44,6 +45,25 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 4. "현재 스프린트" 이슈(`sprint` 라벨, 고정) 본문을 읽고 이전 director의 인계를 확인한다.
 5. Project 보드와 열린 이슈를 읽는다(playbook 3절 "읽기").
 6. 사용량을 확인한다 (재무 규칙).
+7. **버전 비교**: 설치된 플러그인 버전과 프로젝트가 마지막으로 맞춘 버전을 비교해, 다르면 sync 이슈를 만든다(autelon/company#42 결정 2. 바뀐 경로와 상관없이 다르면 만든다). 1번에서 설립·도입으로 갔으면 하지 않는다(그 스킬이 기준 버전 파일을 만든다).
+   1. 설치 SHA: `autelon:found-company` 스킬 3단계 "기준 버전 파일"의 읽는 방법(1~5번)을 따른다. 이 스킬의 플러그인 루트는 `${CLAUDE_PLUGIN_ROOT}`다. 결과가 `미정`(개발본으로 띄운 세션, 읽지 못함)이면 비교하지 않고 이슈도 쓰지 않는다. 사람에게 이유를 알린다(루틴은 마지막 요약에 적는다).
+   2. 기록 SHA: `.claude/autelon-sync.json`의 `pluginSha`. 파일이 없거나 값이 `미정`이면 "기준 없음"이다.
+   3. 두 값이 같으면 끝. 다르면 비교 상태를 본다: `gh api repos/autelon/company/compare/<기록 SHA>...<설치 SHA> --jq .status`. `identical`이면 끝. 기준 없음이면 비교하지 않는다.
+   4. 열린 sync 이슈를 찾는다. 라벨과 상관없이 제목이 `autelon sync:`로 시작하는 열린 이슈다. 있으면 새로 만들지 않는다. 그 이슈 본문과 코멘트에 지금 설치 SHA가 이미 있으면 아무것도 쓰지 않고, 없으면 `설치 SHA: <12자> (비교 상태: <상태>)` 한 줄을 코멘트로 더한다(루틴이면 첫 줄 `[루틴]`). 라벨은 바꾸지 않는다.
+
+      ```
+      gh issue list --author @me --state open --search 'in:title "autelon sync"' --json number,title,labels --jq '.[] | select(.title | startswith("autelon sync:"))'
+      ```
+
+   5. 열린 sync 이슈가 없으면 `${CLAUDE_PLUGIN_ROOT}/templates/issues/sync.md`로 만든다(타입 Task). 제목과 라벨은 아래 표대로다. `behind`·`diverged`는 설치된 플러그인이 기록보다 오래됐거나 갈라진 것이라 내려 맞추지 않는다(플러그인 업데이트는 사람이 한다). 기준 없음은 어느 SHA를 기준으로 삼을지 사람에게 묻는다(템플릿 "사람에게 묻기"의 선택지).
+
+      | 경우                                   | 제목                             | 라벨               |
+      | -------------------------------------- | -------------------------------- | ------------------ |
+      | 비교 상태 `ahead`                      | `autelon sync: <기록 SHA> 이후`  | `agent:ready`      |
+      | `behind`·`diverged`, 비교 명령 실패    | `autelon sync: <기록 SHA> 이후`  | `agent:needs-user` |
+      | 기준 없음(파일 없음, `pluginSha` 미정) | `autelon sync: 기준 버전 정하기` | `agent:needs-user` |
+
+   6. 루틴이 이 단계에서 새로 만든 sync 이슈는 이번 실행의 처리 대상 목록에 넣지 않는다. 다음 실행이 처리한다("이슈 작업 루프"의 작업 범위).
 
 ## task 운영
 

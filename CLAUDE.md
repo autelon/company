@@ -17,7 +17,7 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/agents/`                        | 모든 프로젝트가 같이 쓰는 공용 role: finance, security-reviewer(모든 PR·작업 단위별 이슈 보안 검토) |
 | `plugin/templates/roles/`               | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다                                |
 | `plugin/templates/project/`             | 프로젝트 저장소 파일 템플릿(CLAUDE.md, goals, git-rules, CI, gitignore)                             |
-| `plugin/templates/issues/`              | 이슈 본문(task, PRD, 결정, 스프린트, first-run)과 코멘트(role 결과, 결정) 템플릿                    |
+| `plugin/templates/issues/`              | 이슈 본문(task, PRD, 결정, 스프린트, first-run, sync)과 코멘트(role 결과, 결정) 템플릿              |
 | `plugin/scripts/finance-check.mjs`      | 재무 신호 판정                                                                                      |
 | `plugin/scripts/privacy-check.mjs`      | 개인 정보·비밀 값 검사(패턴의 원본). 이슈·PR 글은 이 스크립트의 `gh` 모드로만 올린다                |
 | `plugin/hooks/hooks.json`               | PreToolUse 훅: 검사 스크립트를 거치지 않은 gh 글쓰기를 막는다(판정은 `privacy-check.mjs hook`)      |
