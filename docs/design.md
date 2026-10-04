@@ -100,7 +100,7 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
   - 실행 기록: 이슈를 건드린 실행은 현재 스프린트 이슈 본문을 인계로 바꾸고 처리 요약 코멘트를 남긴다. 아무 이슈도 건드리지 않은 실행은 이슈에 쓰지 않는다(주기마다 빈 코멘트가 쌓이지 않게). 처리 요약은 실행의 마지막 메시지로도 남긴다.
   - PR은 지금 규칙 그대로다(작업자와 다른 리뷰어, 별도 보안 검토, 같은 head sha에 둘 다 통과, `--match-head-commit`, `--admin` 금지).
   - 다른 프로젝트에 전달: director와 루틴은 조직의 다른 저장소에 새 이슈와 코멘트를 쓸 수 있고 `agent:ready`도 붙일 수 있다. 다른 저장소의 코드·설정·기존 이슈 본문은 건드리지 않는다. 전달 이슈는 새 라벨 없이 본문의 `보낸 곳: <조직>/<저장소>#N` 줄로, 전달 코멘트는 첫 줄의 같은 표시로 구분한다. 같은 gh 계정이라 이 표시가 없으면 받는 쪽 루틴이 전달 코멘트를 사람의 답으로 읽는다. 작업 단위 끝의 보안 검토는 글을 쓴 다른 저장소도 본다. (사용자 결정 2026-10-04, autelon/company#33) 이유: poker 이전 세션이 logistics-hub에 전할 체크리스트를 금지 문장 때문에 사람을 거쳐 옮겨야 했다. 라벨을 쓰지 않은 것은 받는 저장소마다 라벨을 미리 만들어야 해서다. 반복·폭주는 루트 세션이 이슈 생성 추이로 본다.
-  - 예약 작업에 대해 확인한 것 **[확인]** scheduled-tasks 도구 설명: 앱이 열려 있을 때 로컬에서 돌고 놓친 실행은 다음에 앱을 열 때 돈다, 실행 하나가 새 세션 하나다, `list_task_runs`가 실행마다 `running`/`succeeded`/`failed` 상태를 준다, `create_scheduled_task`에는 실행 폴더 값이 없다(사람이 앱에서 정한다). 무인 세션에서는 다른 세션에 메시지 보내기와 권한 모드 변경을 쓸 수 없다(도구 설명). `list_sessions`는 세션마다 `cwd`, `isRunning`, 제목을 준다 **[확인]** 2026-10-04 대화형 세션에서 호출. 무인 실행에서 이 도구들을 쓸 수 있는지는 **[미확인]**(7절).
+  - 예약 작업에 대해 확인한 것 **[확인]** scheduled-tasks 도구 설명: 앱이 열려 있을 때 로컬에서 돌고 놓친 실행은 다음에 앱을 열 때 돈다, 실행 하나가 새 세션 하나다, `list_task_runs`가 실행마다 `running`/`succeeded`/`failed` 상태를 준다, `create_scheduled_task`에는 실행 폴더 값이 없고, 예약 작업을 만든 세션의 폴더가 실행 폴더로 저장된다(autelon/company#25. 그래서 프로젝트 루트의 director 세션이 등록한다). 무인 세션에서는 다른 세션에 메시지 보내기와 권한 모드 변경을 쓸 수 없다(도구 설명). `list_sessions`는 세션마다 `cwd`, `isRunning`, 제목을 준다 **[확인]** 2026-10-04 대화형 세션에서 호출. 무인 실행에서 이 도구들을 쓸 수 있다 **[확인]** autelon/company#25.
   - 지시문은 등록할 때 복사되므로 템플릿이 바뀌면 프로젝트마다 다시 등록한다. 지시문이 부르는 director 스킬과 role은 플러그인 업데이트를 따른다.
   - 근거: 플러그인은 세션 시작 때 불러온다 **[확인]**(plugins/loading 문서). Desktop의 `/reload-plugins`는 사람이 직접 친 입력으로만 실행된다 **[확인]**(commands 문서). 이 계정에서 세션은 사람이 칩을 눌러야 생긴다(`start_session`은 서버 기능 플래그로 꺼짐) **[확인]**. 그래서 role task마다 세션을 만들면 클릭만 늘고, 한 세션을 오래 쓰면 reload가 잦아진다.
 
@@ -223,7 +223,7 @@ PRD 하나 = Feature 이슈 하나. 본문 템플릿은 `plugin/templates/issues
 - [ ] developer worktree: worktree 안에서 `local/comments/` 초안으로 task 이슈 코멘트를 올릴 수 있는지, `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지 (첫 구현 task 때 director가 first-run 이슈의 미확인 항목으로 확인)
 - [x] worktree를 쓰려면 첫 커밋이 있어야 함 (2026-10-03 첫 커밋 완료)
 - [ ] 플러그인 PreToolUse 훅(`plugin/hooks/hooks.json`)이 실제 세션·subagent·예약 작업 세션에서 도는가 (autelon/company#29. 판정 로직은 테스트로 확인)
-- [ ] 이슈 작업 루프의 무인 실행 (company#22 할 일 4, 수동 실행용 시험 예약 작업으로 확인): 세션 목록·이전 실행 조회(`list_sessions`, `list_task_runs`, 자기 실행이 `running`으로 나오는가), subagent, `gh`, `get_usage`, `set_session_title`, 권한 모드와 권한 요청 처리, 프로젝트 폴더에서 플러그인이 로드되는가. 확인 목록은 `plugin/playbooks/routine.md` 끝
+- [x] 이슈 작업 루프의 무인 실행 (autelon/company#25, 2026-10-04): 프로젝트 루트에서 플러그인 로드, `list_sessions`·`list_task_runs`(자기 실행 `running`)·`get_usage`·`set_session_title`, subagent, `gh` 확인. 실행 폴더는 예약 작업을 만든 세션의 폴더. 권한은 사용자 설정 `defaultMode`를 따르는 것으로 본다 **[추정]**. 결과 표는 `plugin/playbooks/routine.md` 끝
 - [x] 실행이 겹칠 때 같은 예약 작업은 다음 주기를 건너뛰고 밀린 주기를 몰아서 실행하지 않는다 (2026-10-04 시험, company#22 코멘트). 지시문의 "이전 실행이 실행 중이면 끝낸다"는 이중 장치로 둔다
 - [ ] 서로 다른 예약 작업끼리 동시에 도는가, 앱을 다시 켰을 때 밀린 실행을 몇 번 하는가
 - [ ] subagent끼리 직접 통신이 되는가 (지금은 안 된다고 보고 메인을 거친다)
