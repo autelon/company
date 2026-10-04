@@ -80,7 +80,7 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
 ```
 
 - 아래 그림의 role 구성은 기본 템플릿이다. 실제 구성은 프로젝트마다 설립 때 정한다.
-- role = 프로젝트 `.claude/agents/<role>.md` 하나 (공용 role은 플러그인 `agents/`). 각 호출은 빈 context에서 시작한다. **[확인]** "Each subagent starts with a fresh, isolated context window." (sub-agents 문서)
+- role = 프로젝트 `.claude/agents/<role>.md` 하나 (공용 role은 플러그인 `agents/`). role 파일에는 frontmatter(`tools:` 포함)와 role마다 다른 내용(페르소나, 책임, 원칙, role 고유의 출력·메모리 규칙)만 둔다. 모든 role에 같은 글로 된 규칙(결과 코멘트로만 출력, 검사 스크립트로 올리기, 초안 경로, 기록 위치, `Refs #N` 등)은 director 스킬 "모든 role 공통"에 두고 director가 호출 때마다 지시문에 넣는다. 그래서 공통 규칙은 플러그인 업데이트로 모든 프로젝트에 같이 반영되고, 프로젝트에 복사된 role 파일은 고치지 않아도 된다. (사용자 결정 2026-10-04, autelon/company#42 결정 4) 각 호출은 빈 context에서 시작한다. **[확인]** "Each subagent starts with a fresh, isolated context window." (sub-agents 문서)
 - role 장기 기억 = `memory: project` → `.claude/agent-memory/<role>/MEMORY.md` 앞 200줄/25KB 자동 로드. **[확인]**
 - subagent는 AskUserQuestion을 못 쓴다. 사람에게 묻는 건 director만 한다. **[확인]**
 - 권한 요청·질문은 Remote Control + "Push when actions required"로 폰에 온다. 답할 때까지 열려 있다. **[확인]**

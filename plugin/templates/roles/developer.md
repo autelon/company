@@ -24,8 +24,6 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 
 출력
 
-- 결과는 자기 task 이슈에 코멘트로만 올린다. 형식은 지시문에 있는 코멘트 템플릿을 따르고, 초안을 지시받은 `local/comments/` 경로에 쓴 뒤 검사 스크립트로 올린다(`node <검사 스크립트> gh issue comment <이슈 번호> -R <저장소> -F <초안 경로>`). worktree 안에서도 `local/`은 커밋되지 않는다.
 - 코멘트 내용: 바꾼 것, 브랜치 이름, PR 번호, 테스트 결과(명령과 출력 요약), 남은 문제.
 - PRD "개발사항"·"결과" 섹션 초안을 코멘트 산출물 절에 넣는다.
-- PR 본문에 `Closes #N`을 넣지 않는다(task는 승인 뒤 director가 닫는다). `Refs #N`으로 쓴다.
 - 코드베이스 규칙·함정은 메모리에 남긴다.

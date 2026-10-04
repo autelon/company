@@ -46,7 +46,7 @@ AskUserQuestion으로 받는다. 추정해서 채우지 않는다.
 - **도메인 전문가 role**을 도메인 문서에서 끌어낸다. 그 도메인의 실무 책임 단위(예: 물류라면 조달, 창고, 운송, 통관, 역물류, 재고·수요계획, 품질·추적성)마다 필요한지 판단하고, 각 role의 페르소나에 그 프로젝트의 용어·결정·제약을 넣는다. 일반론은 뺀다.
 - 기존 문서가 이미 정한 결정은 role이 뒤집지 않는다. 바꿔야 한다고 보면 결과 코멘트의 `사람에게 묻기`로 올린다.
 - 구성안을 표로 보여 주고 AskUserQuestion으로 승인받는다: role 이름, 맡는 일, 근거가 된 문서, 모델.
-- 승인된 role을 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`. 쓴 뒤 사람에게 `/reload-plugins`를 입력해 달라고 요청한다(같은 세션에서는 reload 전까지 새 role을 부를 수 없다).
+- 승인된 role을 `.claude/agents/<role>.md`로 쓴다. 모두 `memory: project`. role 파일에는 frontmatter(`tools:` 포함)와 role마다 다른 내용만 쓰고, 모든 role에 같은 규칙(결과를 task 이슈 코멘트로 올리기, 코멘트 템플릿, 초안 경로와 검사 스크립트, 기록 위치, Bash 용도, `Refs #N` 등)은 넣지 않는다. director가 director 스킬 "모든 role 공통"을 지시문에 넣는다. 도메인 전문가 role도 같다. 쓴 뒤 사람에게 `/reload-plugins`를 입력해 달라고 요청한다(같은 세션에서는 reload 전까지 새 role을 부를 수 없다).
 - 공용 role(`autelon:finance`, `autelon:security-reviewer`)은 플러그인에 있으니 만들지 않는다. security-reviewer는 4단계에서 어떤 작업 방식을 고르든 모든 PR에 보안 검토로 들어간다. 기존 git 규칙 문서에 이 내용을 더한다.
 
 ## 4. 작업 방식 비교 (바꾸지 않고 제안)
