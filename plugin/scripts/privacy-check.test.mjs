@@ -534,3 +534,53 @@ test('훅: 전체 경로로 쓴 감싸는 명령 뒤의 gh 글쓰기를 막는�
     assert.equal(bashViolation(ok), null, ok);
   }
 });
+
+// autelon/company#62: 그룹 앞이나 그룹·하위 명령 사이의 플래그(--help=false 등)를 하위 명령으로 읽지 않는다.
+// gh 2.102.0 은 gh issue --help=false list 를 실행한다. 값을 붙인 도움말 플래그는 도움말로 세지 않는다.
+test('훅: 그룹·하위 명령 사이에 값을 붙인 도움말 플래그가 있는 gh 글쓰기를 막는다', () => {
+  for (const bad of [
+    'gh issue --help=false comment 1 -b x',
+    'gh issue -h=false comment 1 -b x',
+    'gh issue --help=0 comment 1 -b x',
+    'gh issue --help=true comment 1 -b x',
+    'gh issue --help=false create -t a -b b',
+    'gh pr --help=false create -t a -b b',
+    'gh pr --help=f merge 2 --subject x',
+    'gh pr -h=x review 2 -b x',
+    'gh label --help=false create a',
+    'gh release --help=false create v1 --notes x',
+    'gh issue --help=false close 1 -c x',
+    'gh --help=false issue comment 1 -b x',
+    'gh --help=false api -X POST repos/o/r/issues/1/comments -f body=x',
+    'gh --help=false label create a',
+    'gh issue --help=false -R o/r comment 1 -b x',
+    'gh issue -R o/r --help=false comment 1 -b x',
+    'gh -R o/r --help=false issue comment 1 -b x',
+    'gh --help=false -R o/r issue -R o/r --help=false comment 1 -b x',
+    'gh issue --help=false comment 1 --help',
+    'gh issue --help=false comment 1',
+    'gh issue --help comment 1 -b x',
+    'gh issue -h comment 1 -b x',
+    'gh issue --bogus comment 1 -b x',
+    'timeout 5 gh issue --help=false comment 1 -b x',
+    'xargs -n 1 gh issue --help=false comment -b x < local/n.txt',
+    'mise exec -- gh issue --help=false comment 1 -b x',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+  // 검사 스크립트는 이 꼴을 받지 않으므로 같은 인자로 스크립트를 쓰라고 안내하지 않는다
+  assert.equal(bashViolation('gh issue --help=false comment 1 -b x').via, 'other');
+  assert.throws(() => textsFromGhArgs(['issue', '--help=false', 'comment', '1', '-b', 'x']));
+  for (const ok of [
+    'gh issue --help',
+    'gh --help',
+    'gh issue --help comment 1',
+    'gh issue -h comment',
+    'gh --help issue create',
+    'gh issue --help=false list',
+    'gh -R o/r issue --help=false view 1',
+    'gh issue -R o/r --help create',
+  ]) {
+    assert.equal(bashViolation(ok), null, ok);
+  }
+});
