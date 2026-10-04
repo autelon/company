@@ -129,6 +129,7 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
 - **기준 버전 파일** `.claude/autelon-sync.json` (사용자 결정 2026-10-04, autelon/company#42 결정 1·5): 프로젝트가 마지막으로 맞춘 플러그인 버전을 파일 하나에 둔다. 템플릿은 `plugin/templates/project/autelon-sync.json`, 필드와 읽는 방법은 `found-company` 3단계 "기준 버전 파일". 커밋되는 파일이라 필드를 셋으로 고정하고 `note`에는 `설립`·`도입`이나 이슈 번호만 쓴다. 기존 프로젝트에는 없다(poker·logistics-hub는 다시 만들 때 생긴다).
   - `pluginSha`는 커밋 SHA 앞 12자다. 설치 버전(`installed_plugins.json`의 `version`, 설치 폴더 이름)이 12자이고, GitHub API가 12자 SHA를 받는다. **[확인]** 2026-10-05 `gh api repos/autelon/company/compare/<12자>...<12자>`가 비교 결과(ahead_by, files)를 돌려주고 `commits/<12자>`가 40자 SHA로 풀림
   - 스킬 본문의 `${CLAUDE_PLUGIN_ROOT}`가 설치 폴더(`.../cache/autelon/autelon/<12자>`)로 치환되어 마지막 폴더 이름으로 버전을 읽을 수 있다는 것은 **[추정]**. 읽지 못하면 `미정`으로 두고 사람에게 알린다.
+  - 읽는 순서: 플러그인 루트 경로가 우선이다. 경로는 읽었는데 12자 16진수가 아니면(`--plugin-dir` 개발본) 설치 기록으로 대신하지 않고 `미정`으로 둔다. 개발본 세션이 쓴 템플릿은 설치본과 다를 수 있어 그 SHA를 기준으로 삼으면 다음 비교가 틀어진다. 설치 기록(`installed_plugins.json`)은 경로를 아예 읽지 못했을 때만 쓰고, 같은 항목의 `version`이 `gitCommitSha` 앞 12자와 같을 때만 믿는다. 설치 기록은 세션 중 자동 업데이트로 바뀔 수 있지만 로드된 플러그인은 다음 세션부터 바뀌므로(0절) 두 값이 다르면 플러그인 루트가 지금 세션의 버전이다.
 - 이슈 타입은 조직에 이미 있는 Task·Bug·Feature를 쓰고 결정은 라벨로 구분한다. 새 타입은 조직 설정 변경이 필요해서 만들지 않았다. (사용자 결정 2026-10-04) **[확인]** autelon 조직의 타입은 Task·Bug·Feature 세 개(gh api, 2026-10-04)
 - **이슈 = 원본, Project = 화면.** 이슈 하나만 보고도 무엇인지 알 수 있게 쓰고(타입, 라벨, 마일스톤, 부모, 의존 관계, 본문), Project 필드는 보드를 위한 것이다.
 - **본문 = 현재 결론, 코멘트 = 이력.** 본문 맨 위 "현재 결론" 칸을 결정이 날 때마다 director가 고친다. agent는 기본으로 본문만 읽는다.
