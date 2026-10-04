@@ -7,7 +7,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 ## 0. 배포 구조: 플러그인 + 프로젝트별 독립 repo
 
 - 이름: 플러그인·마켓플레이스는 `autelon`, 이 리포는 GitHub `autelon/company`. 처음 이름은 agent-company였고 2026-10-03에 바꿨다. (사용자 결정)
-- autelon은 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다. (사용자 결정 2026-10-03)
+- autelon은 여러 프로젝트에 계속 적용한다. 프로젝트끼리는 role, repo, 이슈, Project가 모두 독립이다. (사용자 결정 2026-10-03, 기록 위치는 2026-10-04에 이슈로 바꿈, 2절)
 - 그래서 이 리포는 Claude Code 플러그인(`plugin/`)이다. 프로젝트는 GitHub 원격 저장소 `autelon/company`의 main에서 설치한다. 로컬 경로(directory 소스)를 가리키지 않는다. (사용자 결정 2026-10-03)
 - 설정은 두 층으로 나눈다. (사용자 결정 2026-10-04)
   - **사용자 설정(user settings)**: 마켓플레이스 등록, 자동 업데이트, 플러그인 설치(user scope). `"extraKnownMarketplaces": {"autelon": {"source": {"source": "github", "repo": "autelon/company"}, "autoUpdate": true}}`, `"enabledPlugins": {"autelon@autelon": false}`. 설치는 한 번, 기본은 꺼짐.
@@ -37,21 +37,19 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - Desktop의 "+ → Plugins" 메뉴에는 autelon이 나오지 않았지만 스킬 자동완성에는 `autelon:*`가 보였다. 원인은 **[미확인]**.
   - 사용자는 CLI 명령을 직접 입력하지 않는다. 에이전트가 앱에 들어 있는 `claude` 바이너리로 실행하고, 사용자는 `/reload-plugins` 같은 세션 명령만 입력한다. (사용자 결정 2026-10-04)
 - `plugin.json`의 `defaultEnabled: false`는 `enabledPlugins`에 값이 없을 때 꺼진 채로 시작한다는 뜻이다. **[확인]** manifest-reference 문서. 프로젝트 settings의 `true`가 이를 이긴다. **[확인]** 2026-10-04 poker에서 enabled
-- 플러그인이 주는 것: `found-company` 스킬(설립), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:notion-sync`, 템플릿, 재무 스크립트.
-- 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), 상태 파일 전부, `notion/config.json`, 코드.
+- 플러그인이 주는 것: `found-company`·`adopt-project` 스킬(설립·도입), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:security-reviewer`, 템플릿(이슈 본문·코멘트 포함), 재무·개인 정보 검사 스크립트, playbook(first-run, 이슈 명령, 이전 절차).
+- 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), "지금 기준" 문서, 코드, 그리고 GitHub의 이슈·마일스톤·Project.
 - 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`)에 만들고, 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md` 표준과 같은 저장소의 `scripts/setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03) 표준 문서는 처음에 사용자 홈의 전역 설정에 있었고 2026-10-04에 `autelon/.github`로 옮겼다(autelon/.github#4). 첫 push는 PR이 아니므로 push 전에 security-reviewer가 로컬 `main` 전체 히스토리를 검토하고 "통과"일 때만 올린다(company#12).
 - PR 리뷰어는 프로젝트마다 정해 프로젝트 `docs/git-rules.md`에 적는다. `director`(기본값) / `reviewer role` / `사람`. 리뷰어가 머지 명령을 낸다. (사용자 결정 2026-10-03)
-- Notion 루트 페이지는 플러그인 기본값에 두지 않는다. 플러그인 리포가 public이라 URL이 공개되기 때문이다. 루트 URL은 사용자 설정 `pluginConfigs["autelon@autelon"].options.notion_root_page`에 둔다(로컬, 저장소에 안 올라감). 값이 없으면 found-company가 사람에게 묻는다. (사용자 결정 2026-10-03, 2026-10-04)
-  - 프로젝트 `notion/`(루트·프로젝트 페이지·DB·뷰 ID의 `config.json`, 항목별 페이지 URL의 `ids.json`)은 커밋하지 않고 `.gitignore`에 넣는다. 처음에는 항목 URL을 board·PRD의 `notion_id`와 notion-sync handoff에 두었는데, 모두 커밋되는 파일이라 옮겼다. 프로젝트 저장소가 public이면 ID가 공개되기 때문이다. 다른 기기에서는 이 파일을 다시 만들거나 옮겨야 한다. (사용자 결정 2026-10-04)
-  - `${user_config.*}`는 스킬을 불러올 때 치환된다. 세션이 열린 뒤에 넣은 값은 `/reload-plugins`가 필요하고, reload가 치환을 다시 한다. **[확인]** 2026-10-04 poker. manifest의 `default`는 치환에 쓰이지 않았다(`github_org`가 reload 뒤에도 글자 그대로). **[확인]** 그래서 스킬은 글자 그대로 남은 값과 빈 값을 둘 다 "설정 안 됨"으로 본다. 사용자는 값을 사용자 설정 `pluginConfigs`에 넣어 두고(이 기기에는 `notion_root_page`와 `github_org` 둘 다 들어 있다), 값은 이 리포에 적지 않는다.
+- Notion 투영(notion-sync role, 프로젝트별 Notion DB)은 2026-10-04에 없앴다. 화면은 GitHub Project가 맡는다(5절). (사용자 결정 2026-10-04) 그 전의 Notion 설정 경위는 git 히스토리에 있다(`git log -S notion_root_page`).
+  - `${user_config.*}`는 스킬을 불러올 때 치환된다. 세션이 열린 뒤에 넣은 값은 `/reload-plugins`가 필요하고, reload가 치환을 다시 한다. **[확인]** 2026-10-04 poker. manifest의 `default`는 치환에 쓰이지 않았다(`github_org`가 reload 뒤에도 글자 그대로). **[확인]** 그래서 스킬은 글자 그대로 남은 값과 빈 값을 둘 다 "설정 안 됨"으로 본다. 사용자는 값을 사용자 설정 `pluginConfigs`에 넣어 두고, 값은 이 리포에 적지 않는다.
   - `pluginConfigs`(userConfig 값)는 사용자·관리 설정에서만 읽고 프로젝트 settings에서는 무시한다. **[확인]** settings-reference 문서
-- 기존 프로젝트는 `adopt-project` 스킬로 들인다. found-company는 CLAUDE.md·결정·목표 파일을 템플릿으로 만들어 기존 프로젝트에서는 덮어쓰거나 충돌한다. adopt-project는 기존 문서를 원본으로 두고 없는 autelon 파일만 더하며, 기존 작업 방식은 비교해 제안만 한다. (2026-10-04, logistics-hub 도입 요청에서)
-- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)는 원격에 올리지 않고 로컬 설정(`pluginConfigs`, 프로젝트 `notion/`·`local/`, gitignore)에만 둔다. 커밋되는 파일은 이름으로 가리킨다. (사용자 결정 2026-10-04) 2026-10-04 점검: autelon 조직 저장소 3개(company, .github, logistics-hub)의 전체 히스토리·PR·코멘트에 Notion URL·개인 경로 없음. poker 로컬 히스토리의 경로는 push 전에 홈 기준 경로로 바꿨지만, 그것도 커밋되는 파일에서는 위반이라 poker 저장소를 지우고 다시 만들었다(아래).
+- 기존 프로젝트는 `adopt-project` 스킬로 들인다. found-company는 CLAUDE.md·목표 파일을 템플릿으로 만들어 기존 프로젝트에서는 덮어쓰거나 충돌한다. adopt-project는 기존 문서를 원본으로 두고 없는 autelon 파일만 더하며, 기존 작업 방식은 비교해 제안만 한다. (2026-10-04, logistics-hub 도입 요청에서)
+- 개인 리소스 정보(Notion URL·ID, 로컬 절대 경로, 계정 정보)는 원격(커밋, PR, 이슈·코멘트)에 올리지 않고 로컬 설정(`pluginConfigs`, 프로젝트 `local/`·예전 `notion/`, gitignore)에만 둔다. 패턴의 원본은 `plugin/scripts/privacy-check.mjs`다. 커밋되는 파일은 이름으로 가리킨다. (사용자 결정 2026-10-04) 2026-10-04 점검: autelon 조직 저장소 3개(company, .github, logistics-hub)의 전체 히스토리·PR·코멘트에 Notion URL·개인 경로 없음. poker 로컬 히스토리의 경로는 push 전에 홈 기준 경로로 바꿨지만, 그것도 커밋되는 파일에서는 위반이라 poker 저장소를 지우고 다시 만들었다(아래).
   - 원칙: 커밋되는 파일에서 경로는 repo 루트 기준 상대 경로로 쓰고, repo 밖의 것은 저장소나 문서 이름으로 가리킨다. 홈 기준 경로(`~/...`)도 위반이다. security-reviewer 검토 항목 1에 넣었다. (사용자 결정 2026-10-04, company#12)
   - 의심스러운 것은 push 전에 막는다. PR 브랜치에 한 번 올라간 커밋은 force push로 빼도 PR 타임라인이 이전 head를 붙잡고 있어 SHA로 계속 조회된다. **[확인]** poker
-  - director는 Notion을 직접 읽거나 쓰지 않는다. 예외: found-company·adopt-project는 설립·도입 때 Notion 페이지와 DB를 직접 만들고, first-run의 Notion 확인은 notion-sync에 맡긴다.
-- 보안 검토자(`security-reviewer`)는 공용 role로 플러그인에 둔다. 리뷰어 지정(director / reviewer role / 사람)과 상관없이 모든 PR에 들어가고, 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있어야 머지한다. 개인 경로, Notion 주소·ID, 비밀 값, 개인 정보, 위험한 CI·의존성 변경을 엄격하고 보수적으로 본다(확신이 없으면 수정 필요). 공용 role로 둔 이유: 프로젝트 role로 두면 프로젝트마다 기준이 달라지고, 플러그인 업데이트만으로 진행 중인 프로젝트(poker, logistics-hub)에도 같은 기준이 들어간다. (사용자 결정 2026-10-04)
-- 프로젝트 기본 무시 항목은 `templates/project/gitignore.template`이 원본이다(notion/, local/, .env*, state/quota.json, role 메모리, settings.local.json, worktrees). found-company·adopt-project가 프로젝트 `.gitignore`에 합친다. (company#9)
+- 보안 검토자(`security-reviewer`)는 공용 role로 플러그인에 둔다. 리뷰어 지정(director / reviewer role / 사람)과 상관없이 모든 PR에 들어가고, 작업 단위 종료 때 그 기간의 이슈·코멘트를 훑는다(2026-10-04 추가). PR은 같은 head sha에 리뷰 통과와 보안 검토 통과가 둘 다 있어야 머지한다. 개인 경로, Notion 주소·ID, 비밀 값, 개인 정보, 위험한 CI·의존성 변경을 엄격하고 보수적으로 본다(확신이 없으면 수정 필요). 공용 role로 둔 이유: 프로젝트 role로 두면 프로젝트마다 기준이 달라지고, 플러그인 업데이트만으로 진행 중인 프로젝트(poker, logistics-hub)에도 같은 기준이 들어간다. (사용자 결정 2026-10-04)
+- 프로젝트 기본 무시 항목은 `templates/project/gitignore.template`이 원본이다(예전 notion/, local/(이슈 초안·백업), .env*, state/quota.json, role 메모리, settings.local.json, worktrees). found-company·adopt-project가 프로젝트 `.gitignore`에 합친다. (company#9)
 - role 개선의 두 층
   - 프로젝트 안의 학습: role의 `memory: project` → 프로젝트 `.claude/agent-memory/`. **커밋하지 않는다**(`.gitignore`). 무엇이 기록될지 미리 알 수 없고 finance 메모리에는 계정 사용량이 들어가서, public 저장소에 올리면 공개된다. 그래서 role 학습은 기기마다 따로 쌓인다. (사용자 결정 2026-10-04, company#9) 공용 role의 메모리 폴더는 `autelon:finance` → `autelon-finance/`처럼 콜론이 하이픈으로 바뀐다. **[확인]** poker first-run. `memory: project`는 유지한다. `.claude/agent-memory-local/`은 무시 목록에만 있는 안전 항목이다. (사용자 결정 2026-10-04)
   - 프로젝트를 넘는 개선: `plugin/templates/roles/`를 고쳐 커밋 → 다음에 설립하는 프로젝트부터 반영
@@ -61,10 +59,10 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
 ## 1. 구조 (B안: director + role subagent)
 
 ```
-사람 ──(폰 푸시·승인 / claude.ai/code / Notion 열람)──┐
+사람 ──(폰 푸시·승인 / claude.ai/code / Project 화면)──┐
                                                     │
 director 세션 (Desktop Code 탭, Remote Control 켬)  ◀┘
-  │  task 분해·배정, 승인 요청, 재무 신호 확인, 보드 기록
+  │  task 분해·배정, 승인 요청, 재무 신호 확인, 이슈·Project 기록
   ├─▶ po        (subagent, 새 context)
   ├─▶ designer  (subagent, 새 context)
   ├─▶ developer (subagent, 새 context, worktree 격리)
@@ -72,10 +70,11 @@ director 세션 (Desktop Code 탭, Remote Control 켬)  ◀┘
   ├─▶ strategist (subagent, 전체 목표·지표 체계, PRD 지표 검토)
   ├─▶ da        (subagent, 지표 정의·이벤트 명세·분석 쿼리·성과측정)
   ├─▶ finance   (subagent, 한도 임박 시)
-  └─▶ notion-sync (subagent, 체크포인트마다 Notion 반영)
+  └─▶ security-reviewer (subagent, 모든 PR, 작업 단위 종료 때 이슈 검토)
 
-로컬 파일 = 원본 (board/, prds/, handoffs/, decisions/, state/)
-Notion     = 사람이 보는 투영(projection)
+GitHub 이슈 = 기록의 원본 (task, PRD, 결정, role 결과 코멘트, 인계)
+Project     = 사람이 보는 화면 (보드, 로드맵)
+저장소 md   = agent가 매 세션 읽는 "지금 기준" 문서
 ```
 
 - 아래 그림의 role 구성은 기본 템플릿이다. 실제 구성은 프로젝트마다 설립 때 정한다.
@@ -83,37 +82,53 @@ Notion     = 사람이 보는 투영(projection)
 - role 장기 기억 = `memory: project` → `.claude/agent-memory/<role>/MEMORY.md` 앞 200줄/25KB 자동 로드. **[확인]**
 - subagent는 AskUserQuestion을 못 쓴다. 사람에게 묻는 건 director만 한다. **[확인]**
 - 권한 요청·질문은 Remote Control + "Push when actions required"로 폰에 온다. 답할 때까지 열려 있다. **[확인]**
-- director도 오래 쓰지 않는다. 스프린트가 끝나면 상태를 파일에 남기고 종료하고, 다음 director가 파일을 읽고 이어간다.
+- director도 오래 쓰지 않는다. 작업 단위가 끝나면 인계를 현재 스프린트 이슈에 남기고 종료하고, 다음 director가 그 이슈를 읽고 이어간다.
 - 세션 구조는 세 단계다. (사용자 결정 2026-10-04)
-  - **루트(조율) 세션**: 프로젝트 폴더들의 상위 폴더에서 연다. 사람의 요청을 받아 프로젝트·작업 단위로 나누고, 작업 세션을 `mcp__ccd_session__spawn_task` 칩(대화 없이 혼자 진행할 수 있는 prompt)으로 연다. 작업 세션의 기록을 읽어(`list_events`) 정리하고, 필요하면 메시지(`send_message`)로 지시한다. 플러그인 리포 변경과 프로젝트 공통 일을 맡는다. 직접 프로젝트 코드를 고치지 않는다.
-  - **작업(director) 세션**: 프로젝트 폴더에서 작업 단위 하나를 맡고, 끝나면 `state/sprint.md`에 인계를 쓰고 끝난다.
+  - **루트(조율) 세션**: 프로젝트 폴더들의 상위 폴더에서 연다. 각 프로젝트로 가는 연결 정보만 들고, 상태는 필요할 때 이슈·Project에서 읽는다(`gh search issues --owner <조직>`). 사람의 요청을 받아 프로젝트·작업 단위로 나누고, 작업 세션을 `mcp__ccd_session__spawn_task` 칩(대화 없이 혼자 진행할 수 있는 prompt)으로 연다. 작업 세션의 기록을 읽어(`list_events`) 정리하고, 필요하면 메시지(`send_message`)로 지시한다. 플러그인 리포 변경과 프로젝트 공통 일을 맡는다. 직접 프로젝트 코드를 고치지 않는다.
+  - **작업(director) 세션**: 프로젝트 폴더에서 작업 단위 하나를 맡고, 끝나면 현재 스프린트 이슈에 인계를 쓰고 끝난다.
   - **role task**: director 세션 안의 subagent.
   - 근거: 플러그인은 세션 시작 때 불러온다 **[확인]**(plugins/loading 문서). Desktop의 `/reload-plugins`는 사람이 직접 친 입력으로만 실행된다 **[확인]**(commands 문서). 이 계정에서 세션은 사람이 칩을 눌러야 생긴다(`start_session`은 서버 기능 플래그로 꺼짐) **[확인]**. 그래서 role task마다 세션을 만들면 클릭만 늘고, 한 세션을 오래 쓰면 reload가 잦아진다.
 
-## 2. 파일 규칙 (모두 프로젝트 repo 안)
+## 2. 기록 위치와 쓰기 규칙
 
-| 경로                                        | 내용                                                                        | 쓰는 쪽                                           |
-| ------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------- |
-| `board/tasks.json`                          | task 보드 (상태, 담당 role, PRD, 마일스톤)                                  | **director만**                                    |
-| `board/milestones.json`                     | 마일스톤                                                                    | **director만**                                    |
-| `prds/PRD-NNN-<slug>.md`                    | feature 단위 PRD (frontmatter + 섹션)                                       | 섹션 담당 role이 handoff로 제출 → director가 반영 |
-| `handoffs/<task-id>.md`                     | role의 작업 결과·요청·질문. director가 **절대 경로**로 지정 (worktree 대응) | 해당 task 담당 role만                             |
-| `decisions/log.md`                          | 승인/반려, 사람 결정 기록                                                   | director만                                        |
-| `docs/goals.md`                             | 프로젝트 목표, north star, 하위 지표                                        | director만 (strategist 제안 → 사람 확정)          |
-| `analytics/events.md`, `analytics/queries/` | 이벤트 수집 명세, 지표별 분석 쿼리                                          | da만                                              |
-| `state/quota.json`                          | 최근 사용량 스냅샷 (`get_usage`의 `plan` 객체 원본)                         | director                                          |
-| `state/sprint.md`                           | 현재 스프린트 요약, 다음 director 인계                                      | director만                                        |
+기준은 하나다. **"언제 무슨 일이 있었고 왜 그렇게 정했나"(기록·진행)는 GitHub 이슈로, agent가 매 세션 읽고 코드를 맞춰야 하는 "지금 기준" 문서는 저장소 md로.** 문서에는 결론만 쓰고, 바뀐 경위는 이슈·PR에 남긴다. (사용자 결정 2026-10-04)
 
-동시 쓰기 금지 원칙: 공유 파일은 director만 쓴다. role은 자기 handoff 파일만 쓴다. 그래서 여러 role이 병렬로 돌아도 충돌하지 않는다.
+| 기록                                        | 위치                                                                                          | 쓰는 쪽                                |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------- |
+| task                                        | 이슈(타입 Task). 상태·Role·Size = Project 필드, 마일스톤 = 저장소 마일스톤, 선행 = blocked by | director                               |
+| role 작업 결과(예전 handoff)                | 그 task 이슈의 코멘트                                                                         | 그 task 담당 role                      |
+| PRD                                         | 이슈(타입 Feature). 명세 = 본문, task = 하위 이슈, 초안·논의·승인 = 코멘트                    | 본문은 director, 초안은 role 코멘트    |
+| 사람의 결정                                 | 결정이 나온 이슈의 코멘트, 따로 난 결정은 Task + `decision` 라벨 이슈                         | director                               |
+| 세션 인계                                   | 고정한 "현재 스프린트" 이슈(`sprint` 라벨) 본문, 이력은 코멘트                                | director                               |
+| first-run 결과                              | `first-run` 라벨 이슈                                                                         | director                               |
+| 로드맵                                      | Project 로드맵 화면(마일스톤, `Start date`·`Target date`)                                     | director                               |
+| `docs/goals.md`                             | 프로젝트 목표, north star, 하위 지표                                                          | director (strategist 제안 → 사람 확정) |
+| `analytics/events.md`, `analytics/queries/` | 이벤트 수집 명세, 지표별 분석 쿼리                                                            | da                                     |
+| 설계·규칙·playbook·조사 문서 (`docs/`)      | 개념, 도메인 모델, 아키텍처, 기능 설계, 아키텍처·테스트·git 규칙, agent 작업 방식             | PR로                                   |
+| `state/quota.json`                          | 최근 사용량 스냅샷 (`get_usage`의 `plan` 객체 원본, 커밋하지 않음)                            | director                               |
 
-task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`)
+- 이슈 타입은 조직에 이미 있는 Task·Bug·Feature를 쓰고 결정은 라벨로 구분한다. 새 타입은 조직 설정 변경이 필요해서 만들지 않았다. (사용자 결정 2026-10-04) **[확인]** autelon 조직의 타입은 Task·Bug·Feature 세 개(gh api, 2026-10-04)
+- **이슈 = 원본, Project = 화면.** 이슈 하나만 보고도 무엇인지 알 수 있게 쓰고(타입, 라벨, 마일스톤, 부모, 의존 관계, 본문), Project 필드는 보드를 위한 것이다.
+- **본문 = 현재 결론, 코멘트 = 이력.** 본문 맨 위 "현재 결론" 칸을 결정이 날 때마다 director가 고친다. agent는 기본으로 본문만 읽는다.
+- **쓰기 권한**: 이슈 생성, 본문·상태·필드·라벨·마일스톤 변경, 닫기는 director만. role(subagent)은 자기 task 이슈에 코멘트만 쓴다. 코멘트는 덧붙이기만 하니 role이 병렬로 써도 충돌하지 않는다. 예전의 "공유 파일은 director만, role은 자기 handoff 파일만" 원칙을 이렇게 바꿨다.
+  - 그래서 코멘트를 올려야 하는 role 템플릿(po, designer, strategist)에도 Bash를 줬다. 용도는 지시문으로 검사 스크립트 실행과 지시받은 작업에 한정한다. director가 대신 올리는 안은 role이 직접 쓴다는 결정과 맞지 않아 버렸다.
+- **개인 정보 사전 검사**: 이슈·코멘트·본문 수정은 리뷰 없이 바로 공개된다. 그래서 모든 쓰기는 `plugin/scripts/privacy-check.mjs gh ...`를 거친다. 스크립트는 issue/pr의 create·edit·comment만 받아 제목·본문 파일을 검사하고, 통과할 때만 `gh`를 실행한다. 표준 입력 본문은 검사할 수 없어 거절한다. 본문·코멘트 초안은 커밋하지 않는 `local/`에 쓴다.
+  - 패턴의 원본은 이 스크립트 하나다. director의 커밋 전 검사와 security-reviewer의 자동 검색도 이 스크립트를 부른다. 예전에는 같은 패턴이 두 곳에 복사돼 있었다.
+  - 올라간 본문·코멘트를 고쳐도 편집 이력이 남는 것으로 안다. 누가 볼 수 있는지, 이력에서 지울 수 있는지 **[미확인]**.
+- **저장소를 지우지 않는다.** 저장소를 지우면 이슈와 코멘트가 사라진다. poker와 logistics-hub는 개인 정보 정리 때문에 삭제 후 재생성됐는데, 이 방식이었다면 기록이 사라졌을 것이다. 정리가 필요하면 사람에게 묻는다. 작업 단위 종료 때 이슈·코멘트·마일스톤·Project 항목을 `local/backup/`에 받는다(`plugin/playbooks/issues.md` 4절).
+- PR 본문에 `Closes #N`을 쓰지 않는다. task는 사람의 승인 뒤 director가 닫는다.
+- Wiki는 쓰지 않는다(전용 API 없음, PR 리뷰 불가, `docs/`와 겹침).
+- 공개 범위: 프로젝트 저장소가 public이면 이슈도 공개된다. 이 기록들은 이미 git에 커밋돼 공개돼 있었으므로 이슈로 옮겨도 공개 범위는 같다. (사용자 판단 2026-10-04)
+
+task 상태: `backlog → ready → in_progress → review → awaiting_approval → done` (+ `blocked`, `rejected`). Project `Status` 필드로 두고, done은 completed, rejected는 not planned로 닫는다.
 
 ## 3. 승인/개입 지점
 
-1. **handoff 승인/반려** (필수): role 결과가 들어오면 director가 AskUserQuestion으로 묻는다. 결과는 `decisions/log.md`에 남는다.
-2. **role의 질문·결정 요청**: role은 handoff의 `## 사람에게 묻기` 섹션에 적고 종료한다. director가 모아서 묻는다.
+1. **role 결과 승인/반려** (필수): role 결과 코멘트가 들어오면 director가 AskUserQuestion으로 묻는다. 답은 그 이슈의 결정 코멘트로 남고 본문 "현재 결론"이 바뀐다.
+2. **role의 질문·결정 요청**: role은 결과 코멘트의 `사람에게 묻기`에 적고 종료한다. director가 모아서 묻는다.
 3. **권한 요청**: Claude Code 기본 권한 프롬프트 → 폰 푸시.
-4. **후속 액션 → 새 PRD**: director가 제안하고 사람이 동의한 것만 생성한다 (`derived_from` 연결).
+4. **후속 액션 → 새 PRD**: director가 제안하고 사람이 동의한 것만 새 PRD 이슈로 만든다 (본문 `파생: #N`).
+5. **PRD 섹션 승인**: role이 task 이슈에 쓴 초안을 사람이 승인하면 director가 PRD 본문에 반영하고, 승인한 내용을 PRD 이슈의 결정 코멘트에 그대로 남긴다. 본문은 나중에 바뀔 수 있어서 승인 시점의 내용은 코멘트가 기록이다.
 
 ## 4. 재무팀 (토큰 한도 관리)
 
@@ -123,74 +138,32 @@ task 상태: `backlog → ready → in_progress → review → awaiting_approval
 - director는 `get_usage` 결과의 `plan` 객체를 가공 없이 `state/quota.json`에 저장한다. 숫자를 LLM이 옮겨 적지 않기 위해서다.
 - 판정은 규칙 스크립트(`plugin/scripts/finance-check.mjs`, 프로젝트 루트에서 실행)로 한다. LLM은 정리 계획·보고만 맡는다.
 
-| 5시간 사용률 | 신호                             | director 행동                                                                                         |
-| ------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| < 70%        | `GO`                             | 정상 배정                                                                                             |
-| 70–85%       | `CAUTION`                        | 큰 task(예상 대형) 새로 시작 안 함, 작은 task만                                                       |
-| ≥ 85%        | `WRAP_UP`                        | 새 task 금지. 진행 중 task는 handoff 남기고 마무리. finance가 재개 계획 작성. `resets_at`에 재개 예약 |
-| 주간 ≥ 85%   | `weekly_low: true` (별도 플래그) | 최상위 모델 role(po, reviewer)은 판단 작업만, 나머지는 sonnet/haiku                                   |
+| 5시간 사용률 | 신호                             | director 행동                                                                                             |
+| ------------ | -------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| < 70%        | `GO`                             | 정상 배정                                                                                                 |
+| 70–85%       | `CAUTION`                        | 큰 task(예상 대형) 새로 시작 안 함, 작은 task만                                                           |
+| ≥ 85%        | `WRAP_UP`                        | 새 task 금지. 진행 중 task는 결과 코멘트 남기고 마무리. finance가 재개 계획 작성. `resets_at`에 재개 예약 |
+| 주간 ≥ 85%   | `weekly_low: true` (별도 플래그) | 최상위 모델 role(po, reviewer)은 판단 작업만, 나머지는 sonnet/haiku                                       |
 
 - 재개 예약 방식: **[미확인]** 후보는 scheduled-tasks MCP, CronCreate. 구현할 때 확인한다.
-- 한도를 실제로 넘었을 때 subagent/세션의 동작: **[미확인]** 일부러 재현하지 않는다. 처음 발생하면 `decisions/log.md`에 관찰 기록.
+- 한도를 실제로 넘었을 때 subagent/세션의 동작: **[미확인]** 일부러 재현하지 않는다. 처음 발생하면 현재 스프린트 이슈에 관찰 기록.
 
-## 5. Notion (사람이 보는 화면)
+## 5. GitHub Project (사람이 보는 화면)
 
-원칙
+- **프로젝트마다 Project 하나.** 조직(`userConfig.github_org`) 소유로 만들고 그 저장소에 연결한다. 제목은 저장소 이름. (사용자 결정 2026-10-04)
+  - 이유: 0절의 "프로젝트끼리 독립" 결정과 맞고, `Role` 단일 선택 필드의 값이 프로젝트마다 다르다(poker와 logistics-hub의 role 구성이 다름). 루트 세션은 Project 없이 `gh search issues --owner <조직>`으로 여러 저장소 이슈를 읽는다.
+  - 버린 안: 조직 Project 하나에 모든 저장소. 루트 세션이 한 곳에서 볼 수 있지만 role 값이 섞이고 프로젝트 독립 원칙과 어긋난다.
+- 필드: 기본 `Status`(task 상태), `Role`, `Size`(small/large), `Start date`, `Target date`. 화면: 표, Status별 보드, Role별 보드, 로드맵. 마일스톤은 저장소 단위라 저장소 사이에 공유하지 못한다.
+- 설립·도입 스킬이 만든다. 명령은 `plugin/playbooks/issues.md` 2절.
+- Notion 투영은 없앴다. Project의 표·보드·로드맵이 상태별·role별 보기를 맡는다. (사용자 결정 2026-10-04) 이유: 원본이 이슈로 바뀌면 notion-sync를 GitHub에서 읽도록 새로 써야 하고, 화면이 두 곳이 된다. Notion ID를 커밋하지 않으려고 둔 `notion/` gitignore 같은 장치도 필요 없어진다.
+- 확인한 것 (GitHub 문서, 2026-10-04 조사): Projects는 항목 50,000개, 필드 50개까지. 조직 Project는 조직 저장소들의 이슈·PR을 담고, Project를 private으로 해도 항목은 원래 저장소 권한을 따른다. 내장 자동화(닫힘·머지 시 Status=Done, 자동 보관, 저장소에서 자동 추가). sub-issue는 부모당 100개·8단계, 의존 관계(blocked by/blocking)는 관계당 50개.
+- `gh` 2.102.0에 `gh issue create --type/--parent/--blocked-by/--project`, `gh issue edit --add-sub-issue`, `gh issue pin`, `gh project field-create/item-edit`가 있다. **[확인]** 도움말. 실제 동작은 **[미확인]**.
+- **[미확인]** Free 조직에서 조직 Project를 쓸 수 있는가(문서 문장 못 찾음. autelon은 Free이고 `has_organization_projects`는 true). 기본 `Status`의 선택지를 API로 바꿀 수 있는가(`gh project`에는 명령이 없다). 화면을 API로 만들 수 있는가. `project` 권한 없이 `gh issue create --project`가 되는가.
+- `gh project`는 토큰에 `project` 권한이 필요하다. 지금 토큰에는 없다(2026-10-04 `gh auth status`). 추가는 `gh auth refresh -s project`(브라우저 승인)이고, 에이전트가 실행하고 사람이 승인한다.
 
-- 프로젝트마다 루트 페이지(플러그인 `userConfig.notion_root_page`) 아래에 프로젝트 페이지와 DB 세 개를 따로 만든다. `found-company` 스킬이 만들고 ID를 프로젝트 `notion/config.json`에 쓴다.
-- 2026-10-03에 루트 페이지 바로 아래 만든 DB 세 개는 스키마 검증용이었다. 구조가 프로젝트별로 바뀌어 더는 쓰지 않는다 (사람이 지워도 된다).
+## 6. PRD
 
-- 로컬 파일이 원본, Notion은 투영. **role/director는 Notion을 읽고 판단하지 않는다.** (양방향 충돌 해결을 만들지 않기 위해)
-- 동기화는 체크포인트에서만: task 상태 변경 묶음, handoff 승인, 작업 단위 종료(스프린트, 기능 하나, PRD 하나).
-- 동기화는 `notion-sync` subagent(haiku)만 한다. Notion MCP 도구를 director와 다른 role의 context에 두지 않기 위해서다. 그래서 다른 role은 `tools:`를 명시해 MCP 도구를 상속하지 않게 한다.
-- **[확인]** claude.ai Notion 커넥터로 DB 생성(SQL DDL), 양방향 relation, 자기 참조 relation, 보드 뷰 생성까지 된다. 2026-10-03 실제로 만들었다. 위치와 ID는 프로젝트 `notion/config.json`.
-- Tasks DB에 보드 뷰 두 개: `칸반`(Status별), `role별`(Role별). role별 보드가 후순위로 미룬 "role 단위 보기"의 최소판이다.
-- **[확인]** subagent(notion-sync)가 claude.ai 커넥터 도구를 상속받아 쓸 수 있다. notion-sync는 `tools:`를 지정하지 않아 모든 도구를 상속한다. 2026-10-04 poker
-- Notion → 로컬 역방향은 없다. 승인은 AskUserQuestion·푸시로만 받는다. (사용자 결정 2026-10-03)
-
-DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
-
-**Milestones**
-
-| 속성        | 타입                                  | 로컬                    |
-| ----------- | ------------------------------------- | ----------------------- |
-| Name        | title                                 | milestones.json `title` |
-| Local ID    | text                                  | `id` (M-01)             |
-| Status      | select (planned/active/done)          | `status`                |
-| Target date | date                                  | `target`                |
-| PRDs        | relation ↔ PRDs.Milestone (자동 생성) | 역산                    |
-
-**PRDs** (feature 단위, 페이지 본문 = PRD 섹션)
-
-| 속성           | 타입                                                    | 로컬                |
-| -------------- | ------------------------------------------------------- | ------------------- |
-| Name           | title                                                   | frontmatter `title` |
-| Local ID       | text                                                    | `id` (PRD-001)      |
-| Status         | select (draft/approved/in_dev/released/measured/closed) | `status`            |
-| Milestone      | relation ↔ Milestones                                   | `milestone`         |
-| Derived from   | relation ↔ PRDs.Follow-up PRDs (자기 참조)              | `derived_from`      |
-| Follow-up PRDs | relation (Derived from의 짝, 자동)                      | 역산                |
-| Tasks          | relation ↔ Tasks.PRD (자동 생성)                        | 역산                |
-| Owner role     | select                                                  | `owner`             |
-
-**Tasks** (뷰: `칸반` Status별 보드, `role별` Role별 보드)
-
-| 속성     | 타입                      | 로컬               |
-| -------- | ------------------------- | ------------------ |
-| Name     | title                     | tasks.json `title` |
-| Local ID | text                      | `id` (T-0001)      |
-| Status   | select (task 상태 그대로) | `status`           |
-| Role     | select (role 8개)         | `role`             |
-| PRD      | relation ↔ PRDs           | `prd`              |
-| Size     | select (small/large)      | `size`             |
-| Handoff  | text                      | `handoff` 경로     |
-| Updated  | date                      | `updated_at`       |
-
-로컬 각 항목은 `last_synced`를 가진다. 항목별 Notion 페이지 URL은 `notion/ids.json`(커밋 안 함)에 두고 notion-sync가 쓴다. notion-sync는 `updated_at > last_synced`인 것만 반영한다. (2026-10-04 사용자 결정: 커밋되는 board·PRD·handoff에 Notion URL을 두지 않는다)
-
-## 6. PRD 템플릿
-
-`templates/prd.md` 참고. 섹션별 담당:
+PRD 하나 = Feature 이슈 하나. 본문 템플릿은 `plugin/templates/issues/prd.md`. 단계(draft/approved/in_dev/released/measured/closed)와 파생 관계는 본문 "현재 결론"에 둔다. 기능이 끝나면 오래 유지될 내용(도메인 규칙, API 계약, 데이터 구조)을 PR로 `docs/` 설계 문서에 반영하고 PRD 이슈를 닫는다. 섹션별 담당:
 
 | 섹션          | 담당                                                           |
 | ------------- | -------------------------------------------------------------- |
@@ -200,13 +173,11 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 | 개발사항      | developer                                                      |
 | 결과          | developer + reviewer                                           |
 | 성과측정 분석 | da 쿼리 실행·숫자 → po 해석                                    |
-| 후속 액션     | po 제안 → 사람 합의 → 합의된 것만 새 PRD + `derived_from`      |
+| 후속 액션     | po 제안 → 사람 합의 → 합의된 것만 새 PRD 이슈 + `파생: #N`     |
 
 ## 7. 남은 확인 항목
 
-- [x] Notion 커넥터 기능 확인, DB·뷰 생성 (2026-10-03)
 - [x] role 실제 호출 확인: 프로젝트 role은 `/reload-plugins` 뒤, 공용 role은 로드된 뒤 부를 수 있다 (2026-10-04 poker). 프로젝트별 짧은 점검은 `plugin/playbooks/first-run.md`
-- [x] notion-sync subagent가 claude.ai 커넥터 도구를 쓸 수 있다 (2026-10-04 poker)
 - [x] directory 소스 + 프로젝트 settings만으로 Desktop Code 세션에 로드되는가 → 안 됨 (2026-10-03 poker 관찰). GitHub 소스로 바꿈 (0절)
 - [x] (user scope 설치로 바꿔 필요 없어짐) GitHub 소스 + 프로젝트 settings로 Desktop 세션에서 자동 설치되는가, 안 되면 `claude plugin install --scope project`가 필요한가 (poker). 문서상 프로젝트 settings에만 켜진 외부 소스 플러그인은 받지 않지만 상대 경로 소스는 예외다("A relative-path plugin needs no install record because it loads from the marketplace itself", plugins/loading). autelon은 상대 경로라 자동 설치를 기대할 근거가 있다
 - [ ] 사용자 설정의 `autoUpdate: true`로 main 머지가 Desktop 세션에서 실제로 반영되는가. 수동 `claude plugin update`와 `/reload-plugins`로 반영되는 것은 확인함(버전이 main HEAD SHA 12자와 같음, 2026-10-04)
@@ -227,5 +198,6 @@ DB 스키마 (2026-10-03 Notion에 실제로 만든 것)
 - [ ] 분석 데이터를 어디에 쌓을지 (da가 선택지 제시 → 사람 결정)
 - [ ] subagent에 전역 CLAUDE.md가 로드되는지 (지금은 문제 아님)
 - [x] `isolation: worktree`일 때 worktree 생성 위치: `.claude/worktrees/` (logistics-hub에서 실제로 생긴 위치로 확인)
-- [ ] developer worktree: handoff가 메인 checkout 절대 경로에 생기는지, worktree 안에서 `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지 (첫 구현 task 때 director가 `docs/first-run.md`의 미확인 항목으로 확인)
+- [ ] developer worktree: worktree 안에서 `local/comments/` 초안으로 task 이슈 코멘트를 올릴 수 있는지, `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지 (첫 구현 task 때 director가 first-run 이슈의 미확인 항목으로 확인)
 - [x] worktree를 쓰려면 첫 커밋이 있어야 함 (2026-10-03 첫 커밋 완료)
+- [ ] 이슈 기록 방식 시험 운영 (poker): Free 조직 Project 가용성, `project` 권한 추가, 기본 Status 선택지·화면을 API로 만들 수 있는지, `gh issue create --type/--parent/--blocked-by/--project` 실제 동작, `gh project item-list` JSON의 필드 키, role(subagent)이 검사 스크립트로 코멘트를 올리는지, 백업 응답에 하위 이슈·의존 관계가 들어 있는지, 본문·코멘트 편집 이력의 공개 범위 (`plugin/playbooks/issues.md`의 **[미확인]**)

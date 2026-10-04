@@ -3,24 +3,28 @@
 role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그인으로 만드는 리포. GitHub `autelon/company`. 플러그인·마켓플레이스 이름은 `autelon`이라 스킬과 공용 role은 `autelon:<이름>`으로 부른다. 설계는 `docs/design.md`, 결정 기록은 `docs/decisions.md`.
 
 이 리포는 "회사의 운영 방식"만 담는다. 실제 프로젝트는 각자 별도 repo이고, 그 repo에서 이 플러그인을 켜서 쓴다.
-프로젝트끼리는 role, 상태 파일, Notion DB, repo가 모두 독립이다.
+프로젝트끼리는 role, repo, 이슈, Project가 모두 독립이다. 프로젝트의 기록(task, PRD, 결정, 인계)은 그 저장소의 GitHub 이슈와 Project에 두고, 저장소에는 "지금 기준" 문서만 둔다.
 
 ## 구조
 
-| 경로                               | 내용                                                                                            |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `.claude-plugin/marketplace.json`  | 이 리포를 로컬 마켓플레이스로 등록할 때 쓰는 목록                                               |
-| `plugin/`                          | 플러그인 본체                                                                                   |
-| `plugin/skills/found-company/`     | 프로젝트 설립: role 설계, 상태 파일, Notion 페이지·DB, GitHub 저장소                            |
-| `plugin/skills/adopt-project/`     | 기존 프로젝트 도입: 기존 문서 유지, 도메인 전문가 role, 작업 방식 비교                          |
-| `plugin/skills/director/`          | director 운영 규칙 (프로젝트 CLAUDE.md가 세션 시작 시 부른다)                                   |
-| `plugin/agents/`                   | 모든 프로젝트가 같이 쓰는 공용 role: finance, notion-sync, security-reviewer(모든 PR 보안 검토) |
-| `plugin/templates/roles/`          | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다                            |
-| `plugin/templates/project/`        | 프로젝트 상태 파일 템플릿                                                                       |
-| `plugin/scripts/finance-check.mjs` | 재무 신호 판정                                                                                  |
-| `plugin/playbooks/first-run.md`    | 설립·도입한 프로젝트에서 처음 확인할 짧은 점검 (결과는 프로젝트 `docs/first-run.md`)            |
-| `.github/workflows/ci.yml`         | 필수 검사 `check`(커밋 메시지·Prettier)와 조직 `git-policy`                                     |
-| `scripts/check-commits.sh`         | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                                                |
+| 경로                                    | 내용                                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `.claude-plugin/marketplace.json`       | 이 리포를 로컬 마켓플레이스로 등록할 때 쓰는 목록                                                   |
+| `plugin/`                               | 플러그인 본체                                                                                       |
+| `plugin/skills/found-company/`          | 프로젝트 설립: role 설계, 기준 문서, GitHub 저장소, 이슈 라벨·Project·스프린트 이슈                 |
+| `plugin/skills/adopt-project/`          | 기존 프로젝트 도입: 기존 문서 유지, 도메인 전문가 role, 작업 방식 비교                              |
+| `plugin/skills/director/`               | director 운영 규칙 (프로젝트 CLAUDE.md가 세션 시작 시 부른다)                                       |
+| `plugin/agents/`                        | 모든 프로젝트가 같이 쓰는 공용 role: finance, security-reviewer(모든 PR·작업 단위별 이슈 보안 검토) |
+| `plugin/templates/roles/`               | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다                                |
+| `plugin/templates/project/`             | 프로젝트 저장소 파일 템플릿(CLAUDE.md, goals, git-rules, CI, gitignore)                             |
+| `plugin/templates/issues/`              | 이슈 본문(task, PRD, 결정, 스프린트, first-run)과 코멘트(role 결과, 결정) 템플릿                    |
+| `plugin/scripts/finance-check.mjs`      | 재무 신호 판정                                                                                      |
+| `plugin/scripts/privacy-check.mjs`      | 개인 정보·비밀 값 검사(패턴의 원본). 이슈·PR 글은 이 스크립트의 `gh` 모드로만 올린다                |
+| `plugin/playbooks/first-run.md`         | 설립·도입한 프로젝트에서 처음 확인할 짧은 점검 (결과는 프로젝트의 `first-run` 이슈)                 |
+| `plugin/playbooks/issues.md`            | 이슈·Project·마일스톤·백업 명령 모음                                                                |
+| `plugin/playbooks/migrate-to-issues.md` | 예전 파일 기록(board 등)을 쓰던 프로젝트를 이슈로 옮기는 절차                                       |
+| `.github/workflows/ci.yml`              | 필수 검사 `check`(커밋 메시지·Prettier·스크립트 테스트)와 조직 `git-policy`                         |
+| `scripts/check-commits.sh`              | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                                                    |
 
 ## 고칠 때 주의
 
@@ -36,6 +40,6 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 ## Git
 
 커밋 전에 `docs/git-rules.md`를 읽는다. main 에는 PR 로만 들어가고, 리뷰어와 머지 절차도 그 문서에 있다. `commit-msg` 훅이 형식을 검사하고, `pre-commit` 훅이 Prettier로 스테이징 파일을 맞춘다.
-파일을 고친 뒤 `pnpm check`(Prettier 검사)를 돌린다. 도구 버전은 mise가 고정한다 (`mise exec --`).
+파일을 고친 뒤 `pnpm check`(Prettier 검사와 `plugin/scripts/*.test.mjs`)를 돌린다. 도구 버전은 mise가 고정한다 (`mise exec --`).
 
 `README.md`만 사람이 읽는 문서라 영어로 쓴다. 나머지 문서·주석·커밋은 한국어다.

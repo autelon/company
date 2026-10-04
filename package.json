@@ -9,8 +9,9 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "prettier --check .",
-    "prepare": "git config core.hooksPath .githooks"
+    "check": "prettier --check . && node --test 'plugin/scripts/*.test.mjs'",
+    "prepare": "git config core.hooksPath .githooks",
+    "test": "node --test 'plugin/scripts/*.test.mjs'"
   },
   "devDependencies": {
     "prettier": "^3.9.9"

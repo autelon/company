@@ -1,15 +1,14 @@
----
-id: PRD-000
-title:
-status: draft # draft | approved | in_dev | released | measured | closed
-milestone: # M-01
-owner: po
-derived_from: # PRD-xxx (후속 액션에서 생긴 경우)
-updated_at:
-last_synced:
----
+<!-- PRD 이슈 본문 (타입 Feature). PRD 하나 = 이 이슈 하나, task = 하위 이슈(sub-issue).
+     섹션 초안은 role이 자기 task 이슈에 코멘트로 쓰고, director가 사람의 승인을 받은 뒤 이 본문에 반영한다.
+     승인 시점의 내용은 승인 코멘트에 남긴다 -->
 
-# {title}
+## 현재 결론
+
+<!-- director가 고친다 -->
+
+- 단계: draft <!-- draft | approved | in_dev | released | measured | closed -->
+- 파생: 없음 <!-- 후속 액션에서 생긴 PRD면 #N -->
+- 열린 질문: 없음
 
 ## 목표
 
@@ -34,7 +33,7 @@ last_synced:
 
 ## 결과
 
-<!-- developer + reviewer: 무엇이 구현됐는지, 리뷰 판정, 브랜치/커밋 -->
+<!-- developer + reviewer: 무엇이 구현됐는지, 리뷰 판정, PR -->
 
 ## 성과측정 분석
 
@@ -42,7 +41,11 @@ last_synced:
 
 ## 후속 액션
 
-<!-- po 제안. 사람이 합의한 항목만 새 PRD로 만들고 링크한다 -->
+<!-- po 제안. 사람이 합의한 항목만 새 PRD 이슈로 만들고 번호를 적는다 -->
 
 | 액션 | 합의 | 새 PRD |
 | ---- | ---- | ------ |
+
+## 설계 문서로 옮길 것
+
+<!-- 기능이 끝나면 오래 유지될 내용(도메인 규칙, API 계약, 데이터 구조)을 PR로 docs/ 설계 문서에 반영하고, 그 PR 번호를 적은 뒤 이 이슈를 닫는다 -->
