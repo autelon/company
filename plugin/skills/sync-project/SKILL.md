@@ -12,7 +12,7 @@ director 세션(사람이 연 세션과 루틴 모두)이 sync 이슈를 처리�
 - `<o>/<r>`는 프로젝트 저장소, `<N>`은 sync 이슈 번호, `<base>`는 기록 SHA, `<target>`은 대상 SHA(둘 다 12자, 정하는 법은 1번 처음), `<role>`은 role 이름이다.
 - `<me>`는 지금 gh 계정이다: `gh api user --jq .login`. 루틴의 `--author @me`와 같은 계정이고, 저장소 소유자(조직 이름)가 아니다. 이 문서에서 "소유 계정이 쓴 코멘트"는 `user.login`이 `<me>`인 코멘트다.
 - **판정표 코멘트**: `<me>`가 쓴 코멘트 중 첫 줄(루틴이면 `[루틴]` 다음 줄)이 `대상 SHA: <12자>`로 시작하는 것. 여러 개면 가장 마지막 것이 기준이다(7번).
-- **GitHub에 쓰는 일(코멘트, 라벨 바꾸기, PR, 닫기)은 모두 director가 Bash에서 `node <S> gh ...`로 한다.** 스크립트나 node가 child_process로 부르는 `gh`는 PreToolUse 훅을 거치지 않기 때문이다. 글이 없는 명령(`--add-label`, `close`)만 스크립트 없이 실행한다.
+- **GitHub에 쓰는 일(코멘트, 이슈·라벨 만들기, 라벨 바꾸기, PR, 닫기)은 모두 director가 Bash에서 `node <S> gh ...`로 한다.** 스크립트나 node가 child_process로 부르는 `gh`는 PreToolUse 훅을 거치지 않기 때문이다. 글이 없는 명령(`--add-label`, `close`)만 스크립트 없이 실행한다.
 - 루틴이 쓰는 코멘트는 첫 줄을 `[루틴]`으로 시작한다(director "이슈 작업 루프").
 - **sync 이슈와 그 단계 이슈의 사람 답 처리와 PR·머지는 이 스킬이 정한다.** 루틴 지시문의 4번 답 처리와 "PR" 절보다 앞선다(director "이슈 작업 루프"의 sync 이슈 항목). 어느 코멘트가 사람의 답인지는 루틴 지시문 4번의 기준(`[루틴]` 코멘트, role 결과 코멘트, `보낸 곳:` 코멘트는 답이 아니다)을 그대로 쓴다.
 
@@ -78,8 +78,8 @@ director 세션(사람이 연 세션과 루틴 모두)이 sync 이슈를 처리�
 | `templates/project/settings.json`                                         | `.claude/settings.json`     | `enabledPlugins` 안의 `autelon@autelon` 키만                                                                            |
 | `templates/project/autelon-sync.json`                                     | `.claude/autelon-sync.json` | 필드 형식이 바뀌었으면 불확실                                                                                           |
 | `templates/project/goals.md`·`events.md`                                  | -                           | 프로젝트가 주인이라 대상 아님                                                                                           |
-| `templates/routine/prompt.md`                                             | 등록된 루틴 지시문          | 10번(보고만)                                                                                                            |
-| `playbooks/issues.md` 2절                                                 | 라벨·Project                | 10번(보고만)                                                                                                            |
+| `templates/routine/prompt.md`                                             | 등록된 루틴 지시문          | 10번(사람 확인 이슈)                                                                                                    |
+| `playbooks/issues.md` 2절                                                 | 라벨·Project                | 10번(빠진 라벨은 사람이 연 세션이 만든다. 그 밖은 사람 확인 이슈)                                                       |
 | 표에 없는 `templates/` 아래 새 경로                                       | -                           | 불확실. company 이슈 후보로 보고                                                                                        |
 | 그 밖의 `plugin/`(skills, agents, hooks, scripts, `templates/issues/` 등) | -                           | 플러그인 업데이트로 반영된다. 판정표에 한 줄씩만 적는다                                                                 |
 
@@ -204,7 +204,7 @@ director가 직접 판단한다(#42 결정 3). 세 가지를 읽는다.
 보고만 · 새 role 제안, 대응표 밖의 새 템플릿: <있으면>
 보고만 · 도입 프로젝트의 CI 차이: <도입 프로젝트이고 ci.yml 템플릿이 바뀌었으면 요약>
 보고만 · 도입 프로젝트 git-rules의 세 절 밖 차이: <도입 프로젝트이고 git-rules 템플릿의 그 밖 절(예: 머지 명령)이 바뀌었으면 요약>
-보고만 · GitHub 설정·루틴(10번): <라벨 비교 결과, 루틴 지시문 변경 여부>
+보고만 · GitHub 설정·루틴(10번): <만든 라벨(사람이 연 세션) 또는 빠진 라벨(루틴), Project 차이와 프로젝트 유지로 본 차이, 루틴 지시문 다시 등록 여부, 사람 확인 이슈 번호>
 ```
 
 - 템플릿 원문은 길게 옮기지 않고 경로와 SHA로 가리킨다. 이유·근거에는 PR·이슈 번호를 적는다.
@@ -227,7 +227,7 @@ director가 직접 판단한다(#42 결정 3). 세 가지를 읽는다.
    ```
    node <S> gh pr create -R <o>/<r> --head chore/autelon-sync-<target> --title "<프로젝트 커밋 규칙을 따른 제목, 대상 SHA 포함>" -F local/prs/sync-<target>.md
    ```
-   PR 본문: `Refs #<N>`(`Closes`는 쓰지 않는다), 판정표 요약(적용·합침 행), 바꾸지 않은 행(프로젝트 유지)과 이유, `tools:`에서 빠지는 도구와 근거 이슈, 관문 파일을 바꾸는지(9번), 사람이 할 일(10번 보고).
+   PR 본문: `Refs #<N>`(`Closes`는 쓰지 않는다), 판정표 요약(적용·합침 행), 바꾸지 않은 행(프로젝트 유지)과 이유, `tools:`에서 빠지는 도구와 근거 이슈, 관문 파일을 바꾸는지(9번), 사람 확인 이슈 번호(10번, 없으면 없음).
 
 ## 9. 적용 뒤 검증과 머지
 
@@ -260,19 +260,54 @@ director가 직접 판단한다(#42 결정 3). 세 가지를 읽는다.
 - 머지 직전에 판정표의 blob SHA를 `origin/main`과 한 번 더 비교한다. 다르면 머지하지 않고 위 "브랜치 다시 만들기"대로 6번부터 다시 한다.
 - **머지 명령**: 프로젝트 `docs/git-rules.md`에 적힌 머지 명령을 쓴다(설립 프로젝트는 "머지 명령" 절). 그 문서에 머지 명령이 없으면 조직 `.github` 저장소 `git-workflow.md` "에이전트의 PR 절차" 3번의 명령을 쓴다(머지 큐가 있으면 `gh pr merge <PR>`, 없으면 `gh pr merge <PR> --auto --<병합 방식>`). 어느 쪽이든 리뷰한 head sha로 `--match-head-commit`을 붙이고, `--admin`은 쓰지 않는다.
 
-## 10. GitHub 설정과 루틴 (보고만)
+## 10. GitHub 설정과 루틴
 
-저장소 PR 밖의 일이다. 이 단계에서는 비교해서 판정표와 마무리 코멘트에 보고만 하고, 아무것도 바꾸지 않는다. 더하기와 사람 확인 이슈는 B 단계(autelon/company#74)에서 정한다.
+저장소 PR 밖의 일이다. 비교는 7번 판정표를 올리기 전에 하고(쪼갠 경우 sync 이슈에서 한 번), 결과를 판정표의 "GitHub 설정·루틴" 보고 줄에 적는다. 라벨 만들기와 사람 확인 이슈 만들기는 판정표를 올린 뒤에 한다. 이 일은 sync PR과 상관이 없으므로 불확실이 남아 멈추는 실행에서도 한다. 다음 실행이 1번부터 다시 해도 겹치지 않게, 라벨은 빠진 것만 만들고 사람 확인 이슈는 이미 있으면 만들지 않는다.
 
-- 라벨: `gh label list -R <o>/<r> --json name --jq '.[].name'`을 대상 SHA의 `plugin/playbooks/issues.md` 2절 "라벨"(6번의 raw 읽기 명령)과 비교해 빠진 라벨을 적는다. 라벨을 만들거나 고치지 않는다.
-- Project 필드·Status 선택지·화면·워크플로: 이 단계에서는 비교하지 않는다. `playbooks/issues.md`가 바뀌었으면 "Project 설정 확인 필요"로만 적는다.
-- 루틴: 3번에서 `plugin/templates/routine/prompt.md`가 바뀌었으면 "루틴 지시문 다시 등록 필요"로 적는다. 다시 등록은 사람이 승인한 뒤 `playbooks/routine.md` "바꿀 때"대로 한다. 이 스킬은 예약 작업을 고치지 않는다.
+**라벨**
+
+- 기준: 대상 SHA의 `plugin/playbooks/issues.md` 2절 "라벨" 코드 블록의 `gh label create <이름> … --color <색> --description "<설명>"` 줄(6번의 raw 읽기 명령으로 읽는다).
+- 프로젝트: `gh label list -R <o>/<r> --limit 200 --json name --jq '.[].name'`. 이름만 비교한다.
+- 사람이 연 세션: 빠진 라벨만 그 줄 그대로(`<S>`, `<o>/<r>`만 채운다) `node <S> gh label create …`로 만든다. 스크립트 없는 `gh label create`는 훅이 막는다. **있는 라벨의 이름·색·설명은 바꾸지 않는다**(달라도 고치지 않고 적지도 않는다). 만든 라벨을 보고 줄에 적는다.
+- 루틴: 만들지 않는다(#67 결정 8. 루틴 지시문의 "저장소 설정을 바꾸지 않는다"를 해석에 기대지 않는다). 빠진 라벨을 아래 사람 확인 이슈의 항목으로 넘긴다.
+
+**Project 필드·Status 선택지·화면·워크플로** (사람이 연 세션도 보고만)
+
+- `<P>`는 프로젝트 `CLAUDE.md`의 "기록" 표에 적힌 Project 번호, `<조직>`은 저장소의 조직이다. 번호가 없으면 "Project 번호 없음"을 항목으로 넘긴다.
+- GraphQL로 한 번 읽는다. `gh project field-list` 같은 `gh project` 하위 명령은 쓰지 않는다(호출 하나에 약 100포인트, `playbooks/issues.md` 0절).
+  ```
+  gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>){ fields(first:50){ nodes{ ... on ProjectV2FieldCommon { name dataType } ... on ProjectV2SingleSelectField { options { name } } } } views(first:20){ nodes{ name layout verticalGroupByFields(first:5){ nodes{ ... on ProjectV2FieldCommon { name } } } } } workflows(first:20){ nodes{ name enabled } } } } }'
+  ```
+- 대상 SHA의 `issues.md` 2절 "Project"와 비교한다.
+  - 필드: `Role`(단일 선택, 선택지에 `director`가 있다. 나머지 선택지는 프로젝트 role이라 비교하지 않는다), `Size`(`small`, `large`), `Start date`·`Target date`(날짜).
+  - `Status` 선택지: "Status 선택지" 절의 이름 목록.
+  - 화면: 표, 열 기준이 `Status`인 보드, 열 기준이 `Role`인 보드, 로드맵. 이름이 아니라 `layout`과 `verticalGroupByFields`로 본다.
+  - 워크플로: "기본 워크플로" 표의 켬·끔과 `enabled`. 대상 값(Status = `backlog` 등)은 API로 읽을 수 없다. 3번 범위에서 `issues.md`가 바뀌었으면 "웹 워크플로 화면에서 대상 값 확인"을 항목으로 넣는다.
+- 프로젝트 `CLAUDE.md`에 다르게 둔 이유가 적힌 차이(`issues.md` 2절: 프로젝트가 다르게 켜면 그 이유를 `CLAUDE.md`에 적는다)는 "프로젝트 유지"로 보고 줄에만 적고 사람 확인 이슈에 넣지 않는다. 이유가 없는 차이는 사람 확인 이슈 항목이다.
+- 아무것도 바꾸지 않는다. Status 선택지는 넘긴 목록이 전체가 되어 기존 선택지와 워크플로 대상이 지워질 수 있고(`issues.md` 2절 [확인]), 화면의 열 기준과 워크플로는 웹 설정이 필요하다.
+
+**루틴 지시문**: 3번 범위에서 `plugin/templates/routine/prompt.md`가 바뀌었으면 "루틴 지시문 다시 등록"을 항목으로 넣는다. 다시 등록은 사람이 승인한 뒤 `playbooks/routine.md` "바꿀 때"대로 한다. 이 스킬은 예약 작업을 고치지 않는다.
+
+**사람 확인 이슈**: 위 항목(루틴에서 빠진 라벨, Project 번호 없음, 이유 없는 Project 차이, 워크플로 대상 값 확인, 루틴 지시문 다시 등록)이 하나라도 있으면 사람 확인 이슈 하나로 넘긴다. 없으면 만들지 않는다.
+
+1. 이미 있는지 본다. sync 이슈에 `사람 확인 이슈: #<M>` 코멘트가 있으면 새로 만들지 않는다. 그 이슈가 열려 있고 이번에 새 항목이 생겼으면 그 이슈에 코멘트로 더한다(루틴이면 첫 줄 `[루틴]`).
+2. 만든다(타입 Task). 본문은 `local/issues/sync-<target>-check.md`에 쓴다.
+   ```
+   node <S> gh issue create -R <o>/<r> --type Task --title "sync 설정 확인 (<target>)" -F local/issues/sync-<target>-check.md --label agent:needs-user
+   ```
+   - 제목은 일반 task 제목이고 `autelon sync:`로 시작하지 않는다(5번의 단계 이슈와 같은 이유).
+   - 본문은 `templates/issues/task.md`의 절을 쓰고 다음을 넣는다: `이어지는 이슈: #<N>`, 항목마다 무엇이 다른지와 할 일, 참고할 절(라벨은 `issues.md` 2절 "라벨"의 명령, Project는 2절과 "웹 설정", 루틴은 `routine.md` "바꿀 때"), "사람이 연 director 세션이 처리한다(루틴은 건너뛴다)", "이 이슈는 sync PR을 막지 않는다".
+3. sync 이슈에 `사람 확인 이슈: #<M>` 한 줄 코멘트를 남긴다(루틴이면 첫 줄 `[루틴]`). 판정표 보고 줄, PR 본문, 11번 결과 코멘트에 이 번호를 적는다.
+
+- 처리: 사람이 연 director 세션이 한다. 웹 설정은 `issues.md` "웹 설정"대로 director가 브라우저 도구로, 라벨은 2절 명령으로, 루틴 재등록은 `routine.md` "바꿀 때"대로 사람이 승인한 뒤에 한다. 끝나면 결과를 코멘트로 남기고 닫는다.
+- 이 이슈는 sync PR을 막지 않는다. sync 이슈는 PR이 머지되면 이 이슈가 열려 있어도 11번에서 닫는다.
+- **[확인]** 2026-10-05 위 GraphQL을 autelon 조직의 Project 두 개에 읽기로 실행했다: 질의 하나의 `rateLimit { cost }`가 1이고, 필드와 선택지, 화면의 `layout`·열 기준, 워크플로 `enabled`가 나온다. **[미확인]** 실제 sync에서 이 비교와 사람 확인 이슈를 만든 적은 없다.
 
 ## 11. 마무리
 
 머지되면(사람이 머지했으면 다음 실행의 1번 (a)에서 여기로 온다):
 
-1. sync 이슈에 결과 코멘트를 남긴다: PR 번호, 머지 커밋, 새 `pluginSha`, 판정 수(적용·합침·프로젝트 유지), 10번에서 보고한 사람이 할 일.
+1. sync 이슈에 결과 코멘트를 남긴다: PR 번호, 머지 커밋, 새 `pluginSha`, 판정 수(적용·합침·프로젝트 유지), 10번에서 만든 라벨과 사람 확인 이슈 번호.
 2. `gh issue close <N> -R <o>/<r> --reason completed`로 닫는다(`--comment` 없이). 처리 중에 더 새 `설치 SHA:` 줄이 붙었어도 닫는다. 다음 세션의 버전 비교가 새 기준으로 새 sync 이슈를 만든다.
 3. 쪼갠 경우에는 마지막 단계 이슈에서 여기로 온다. 마지막 단계 이슈에 PR 번호와 머지 커밋을 적은 결과 코멘트를 남기고(루틴이면 첫 줄 `[루틴]`) `--reason completed`로 먼저 닫은 뒤, 위 1·2를 sync 이슈 `<N>`에 한다.
 
@@ -283,7 +318,7 @@ director가 직접 판단한다(#42 결정 3). 세 가지를 읽는다.
 - 프로젝트에만 있는 절·키·파일을 지우지 않는다. 템플릿이 없는 role은 손대지 않는다.
 - 불확실이 남은 채로 파일을 고치거나 PR을 만들지 않는다. 일부만 맞추고 기준 SHA를 올리지 않는다.
 - `ahead`가 아닌 대상으로 맞추지 않는다(옛 템플릿으로 되돌리지 않는다).
-- 라벨, Project 선택지·필드·화면을 만들거나 바꾸지 않는다. 루틴을 다시 등록하지 않는다.
+- 있는 라벨을 바꾸지 않는다. 라벨은 사람이 연 세션에서 빠진 것만 만든다(루틴은 만들지 않는다). Project 선택지·필드·화면·워크플로를 만들거나 바꾸지 않는다. 루틴을 다시 등록하지 않는다.
 - director가 직접 프로젝트 파일을 고치거나 sync 브랜치에 push하지 않는다(sync-editor가 옮기고 다시 만든다).
 
 ## 확인한 것과 못 한 것
