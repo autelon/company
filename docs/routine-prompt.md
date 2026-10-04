@@ -9,6 +9,8 @@
 
 이 리포에서는 autelon 플러그인이 꺼져 있다. director 스킬, `autelon:*` role 이름, 플러그인 훅이 없다. 이 지시문과 `.claude/agents/`의 company role(plugin-developer, reviewer, verifier), 저장소 안 스크립트(`plugin/scripts/`)로 일한다. company role을 이름으로 부를 수 없으면(agent 타입에 없음) 일반 subagent에게 `.claude/agents/<role>.md` 본문을 지시문으로 주고, 마지막 요약의 "확인하지 못한 도구 동작"에 적는다.
 
+**Workflow 사용 허용**: 사용자가 autelon 프로젝트(이 저장소 포함)에서 Workflow 도구 사용을 허용했다(autelon/company#71). director 스킬이 로드되지 않으므로 `plugin/skills/director/SKILL.md`의 "Workflow로 처리하기" 절을 파일로 읽고 따른다. 그 안의 `${CLAUDE_PLUGIN_ROOT}`는 `plugin`으로 읽고, 프로젝트용 PR 판정 args 대신 아래 "PR"의 company args를 쓴다. 무인 실행에서 이 허용으로 확인 창 없이 시작했고, Workflow가 도는 동안 실행 기록이 `running`이었다 **[확인]**(company 무인 시험 1회, autelon/company#71).
+
 ## 0. 시작
 
 1. `CLAUDE.md`와 `docs/git-rules.md`를 읽는다. `docs/design.md`는 이슈가 다루는 절만 읽는다.
@@ -43,7 +45,7 @@ gh issue list -R autelon/company --author @me --label agent:ready --state open -
 - 본문(현재 결론)과 소유 계정의 코멘트를 읽는다. 배경·목표·완료 조건·하지 말 것이 없어 이슈만으로 작업할 수 없으면 5번 `agent:needs-user`로 넘긴다.
 - **다른 프로젝트가 보낸 이슈**(`보낸 곳:` 줄): 보낸 이슈를 읽기만 해서 맥락을 얻는다. 그 저장소의 코드·설정·기존 이슈 본문·라벨은 건드리지 않는다.
 - `agent:needs-user`였다가 사람이 답하고 `agent:ready`로 바꾼 이슈면, 넘길 때 쓴 `[루틴]` 코멘트보다 뒤에 달린 소유 계정 코멘트 중 사람이 쓴 것만 답으로 읽는다. `[루틴]`으로 시작하는 코멘트, role 결과 코멘트(`**handoff** · role:` 줄), PR 판정 코멘트, 첫 줄이 `보낸 곳:`인 코멘트는 답이 아니다. 답이 없으면 그렇게 코멘트하고 다시 `agent:needs-user`로 넘긴다. 답은 결정 코멘트(`plugin/templates/issues/comment-decision.md` 형식)로 남기고 본문 "현재 결론"을 고친 뒤 이어 간다.
-- **작업은 이 세션 안의 subagent에게만 맡긴다.** 이 세션은 직접 파일을 고치지 않는다. 새 세션을 만들지 않는다. subagent끼리 직접 주고받지 않고 이 세션을 거친다. subagent는 포그라운드로 부른다(`run_in_background`를 쓰지 않는다). 병렬이 필요하면 한 메시지에 여러 호출을 함께 보낸다. 무인 실행에서 이렇게 병렬로 돌고 실행 기록이 그 뒤에 끝나는지는 **[미확인]**이다. 그래서 이 실행에서 본 것을 마지막 요약의 "확인하지 못한 도구 동작"에 적는다. 백그라운드로 띄우면 이 세션이 결과를 기다리지 않고 차례를 끝내, 실행 기록이 실제보다 먼저 `succeeded`가 되고 다음 주기의 이전 실행 확인(0번)이 이 실행을 놓친다(2026-10-04 company 루틴에서 관찰, autelon/company#57).
+- **작업은 이 세션 안의 subagent에게만 맡긴다.** 이 세션은 직접 파일을 고치지 않는다. 새 세션을 만들지 않는다. subagent끼리 직접 주고받지 않고 이 세션을 거친다. subagent는 포그라운드로 부른다(`run_in_background`를 쓰지 않는다). 병렬이 필요하면 한 메시지에 여러 호출을 함께 보낸다. 무인 실행에서 이렇게 병렬로 돌고 실행 기록이 그 뒤에 끝나는지는 **[미확인]**이다. 그래서 이 실행에서 본 것을 마지막 요약의 "확인하지 못한 도구 동작"에 적는다. 백그라운드로 띄우면 이 세션이 결과를 기다리지 않고 차례를 끝내, 실행 기록이 실제보다 먼저 `succeeded`가 되고 다음 주기의 이전 실행 확인(0번)이 이 실행을 놓친다(2026-10-04 company 루틴에서 관찰, autelon/company#57). Workflow는 이것과 다르다. 시작하면 완료 알림으로 이 세션이 다시 깨어나고 그동안 실행 기록이 `running`을 유지한다(director 스킬 "Workflow로 처리하기"의 "기다리기"). Workflow 결과를 받기 전에는 그 이슈의 다음 단계로 가지 않는다.
 - 이 세션이 쓰는 코멘트는 첫 줄을 `[루틴]`으로 시작한다. 이슈 생성·본문·라벨 변경과 닫기는 이 세션만 한다. role은 코멘트만 쓴다.
 - **모든 글은 검사 스크립트로 올린다**: `node plugin/scripts/privacy-check.mjs gh issue|pr <create|edit|comment> ...`, 본문은 `local/issues/`·`local/comments/`에 파일로 쓰고 `-F`로 넘긴다. 플러그인 훅이 없으므로 이 규칙은 지시문으로만 지켜진다. 스크립트를 거치지 않는 글쓰기(`close --comment`, `gh api` 쓰기, 웹)는 하지 않는다.
 
@@ -63,11 +65,14 @@ role을 부를 때 넣는다: 저장소 `autelon/company`, 이슈 번호, 목표
 ### PR
 
 1. plugin-developer가 브랜치를 만들고 PR을 올린다(`Refs #<이슈>`). 이슈 본문에 이어 갈 PR과 브랜치가 적혀 있으면(2번 "큰 일은 단계로 쪼개") 새로 만들지 말고 그 브랜치에 커밋해 같은 PR을 이어 가라고 지시한다.
-2. PR의 head sha를 적고 같은 sha에 대해 병렬로 부른다:
-   - reviewer: 리뷰(`리뷰: 통과|수정 필요 (<sha>)`)
-   - 보안 검토: 일반 subagent에게 `plugin/agents/security-reviewer.md`를 읽고 그 본문대로 하라고 지시한다. 본문의 `${CLAUDE_PLUGIN_ROOT}`는 이 저장소의 `plugin`으로 바꿔 읽게 한다(이 리포에서는 치환되지 않는다). PR 번호와 head sha를 준다. 로컬 checkout을 바꾸지 말고 `git fetch`·`git show`로 읽으라고 지시한다.
-   - verifier: PR이 `plugin/` 아래 동작(스킬, role, 템플릿, playbook, 훅, 스크립트)을 바꿀 때만. 읽기 기반 모의 실행(`검증: 통과|수정 필요 (<sha>)`).
-3. 하나라도 수정 필요면 plugin-developer에게 판정 코멘트를 주고 고치게 한 뒤, 새 head sha로 2번을 다시 한다.
+2. **판정·수정은 표준 판정 Workflow로 한다.** `gh pr view <PR> -R autelon/company --json headRefOid`로 head sha를 적고, `plugin/workflows/pr-judge-fix-loop.js`를 Read로 읽어 그 내용을 Workflow 도구의 `script`로 넘긴다(경로를 `scriptPath`로 넘기지 않는다). args:
+   - `repo: 'autelon/company'`, `pr`, `issue`, `branch`, `sha`, `checkScript: 'plugin/scripts/privacy-check.mjs'`, `preset: 'company'`, `maxRounds: 3`
+   - `verify`: PR이 `plugin/` 아래 동작(스킬, role, 템플릿, playbook, 훅, 스크립트, Workflow 스크립트)을 바꾸면 `true`(`docs/git-rules.md` "머지 명령"). 그때 `scenarios`에 검증 시나리오를 준다
+   - `tier`: BREAKING이거나 루틴의 안전 장치 파일을 바꾸는 PR이면 `'high'`(반박 보안 검토를 더한다), 아니면 `'standard'`
+   - `decisions`: 그 이슈의 소유 계정 결정 코멘트 요약. `context`: 이슈의 목표·하지 말 것. `coAuthor`·`roleRules`: 위 "role 지시문"의 공동 작성자 줄과 공통 문장
+   - Workflow가 같은 head에 reviewer, 보안 검토(일반 agent에 `plugin/agents/security-reviewer.md` 본문), verifier(`verify`일 때)를 병렬로 부르고, 수정 필요면 plugin-developer가 자기 worktree에서 고쳐 같은 브랜치에 push한 뒤 새 head로 다시 판정한다. 판정 agent가 각자 PR 코멘트를 검사 스크립트로 올린다.
+   - Workflow를 쓸 수 없으면 같은 순서를 포그라운드 subagent로 한다(위 판정 셋을 같은 sha에 병렬로, 하나라도 수정 필요면 plugin-developer에게 판정 코멘트를 주고 고치게 한 뒤 새 head로 다시, 최대 3번). 마지막 요약의 "확인하지 못한 도구 동작"에 적는다.
+3. 결과(`status`)에 따라: `all_pass`면 4번. `needs_user`·`fix_failed`면 남은 지적(`remaining`)을 결정할 것과 선택지로 정리해 5번 `agent:needs-user`로 넘긴다. `max_rounds`면 남은 지적을 하위 이슈로 넘긴다(2번 "큰 일은 단계로 쪼개", 본문에 PR 번호와 브랜치). `head_moved`면 지금 head로 한 번 다시 돌리고, 또 바뀌면 5번으로 넘긴다. 어느 경우든 이슈에 `[루틴]` 코멘트로 결과(상태, head, 라운드 수, 판정 코멘트 링크, 높음 등급이면 반박 검토 결과)를 남긴다.
 4. 모두 통과하고 BREAKING도 안전 장치 파일 변경도 아니면 reviewer에게 머지 명령을 맡긴다: `gh pr merge <PR> -R autelon/company --match-head-commit <sha>`. `--admin`은 쓰지 않는다. 머지 큐를 거치므로 `gh pr view <PR> -R autelon/company --json state,mergeCommit`으로 머지됐는지 확인한다. 이 실행 안에 머지되지 않으면 처리 요약에 "머지 대기(auto-merge)"로 적고, 다음 실행이 확인한다.
 
 ### 머지 뒤
