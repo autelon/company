@@ -1,6 +1,6 @@
 ---
 name: sync-project
-description: autelon 플러그인이 바뀌었을 때 프로젝트에 복사된 파일(role, CLAUDE.md의 autelon 절, docs/git-rules.md, CI, .gitignore, 설정)을 새 템플릿에 맞춘다. director가 제목이 "autelon sync:"로 시작하는 sync 이슈를 처리할 때 사용. 템플릿 변경을 절 단위로 판정해 이슈에 먼저 올리고, 모두 정해지면 sync-editor에게 옮기게 해 기준 버전 파일과 함께 PR 하나로 올린다.
+description: autelon 플러그인이 바뀌었을 때 프로젝트에 복사된 파일(role, CLAUDE.md의 autelon 절, docs/git-rules.md, CI, .gitignore, 설정)을 새 템플릿에 맞춘다. director가 제목이 "autelon sync:"로 시작하는 sync 이슈(기준 버전 정하기 포함)와 그 단계 이슈를 처리할 때 사용. 템플릿 변경을 절 단위로 판정해 이슈에 먼저 올리고, 모두 정해지면 sync-editor에게 옮기게 해 기준 버전 파일과 함께 PR 하나로 올린다.
 ---
 
 # 플러그인 버전 맞추기 (sync)
@@ -22,7 +22,7 @@ director 세션(사람이 연 세션과 루틴 모두)이 sync 이슈를 처리�
 
 - 제목이 `autelon sync: <기록 SHA> 이후`이고 `agent:ready`인 열린 sync 이슈를 처리할 때.
 - 그 sync 이슈를 쪼갠 **단계 이슈**를 처리할 때. 제목이 `sync <i>/<n> <내용> (<대상 SHA>)`이고, 본문의 `이어지는 이슈: #<N>`이 `<me>`가 연 열린 sync 이슈를 가리키는 `agent:ready` 이슈다. 처리 순서는 5번 "단계 이슈를 처리할 때"다. `#<N>`이 열린 sync 이슈가 아니면 고치지 않고 이유를 코멘트로 남긴 뒤 `agent:needs-user`로 넘긴다.
-- `autelon sync: 기준 버전 정하기` 이슈는 이 스킬이 아직 처리하지 않는다. 사람의 답이 와도 고치지 않고, "답 처리 규칙이 아직 없다(autelon/company#74)"를 코멘트로 남기고 `agent:needs-user`로 둔다.
+- `autelon sync: 기준 버전 정하기` 이슈를 처리할 때(사람이 답하고 `agent:ready`로 바꿨거나, 사람이 연 세션이 그 이슈를 다룰 때). 처리 순서는 아래 1~11이 아니라 12번이다(기록 SHA가 없다).
 - 처리 순서는 아래 1~11이다. 한 번의 실행에서 가능한 데까지 가고, 멈추는 곳마다 이유를 sync 이슈에 남긴다. 다음 실행은 1번부터 다시 시작해 남긴 기록(판정표, 결정 코멘트, 브랜치, PR)을 보고 이어 간다.
 
 ## 1. 입구 검사
@@ -310,6 +310,33 @@ director가 직접 판단한다(#42 결정 3). 세 가지를 읽는다.
 1. sync 이슈에 결과 코멘트를 남긴다: PR 번호, 머지 커밋, 새 `pluginSha`, 판정 수(적용·합침·프로젝트 유지), 10번에서 만든 라벨과 사람 확인 이슈 번호.
 2. `gh issue close <N> -R <o>/<r> --reason completed`로 닫는다(`--comment` 없이). 처리 중에 더 새 `설치 SHA:` 줄이 붙었어도 닫는다. 다음 세션의 버전 비교가 새 기준으로 새 sync 이슈를 만든다.
 3. 쪼갠 경우에는 마지막 단계 이슈에서 여기로 온다. 마지막 단계 이슈에 PR 번호와 머지 커밋을 적은 결과 코멘트를 남기고(루틴이면 첫 줄 `[루틴]`) `--reason completed`로 먼저 닫은 뒤, 위 1·2를 sync 이슈 `<N>`에 한다.
+
+## 12. 기준 버전 정하기 이슈
+
+기준 버전 파일이 없거나 `pluginSha`가 `미정`이라 director가 만든 `autelon sync: 기준 버전 정하기` 이슈(`agent:needs-user`)의 처리다. 갈래는 이슈 템플릿 "사람에게 묻기"의 셋이다(#67 결정 5): ① 지금 설치 SHA를 기록 ② 사람이 준 SHA를 기록 ③ 그대로 둔다. `<sha>`는 기록할 SHA(12자)다.
+
+1. **이어 가는지 본다.** `<me>`가 쓴 결정 코멘트 중 `기록할 SHA: <12자>` 줄이 있는 가장 마지막 것이 있으면 그 값이 `<sha>`다.
+   - `git fetch origin` 뒤 `git show origin/main:.claude/autelon-sync.json`의 `pluginSha`가 `<sha>`이고 `chore/autelon-sync-<sha>` PR이 머지됐으면 6번(마무리)으로 간다.
+   - 그 브랜치의 열린 PR이 있으면 5번의 검증·리뷰·머지부터 이어 간다.
+   - 결정 코멘트가 없는데 `origin/main`의 `pluginSha`가 이미 12자 SHA면(다른 경로로 기록됨) 고치지 않는다. 그 사실을 코멘트로 남기고 `agent:needs-user`로 넘긴다.
+2. **답을 읽는다.** 사람의 답은 맨 위 기준(`[루틴]` 코멘트, role 결과 코멘트, `보낸 곳:` 코멘트는 답이 아니다)으로 고른, `<me>`가 쓴 코멘트다. 사람이 연 세션에서 답이 없으면 AskUserQuestion으로 세 갈래를 묻는다.
+   - ①②이고 `origin/main`에 기준 버전 파일이 없으면, 이 프로젝트가 설립(`found-company`)인지 도입(`adopt-project`)인지도 답에 있어야 한다. 이 값을 파일 첫 판의 `note`에 쓴다. 4번은 첫 판의 `note`로 설립·도입을 가리므로, 여기서 `#<N>`을 쓰면 이후 모든 sync가 그 구분을 다시 묻게 된다.
+   - 갈래를 정할 수 없거나, ②인데 SHA가 없거나, 위 설립·도입이 없으면 고치지 않는다. 사람이 연 세션은 빠진 것만 AskUserQuestion으로 묻는다. 루틴은 빠진 것을 묻는 코멘트를 남기고 `agent:needs-user`로 넘긴다(답이 하나도 없으면 같은 질문을 다시 적는다).
+3. **③ 그대로 둔다**: 답을 결정 코멘트로 남기고, 이슈를 닫지 않고 `agent:needs-user`로 돌린다. 열린 sync 이슈만 찾으므로 닫으면 다음 세션이 같은 이슈를 다시 만든다(`docs/design.md` 2절). 여기서 끝낸다.
+4. **①② 기록할 SHA를 정하고 확인한다.**
+   - ①: 사람의 답 코멘트보다 **앞에** 있는 가장 마지막 `설치 SHA: ` 줄(1번 (b)와 같이 본문 표와 `<me>`의 코멘트에서)의 값이다. 답 뒤에 붙은 줄은 쓰지 않는다. 사람이 보고 고른 값이 아니기 때문이다. 그보다 새 설치본은 이 기록이 머지된 뒤 다음 세션의 버전 비교가 새 sync 이슈로 다룬다.
+   - ②: 사람이 준 SHA의 앞 12자. 16진수 12자 이상이 아니면 다시 묻는다.
+   - 확인(둘 다): `gh api repos/autelon/company/commits/<sha> --jq .sha`가 40자 SHA를 준다. `gh api repos/autelon/company/compare/<sha>...main --jq .status`가 `ahead`나 `identical`이다(main의 조상이다. 아니면 다음 버전 비교가 `diverged`가 된다). ②는 `compare/<sha>...<가장 마지막 설치 SHA>`도 `ahead`나 `identical`이어야 한다(설치본보다 새 SHA면 다음 비교가 `behind`가 된다).
+   - 걸리면 고치지 않고, 이유와 함께 다시 묻는다(루틴은 `agent:needs-user`).
+   - 통과하면 결정 코멘트(`comment-decision.md`)를 남긴다. "후속 조치"에 `기록할 SHA: <sha>`, 파일을 새로 만들면 `첫 판 note: 설립` 또는 `첫 판 note: 도입`, 확인 명령의 결과를 적는다.
+5. **기록 PR.** 8번 3·4·5와 9번을 이 PR에 맞춰 쓴다. 판정표와 blob SHA 비교는 없다.
+   - `autelon:sync-editor` 지시: 브랜치 `chore/autelon-sync-<sha>`, 모드 `새로`(그 브랜치가 origin에 있는데 열린 PR이 없으면 부르지 않고 사람에게 묻는다), 행 하나. 파일이 없으면 동작 "파일 생성"으로 `{"pluginSha": "<sha>", "syncedAt": "<오늘 YYYY-MM-DD>", "note": "<설립 또는 도입>"}`의 전문(템플릿 `templates/project/autelon-sync.json`의 세 필드와 순서), 파일이 있으면(`pluginSha`가 `미정`) 같은 꼴에 `note` = `#<N>`인 전문으로 바꾼다.
+   - 검증: `git diff --name-only origin/main...origin/chore/autelon-sync-<sha>`가 `.claude/autelon-sync.json` 하나뿐이고, 그 파일이 JSON으로 읽히며 필드가 셋, `pluginSha`가 `<sha>`, `note`가 위 값이다.
+   - PR: `node <S> gh pr create -R <o>/<r> --head chore/autelon-sync-<sha> --title "<프로젝트 커밋 규칙을 따른 제목, SHA 포함>" -F local/prs/sync-<sha>.md`. 본문: `Refs #<N>`(`Closes`는 쓰지 않는다), 고른 갈래와 `<sha>`, 4번 확인 결과, 새 파일이면 첫 판 `note`.
+   - 리뷰·보안 검토를 같은 head sha로 받는다. 기준 버전 파일은 관문 파일이 아니므로 프로젝트 리뷰어 설정대로 머지한다(9번 "머지를 누가 정하나", "머지 명령"). 머지 큐나 auto-merge로 머지가 늦게 끝나면 이슈를 `agent:ready`로 두어 다음 실행이 1번에서 6번으로 가게 한다. 리뷰어가 사람이면 `agent:needs-user`로 넘기고, 머지한 뒤 `agent:ready`로 돌려 달라고 적는다.
+6. **마무리.** 머지되면 이슈에 결과 코멘트(PR 번호, 머지 커밋, 기록한 `pluginSha`)를 남기고 `gh issue close <N> -R <o>/<r> --reason completed`로 닫는다. **꼭 닫는다.** 열린 `autelon sync:` 이슈가 있으면 director "시작할 때" 7번이 새 sync 이슈를 만들지 않으므로, 이 이슈가 열려 있으면 기록한 SHA 이후의 sync가 시작되지 않는다. 다음 세션의 버전 비교가 기록한 SHA와 설치 SHA를 비교해 다르면 새 sync 이슈를 만든다.
+
+- **[확인]** 2026-10-05 autelon/company에서: `compare/<main의 조상 SHA>...main`이 `ahead`(PR 브랜치 커밋도 머지 뒤에는 조상이라 `ahead`), `compare/<main head>...main`이 `identical`, `commits/<12자>`가 40자 SHA를 준다. **[미확인]** 이 절 전체를 실제 프로젝트에서 돌리지 않았다.
 
 ## 하지 않는 것
 
