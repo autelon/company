@@ -10,6 +10,10 @@ tools: Read, Edit, Write, Glob, Grep, Bash
 ## 입력 (director가 지시문에 넣는다)
 
 - 저장소(`<조직>/<이름>`), sync 이슈 번호, 브랜치 이름(`chore/autelon-sync-<대상 SHA>`), worktree 이름
+- 모드: 셋 중 하나
+  - `새로`: 브랜치가 아직 없다. `origin/main`에서 만든다.
+  - `이어서`: 있는 브랜치에 커밋을 더한다(리뷰 수정).
+  - `다시 만들기`: 있는 브랜치를 `origin/main` 위에 처음부터 다시 만든다(main이 움직였거나 판정이 바뀌어 이미 옮긴 행을 되돌려야 할 때). 지금 `origin/<브랜치>`의 예상 head sha가 같이 온다. 이때 옮길 행은 판정표의 모든 행이다.
 - 옮길 행 목록. 행마다:
   - 파일: 프로젝트 루트 기준 상대 경로
   - 위치: markdown 절 제목(제목 줄 전체) 또는 frontmatter 키, JSON 키, `.gitignore`면 "파일 끝"
@@ -28,11 +32,10 @@ tools: Read, Edit, Write, Glob, Grep, Bash
 frontmatter의 격리 설정에 기대지 않는다. 자기 작업 폴더를 직접 만들고, 그 안에서만 고친다. 메인 checkout은 건드리지 않는다.
 
 1. 프로젝트 루트에서 `git fetch origin`
-2. 브랜치를 본다.
-   - 로컬 브랜치가 있으면: `git worktree add .claude/worktrees/<이름> <브랜치>`. 로컬 브랜치와 `origin/<브랜치>`가 둘 다 있는데 가리키는 커밋이 다르면 멈추고 응답한다.
-   - 로컬에는 없고 `origin/<브랜치>`가 있으면: `git worktree add --track -b <브랜치> .claude/worktrees/<이름> origin/<브랜치>`
-   - 둘 다 없으면: `git worktree add -b <브랜치> .claude/worktrees/<이름> origin/main`
-   - 같은 경로에 worktree가 이미 있으면 지우지 않고 멈추고 응답한다(앞 실행이 남긴 것일 수 있다).
+2. 모드에 맞춰 브랜치를 준비한다. 같은 경로에 worktree가 이미 있으면 어느 모드든 지우지 않고 멈추고 응답한다(앞 실행이 남긴 것일 수 있다). 로컬 브랜치와 `origin/<브랜치>`가 둘 다 있는데 가리키는 커밋이 다르면 어느 모드든 멈추고 응답한다.
+   - `새로`: 로컬 브랜치와 `origin/<브랜치>`가 둘 다 없어야 한다(있으면 멈추고 응답). `git worktree add -b <브랜치> .claude/worktrees/<이름> origin/main`
+   - `이어서`: 로컬 브랜치가 있으면 `git worktree add .claude/worktrees/<이름> <브랜치>`, 로컬에는 없고 `origin/<브랜치>`만 있으면 `git worktree add --track -b <브랜치> .claude/worktrees/<이름> origin/<브랜치>`. 둘 다 없으면 멈추고 응답한다.
+   - `다시 만들기`: `git rev-parse origin/<브랜치>`가 지시받은 예상 head sha와 같아야 한다(다르면 멈추고 응답). `git worktree add -B <브랜치> .claude/worktrees/<이름> origin/main`으로 브랜치를 `origin/main`에 다시 놓고, 옮길 행을 처음부터 모두 옮긴다.
 3. 이후 모든 읽기·고치기·커밋은 `.claude/worktrees/<이름>` 안에서 한다.
 
 ## 옮기기
@@ -52,21 +55,23 @@ frontmatter의 격리 설정에 기대지 않는다. 자기 작업 폴더를 직
   - 작성자 확인: 지시받은 작성자 확인 명령을 push할 범위(`origin/main..HEAD`)에 돌린다(커밋 뒤, push 전). 출력이 남으면 push하지 않는다
   - 지시받은 검증 명령
 - 커밋 author는 지시받은 모델명과 `noreply@anthropic.com`, 공동 작성자 줄은 지시받은 그대로 붙인다.
-- `git push -u origin <브랜치>`. force push하지 않는다. push가 거절되면 worktree를 지우지 않고 응답한다.
+- `새로`·`이어서`: `git push -u origin <브랜치>`. force push하지 않는다.
+- `다시 만들기`: `git push -u --force-with-lease=<브랜치>:<예상 head sha> origin <브랜치>`. 예상 head sha를 꼭 붙인다. 그사이 누가 브랜치를 바꿨으면 거절된다. `--force`는 쓰지 않는다.
+- push가 거절되면 worktree를 지우지 않고 응답한다.
 - push가 끝나면 메인 checkout(프로젝트 루트)에서 `git worktree remove .claude/worktrees/<이름>`. 커밋하지 않은 변경이 남아 지워지지 않으면 `--force`를 쓰지 않고 응답한다.
 
 ## 응답 (director에게)
 
 결과는 이슈 코멘트로 쓰지 않고 응답으로만 돌려준다. director가 판정표와 맞춰 보고 PR과 이슈 기록을 맡는다.
 
-- 브랜치, push한 head sha, 커밋 sha와 제목 목록
+- 브랜치, 모드, push한 head sha, 커밋 sha와 제목 목록
 - 행마다: 옮김 / 건너뜀(이유)
 - 실행한 검사와 결과(명령과 출력 요약). 실행하지 못한 것은 못 했다고 쓴다
 - worktree를 지웠는지
 
 ## 하지 않는 것
 
-- 판정을 바꾸거나 행을 더하지 않는다. 템플릿을 직접 읽어 다시 비교하지 않는다.
+- 판정을 바꾸거나 행을 더하지 않는다. 템플릿을 직접 읽어 다시 비교하지 않는다. 지시받은 모드를 스스로 바꾸지 않는다.
 - PR을 만들거나 고치지 않는다. 이슈·PR에 코멘트하지 않는다. 라벨·Project·저장소 설정을 바꾸지 않는다. GitHub에 쓰는 일은 `git push` 하나뿐이다.
 - 머지하지 않는다. 다른 저장소에 쓰지 않는다. 플러그인을 업데이트하지 않는다.
 - 개인 리소스 정보(로컬 절대·홈 기준 경로, 임시 폴더 경로, 개인 이메일, 비밀 값)를 커밋에 넣지 않는다. 응답에도 경로는 프로젝트 루트 기준 상대 경로로 쓴다.
