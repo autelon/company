@@ -15,18 +15,36 @@ import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+const EXAMPLE_UUIDS = new Set([
+  '00000000-0000-0000-0000-000000000000',
+  'ffffffff-ffff-ffff-ffff-ffffffffffff',
+  'f81d4fae-7dec-11d0-a765-00a0c91e6bf6',
+  '123e4567-e89b-12d3-a456-426614174000',
+]);
+
+// [종류, 정규식, 허용(찾은 값 → true 면 넘김)]
 export const PATTERNS = [
   ['Notion 주소', /notion\.(com|so|site)/i],
   ['Notion 참조', /(collection|view):\/\//i],
   // macOS 홈은 대문자, Linux 홈은 소문자다. 대소문자를 가리지 않으면 API 경로(/users/{id})까지 막는다.
-  ['사용자 홈 경로', /\/Users\/|\/home\/[a-z]|[Cc]:\\[Uu]sers/],
+  // Linux 홈은 경로의 맨 앞에서만 시작한다. 앞에 호스트·경로 글자(example.com/home/...)나 HTTP 메서드(GET /home/...)가
+  // 있으면 웹 주소·라우트로 보고 넘긴다(autelon/company#28).
+  [
+    '사용자 홈 경로',
+    /\/Users\/|(?<![\w.~%-])(?<!\b(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) )\/home\/[a-z]|[Cc]:\\[Uu]sers/,
+  ],
   ['홈 기준 경로', /(^|[^A-Za-z0-9_.])~\//],
   ['임시 폴더 경로', /-Users-|\/private\/tmp\/|\/var\/folders\/|claude-[0-9]+\/|scratchpad\//],
   ['개인 메일', /@(gmail|naver|kakao|daum|hotmail|outlook|icloud|yahoo)\./i],
   // git SHA(40자)는 앞뒤가 16진수라 걸리지 않는다. 하이픈 없는 Notion ID 꼴만 잡는다.
+  // md5 같은 32자 해시도 걸린다. Notion ID 와 모양이 같아 가를 수 없다(글에는 "해시"처럼 말로 쓴다).
   ['32자리 ID', /(^|[^0-9a-f])[0-9a-f]{32}([^0-9a-f]|$)/i],
   // 하이픈 있는 Notion ID, 세션 UUID
-  ['UUID', /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i],
+  [
+    'UUID',
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    (v) => EXAMPLE_UUIDS.has(v.toLowerCase()),
+  ],
   ['GitHub 토큰', /\bgh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}/],
   [
     'API 키',
@@ -38,14 +56,17 @@ export const PATTERNS = [
 
 const mask = (s) => (s.length <= 4 ? '****' : `${s.slice(0, 4)}****`);
 
-// 걸린 것: [{ line, kind, masked }]. 찾은 값은 앞 4자만 남기고 가린다.
+// 걸린 것: [{ line, kind, masked }]. 찾은 값은 앞 4자만 남기고 가린다. 한 줄에서 종류마다 하나만 찍는다.
 export function scan(text) {
   const hits = [];
   text.split('\n').forEach((line, i) => {
-    for (const [kind, re] of PATTERNS) {
-      const m = line.match(re);
-      if (m)
+    for (const [kind, re, allow] of PATTERNS) {
+      const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
+      for (const m of line.matchAll(g)) {
+        if (allow?.(m[0])) continue;
         hits.push({ line: i + 1, kind, masked: mask(m[0].replace(/^[^0-9A-Za-z/@~:-]+/, '')) });
+        break;
+      }
     }
   });
   return hits;

@@ -102,3 +102,31 @@ test('gh 인자: create·comment 는 본문이 있어야 한다, edit 는 없어
   assert.throws(() => textsFromGhArgs(['issue', 'comment', '1']));
   assert.deepEqual(textsFromGhArgs(['issue', 'edit', '1', '--add-label', 'decision']), []);
 });
+
+// autelon/company#28: 웹 주소·라우트의 홈 경로와 예시 UUID 는 넘기고, 실제 홈 경로와 무작위 UUID 는 막는다.
+const HOME = '/ho' + 'me/';
+test('홈 경로: 웹 주소·HTTP 라우트는 통과, 경로 맨 앞의 홈은 막는다', () => {
+  assert.deepEqual(scan('https://example.com' + HOME + 'about'), []);
+  assert.deepEqual(scan('localhost:3000' + HOME + 'x'), []);
+  assert.deepEqual(scan('GET ' + HOME + 'dashboard'), []);
+  for (const bad of [
+    HOME + 'alice/dev',
+    '경로 ' + HOME + 'bob',
+    '`' + HOME + 'carol`',
+    'file://' + HOME + 'dan',
+  ]) {
+    assert.ok(kinds(bad).includes('사용자 홈 경로'), bad);
+  }
+});
+
+test('UUID: nil·예시 값은 통과, 같은 줄의 다른 UUID 는 막는다', () => {
+  const nil = ['00000000', '0000', '0000', '0000', '000000000000'].join('-');
+  const example = ['123e4567', 'e89b', '12d3', 'a456', '426614174000'].join('-');
+  const other = ['12345678', '1234', '1234', '1234', '123456789abc'].join('-');
+  assert.deepEqual(scan(nil + ' ' + example), []);
+  assert.deepEqual(kinds(example + ' ' + other), ['UUID']);
+});
+
+test('32자 해시는 Notion ID 와 가를 수 없어 막는다', () => {
+  assert.ok(kinds('md5 ' + '0123456789abcdef'.repeat(2)).includes('32자리 ID'));
+});
