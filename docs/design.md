@@ -229,5 +229,6 @@ PRD 하나 = Feature 이슈 하나. 본문 템플릿은 `plugin/templates/issues
 - [x] 이슈 작업 루프의 무인 실행 (autelon/company#25, 2026-10-04): 프로젝트 루트에서 플러그인 로드, `list_sessions`·`list_task_runs`(자기 실행 `running`)·`get_usage`·`set_session_title`, subagent, `gh` 확인. 실행 폴더는 예약 작업을 만든 세션의 폴더. 권한은 사용자 설정 `defaultMode`를 따르는 것으로 본다 **[추정]**. 결과 표는 `plugin/playbooks/routine.md` 끝
 - [x] 실행이 겹칠 때 같은 예약 작업은 다음 주기를 건너뛰고 밀린 주기를 몰아서 실행하지 않는다 (2026-10-04 시험, company#22 코멘트). 지시문의 "이전 실행이 실행 중이면 끝낸다"는 이중 장치로 둔다
 - [ ] 서로 다른 예약 작업끼리 동시에 도는가, 앱을 다시 켰을 때 밀린 실행을 몇 번 하는가
+- [ ] 무인 실행에서 앱 내장 `claude` 바이너리와 `--plugin-dir`로 머지 전 변경본을 실제로 돌릴 수 있는가. 지금 company 검증은 읽기 기반 모의 실행이다(`.claude/agents/verifier.md`, autelon/company#34)
 - [ ] subagent끼리 직접 통신이 되는가 (지금은 안 된다고 보고 메인을 거친다)
 - [x] 이슈 기록 방식 시험 운영 (poker, 2026-10-04, autelon/company#30. 남은 [미확인]은 5절과 `plugin/playbooks/issues.md`): Free 조직 Project 가용성, `project` 권한 추가, 기본 Status 선택지·화면을 API로 만들 수 있는지, `gh issue create --type/--parent/--blocked-by/--project` 실제 동작, `gh project item-list` JSON의 필드 키, role(subagent)이 검사 스크립트로 코멘트를 올리는지, 백업 응답에 하위 이슈·의존 관계가 들어 있는지, 본문·코멘트 편집 이력의 공개 범위 (`plugin/playbooks/issues.md`의 **[미확인]**)

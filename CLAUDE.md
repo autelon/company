@@ -28,6 +28,8 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/templates/routine/`             | 루틴 지시문 템플릿(프로젝트마다 채워 예약 작업 prompt로 등록)                                       |
 | `.github/workflows/ci.yml`              | 필수 검사 `check`(커밋 메시지·Prettier·스크립트 테스트)와 조직 `git-policy`                         |
 | `scripts/check-commits.sh`              | PR 범위의 커밋 메시지를 `commit-msg` 훅으로 검사                                                    |
+| `.claude/agents/`                       | company 전용 role: plugin-developer, reviewer, verifier(읽기 기반 모의 실행). 이 리포에서만 쓴다    |
+| `docs/routine-prompt.md`                | company 루틴(이슈 작업 루프) 지시문 원본. 채운 사본은 `local/routine-prompt.md`                     |
 
 ## 고칠 때 주의
 
@@ -46,3 +48,12 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 파일을 고친 뒤 `pnpm check`(Prettier 검사와 `plugin/scripts/*.test.mjs`)를 돌린다. 도구 버전은 mise가 고정한다 (`mise exec --`).
 
 `README.md`만 사람이 읽는 문서라 영어로 쓴다. 나머지 문서·주석·커밋은 한국어다.
+
+## 이슈 작업 루프 (company 루틴)
+
+이 리포도 이슈로 일한다. `agent:ready`가 붙은 이슈를 company 루틴(로컬 예약 작업, 실행 폴더 = 이 리포 루트)이 처리한다. 지시문은 `docs/routine-prompt.md`, 설계 경위는 autelon/company#34.
+
+- 플러그인은 꺼 둔다. 그래서 director 스킬·`autelon:*` role·플러그인 훅 대신 `.claude/agents/`의 company role과 지시문의 규칙을 쓴다. 보안 검토는 `plugin/agents/security-reviewer.md` 본문을 지시문으로 준다.
+- 프로젝트 director도 이 리포 이슈에 `agent:ready`를 붙일 수 있다. 그래서 한 프로젝트의 사정만으로 공통 규칙을 바꾸지 않고, BREAKING 변경은 PR까지만 올리고 `agent:needs-user`로 사람이 머지를 정한다.
+- 루틴은 머지까지만 한다. 설치된 플러그인 업데이트는 루트 세션이 머지된 PR과 이슈의 `[루틴] 처리 요약` 코멘트를 읽고 한다.
+- 지시문을 고치면 채운 사본을 다시 만들고 `update_scheduled_task`로 바꾼다(지시문은 등록할 때 복사된다).
