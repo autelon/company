@@ -20,6 +20,7 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `plugin/templates/issues/`              | 이슈 본문(task, PRD, 결정, 스프린트, first-run)과 코멘트(role 결과, 결정) 템플릿                    |
 | `plugin/scripts/finance-check.mjs`      | 재무 신호 판정                                                                                      |
 | `plugin/scripts/privacy-check.mjs`      | 개인 정보·비밀 값 검사(패턴의 원본). 이슈·PR 글은 이 스크립트의 `gh` 모드로만 올린다                |
+| `plugin/hooks/hooks.json`               | PreToolUse 훅: 검사 스크립트를 거치지 않은 gh 글쓰기를 막는다(판정은 `privacy-check.mjs hook`)      |
 | `plugin/playbooks/first-run.md`         | 설립·도입한 프로젝트에서 처음 확인할 짧은 점검 (결과는 프로젝트의 `first-run` 이슈)                 |
 | `plugin/playbooks/issues.md`            | 이슈·Project·마일스톤·백업 명령 모음                                                                |
 | `plugin/playbooks/migrate-to-issues.md` | 예전 파일 기록(board 등)을 쓰던 프로젝트를 이슈로 옮기는 절차                                       |

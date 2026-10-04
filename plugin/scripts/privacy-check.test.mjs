@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { scan, textsFromGhArgs } from './privacy-check.mjs';
+import { scan, textsFromGhArgs, bashViolation, splitCommands } from './privacy-check.mjs';
 
 const kinds = (text) => scan(text).map((h) => h.kind);
 
@@ -209,4 +209,61 @@ test('gh api: 마일스톤 만들기·고치기와 코멘트 고치기만 받고
   ]) {
     assert.throws(() => textsFromGhArgs(bad), undefined, bad.join(' '));
   }
+});
+
+// autelon/company#29: 훅은 스크립트를 거치지 않은 gh 글쓰기만 막는다.
+test('훅: 스크립트 밖 gh 글쓰기를 막는다', () => {
+  const S = 'node plugin/scripts/privacy-check.mjs';
+  for (const bad of [
+    'gh issue comment 1 -F local/c.md',
+    'gh issue create -t 제목 -b 본문',
+    'gh pr comment 3 --body x',
+    'gh issue edit 1 --title 새 제목',
+    'gh issue close 1 --comment 끝',
+    'gh pr review 2 --approve -b 좋음',
+    'gh pr merge 2 --subject x',
+    'gh label create a --description d',
+    'gh api repos/o/r/milestones -f title=x',
+    'gh api -X PATCH repos/o/r/issues/comments/9 -F body=@x.md',
+    'gh api --silent -X POST repos/o/r/issues/1/comments -f body=x',
+    "gh api graphql -f query='mutation { addComment(input:{}) { clientMutationId } }'",
+    `${S} scan x && gh issue comment 1 -b x`,
+    'cd x; gh issue comment 1 -b x',
+    'FOO=1 command gh issue comment 1 -b x',
+    'mise exec -- gh pr create -t a -b b',
+    '/usr/local/bin/gh issue comment 1 -b x',
+    'echo $(gh issue comment 1 -b x)',
+    'gh api -X GET -X PATCH repos/o/r/issues/comments/9 -f body=x',
+  ]) {
+    assert.ok(bashViolation(bad), bad);
+  }
+});
+
+test('훅: 스크립트 경유, 읽기, 글 없는 쓰기, 글 속의 명령 문자열은 통과한다', () => {
+  const S = 'node plugin/scripts/privacy-check.mjs';
+  for (const ok of [
+    `${S} gh issue comment 1 -F local/c.md`,
+    `${S} gh api repos/o/r/milestones -f title=x`,
+    'gh issue list --label agent:ready',
+    'gh issue view 1 --comments',
+    'gh issue edit 1 --add-label agent:ready --remove-label agent:needs-user',
+    'gh issue close 1 --reason completed',
+    'gh pr merge 2 --match-head-commit abc',
+    'gh pr review 2 --approve',
+    'gh api repos/o/r/issues --paginate',
+    'gh api -X PUT repos/o/r/issues/1/sub_issues -f sub_issue_id=3',
+    "gh api graphql -f query='query { viewer { login } }'",
+    "gh api graphql -f query='mutation { updateProjectV2Field(input:{}) { clientMutationId } }'",
+    'git commit -m "gh issue comment 을 스크립트로 바꿈"',
+    "echo 'gh issue comment 1 -b x' > local/note.md",
+    'cat > local/c.md <<EOF\ngh issue comment 1 -b x\nEOF\ngit status',
+    "cat <<'END'\n  gh pr create -t a -b b\nEND",
+  ]) {
+    assert.equal(bashViolation(ok), null, ok);
+  }
+});
+
+test('훅: here-document 뒤의 명령은 다시 본다', () => {
+  assert.ok(bashViolation('cat > a <<EOF\nx\nEOF\ngh issue comment 1 -b x'));
+  assert.deepEqual(splitCommands('a "b c" | d'), [['a', 'b c'], ['d']]);
 });

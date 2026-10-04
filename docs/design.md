@@ -37,7 +37,7 @@ role 단위로 일을 나눠 맡기는 멀티 에이전트 오케스트레이션
   - Desktop의 "+ → Plugins" 메뉴에는 autelon이 나오지 않았지만 스킬 자동완성에는 `autelon:*`가 보였다. 원인은 **[미확인]**.
   - 사용자는 CLI 명령을 직접 입력하지 않는다. 에이전트가 앱에 들어 있는 `claude` 바이너리로 실행하고, 사용자는 `/reload-plugins` 같은 세션 명령만 입력한다. (사용자 결정 2026-10-04)
 - `plugin.json`의 `defaultEnabled: false`는 `enabledPlugins`에 값이 없을 때 꺼진 채로 시작한다는 뜻이다. **[확인]** manifest-reference 문서. 프로젝트 settings의 `true`가 이를 이긴다. **[확인]** 2026-10-04 poker에서 enabled
-- 플러그인이 주는 것: `found-company`·`adopt-project` 스킬(설립·도입), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:security-reviewer`, 템플릿(이슈 본문·코멘트, 루틴 지시문 포함), 재무·개인 정보 검사 스크립트, playbook(first-run, 이슈 명령, 이전 절차, 루틴 등록).
+- 플러그인이 주는 것: `found-company`·`adopt-project` 스킬(설립·도입), `director` 스킬(운영 규칙), 공용 role `autelon:finance`·`autelon:security-reviewer`, 템플릿(이슈 본문·코멘트, 루틴 지시문 포함), 재무·개인 정보 검사 스크립트, 검사 스크립트 밖 gh 글쓰기를 막는 PreToolUse 훅(`plugin/hooks/hooks.json`), playbook(first-run, 이슈 명령, 이전 절차, 루틴 등록).
 - 프로젝트가 가지는 것: 프로젝트 role(`.claude/agents/`, 설립 때 기본 템플릿을 프로젝트에 맞게 고쳐 만든다), "지금 기준" 문서, 코드, 그리고 GitHub의 이슈·마일스톤·Project.
 - 프로젝트 저장소: 설립 때 found-company가 GitHub 조직(플러그인 `userConfig.github_org`)에 만들고, 조직 `.github` 저장소(`autelon/.github`)의 `git-workflow.md` 표준과 같은 저장소의 `scripts/setup-repo.sh`로 main 보호를 적용한다. 적용 전에 바뀔 값을 사람에게 보여 주고 승인받는다. (사용자 결정 2026-10-03) 표준 문서는 처음에 사용자 홈의 전역 설정에 있었고 2026-10-04에 `autelon/.github`로 옮겼다(autelon/.github#4). 첫 push는 PR이 아니므로 push 전에 security-reviewer가 로컬 `main` 전체 히스토리를 검토하고 "통과"일 때만 올린다(company#12).
 - PR 리뷰어는 프로젝트마다 정해 프로젝트 `docs/git-rules.md`에 적는다. `director`(기본값) / `reviewer role` / `사람`. 리뷰어가 머지 명령을 낸다. (사용자 결정 2026-10-03)
@@ -128,6 +128,11 @@ Project     = 사람이 보는 화면 (보드, 로드맵)
 - **쓰기 권한**: 이슈 생성, 본문·상태·필드·라벨·마일스톤 변경, 닫기는 director만. role(subagent)은 자기 task 이슈에 코멘트만 쓴다. 코멘트는 덧붙이기만 하니 role이 병렬로 써도 충돌하지 않는다. 예전의 "공유 파일은 director만, role은 자기 handoff 파일만" 원칙을 이렇게 바꿨다.
   - 그래서 코멘트를 올려야 하는 role 템플릿(po, designer, strategist)에도 Bash를 줬다. 용도는 지시문으로 검사 스크립트 실행과 지시받은 작업에 한정한다. director가 대신 올리는 안은 role이 직접 쓴다는 결정과 맞지 않아 버렸다.
 - **개인 정보 사전 검사**: 이슈·코멘트·본문 수정은 리뷰 없이 바로 공개된다. 그래서 모든 쓰기는 `plugin/scripts/privacy-check.mjs gh ...`를 거친다. 스크립트는 issue/pr의 create·edit·comment, 라벨 create·edit, `gh api`의 마일스톤 만들기·고치기와 이슈 코멘트 고치기만 받아 글을 검사하고, 통과할 때만 `gh`를 실행한다. 라벨·마일스톤·코멘트 고치기는 poker 이전에서 스크립트를 거치지 않는 글로 드러나 더했다(autelon/company#27, 사용자 결정 2026-10-04). Project·화면·선택지 이름은 GraphQL·`gh project`라 인자 모양이 다양해 받지 않고, playbook의 고정 문구만 쓴다. 표준 입력 본문은 검사할 수 없어 거절한다. 본문·코멘트 초안은 커밋하지 않는 `local/`에 쓴다.
+  - **PreToolUse 훅** (사용자 결정 2026-10-04, autelon/company#29): 플러그인이 `hooks/hooks.json`으로 Bash 훅을 주고, 판정은 `privacy-check.mjs hook`이 한다(받는 명령 목록이 스크립트 한 곳에 있게). 스크립트를 거치지 않은 gh 글쓰기면 `permissionDecision: deny`와 이유를 돌려준다. 이유: 규칙만으로는 실수로 직접 `gh issue comment`를 쓰는 것을 막지 못한다. poker에서 프로젝트 로컬 설정의 같은 훅이 메인 세션과 subagent 모두에서 막는 것을 확인했다(autelon/company#29).
+    - 플러그인 훅은 플러그인이 켜진 프로젝트에서만 돈다(이 리포처럼 켜지 않은 곳은 안 걸린다). 설정·플러그인 훅은 subagent 도구 호출에도 돈다. 훅 명령에 `${CLAUDE_PLUGIN_ROOT}`를 쓸 수 있다. **[확인]** hooks·plugins 문서
+    - 버린 안: 프로젝트 템플릿 `settings.json`에 넣기(훅 스크립트 경로가 로컬 절대 경로라 커밋할 수 없다), 규칙으로만 두기(실수를 못 막는다). 끄는 설정(userConfig)은 두지 않았다(사용자가 고른 안).
+    - 한계: 명령 문자열을 단순하게 나눠 보므로 변수에 담은 명령, `eval`, `bash -c` 안의 명령은 잡지 못한다. 강제 장치가 아니라 실수 방지다. here-document 본문과 따옴표 안의 명령 문자열(커밋 메시지 등)은 명령으로 보지 않는다.
+    - **[미확인]** 실제 세션에서 플러그인 훅이 로드되는가(이 리포에서 `--plugin-dir`로 띄워 보지 못했다. 판정은 표준 입력 JSON으로만 시험), 예약 작업(루틴) 세션에서 도는가.
   - 오탐 줄이기(autelon/company#28, 사용자 결정 2026-10-04): 웹 주소·HTTP 라우트 뒤의 홈 경로(호스트 글자나 `GET ` 같은 메서드가 앞에 있는 것)는 넘기고, 경로 맨 앞의 홈 경로는 막는다. 예시 UUID(nil, max, RFC 4122 예시, 흔한 문서 예시)는 넘긴다. 32자 해시는 Notion ID와 모양이 같아 그대로 막는다. 줄 단위 허용 표시는 남용하면 검사가 무력해져 두지 않았다. 알고 둔 한계: 홈 경로 바로 앞의 `.`도 경로 글자로 보고 넘기므로(웹 프로젝트의 `./home/...` import를 넘기려고), 상위 폴더(`..`)를 거쳐 홈 경로로 들어가는 상대 경로는 걸리지 않는다.
   - 패턴의 원본은 이 스크립트 하나다. director의 커밋 전 검사와 security-reviewer의 자동 검색도 이 스크립트를 부른다. 예전에는 같은 패턴이 두 곳에 복사돼 있었다.
   - 올라간 코멘트를 고쳐도 편집 이력이 남고, 저장소 읽기 권한이 있는 누구나 이력을 본다. 이력 삭제는 작성자·write 권한자가 웹에서만 한다. **[확인]** GitHub 문서 "Tracking changes in a comment". 이슈 본문도 편집 이력이 남는다 **[확인]** poker `userContentEdits`(autelon/company#30). 본문 이력을 보는 범위는 문서에 없어 코멘트와 같다고 본다 **[추정]**.
@@ -217,6 +222,7 @@ PRD 하나 = Feature 이슈 하나. 본문 템플릿은 `plugin/templates/issues
 - [x] `isolation: worktree`일 때 worktree 생성 위치: `.claude/worktrees/` (logistics-hub에서 실제로 생긴 위치로 확인)
 - [ ] developer worktree: worktree 안에서 `local/comments/` 초안으로 task 이슈 코멘트를 올릴 수 있는지, `memory: project`의 `.claude/agent-memory/` 경로가 메인 checkout과 worktree 중 어디로 가는지 (첫 구현 task 때 director가 first-run 이슈의 미확인 항목으로 확인)
 - [x] worktree를 쓰려면 첫 커밋이 있어야 함 (2026-10-03 첫 커밋 완료)
+- [ ] 플러그인 PreToolUse 훅(`plugin/hooks/hooks.json`)이 실제 세션·subagent·예약 작업 세션에서 도는가 (autelon/company#29. 판정 로직은 테스트로 확인)
 - [ ] 이슈 작업 루프의 무인 실행 (company#22 할 일 4, 수동 실행용 시험 예약 작업으로 확인): 세션 목록·이전 실행 조회(`list_sessions`, `list_task_runs`, 자기 실행이 `running`으로 나오는가), subagent, `gh`, `get_usage`, `set_session_title`, 권한 모드와 권한 요청 처리, 프로젝트 폴더에서 플러그인이 로드되는가. 확인 목록은 `plugin/playbooks/routine.md` 끝
 - [x] 실행이 겹칠 때 같은 예약 작업은 다음 주기를 건너뛰고 밀린 주기를 몰아서 실행하지 않는다 (2026-10-04 시험, company#22 코멘트). 지시문의 "이전 실행이 실행 중이면 끝낸다"는 이중 장치로 둔다
 - [ ] 서로 다른 예약 작업끼리 동시에 도는가, 앱을 다시 켰을 때 밀린 실행을 몇 번 하는가
