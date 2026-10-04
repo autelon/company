@@ -1,6 +1,6 @@
 # autelon
 
-role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그인으로 만드는 리포. GitHub `autelon/company`. 플러그인·마켓플레이스 이름은 `autelon`이라 스킬과 공용 role은 `autelon:<이름>`으로 부른다. 설계는 `docs/design.md`, 결정 기록은 `docs/decisions.md`.
+role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그인으로 만드는 리포. GitHub `autelon/company`. 플러그인·마켓플레이스 이름은 `autelon`이라 스킬과 공용 role은 `autelon:<이름>`으로 부른다. 설계는 `docs/design.md`. 이 리포의 결정 기록은 이슈다: 어느 이슈에도 속하지 않는 결정은 `decision` 라벨 이슈, 이슈에서 나온 결정은 그 이슈의 결정 코멘트(`gh issue list -R autelon/company --label decision --state all`).
 
 이 리포는 "회사의 운영 방식"만 담는다. 실제 프로젝트는 각자 별도 repo이고, 그 repo에서 이 플러그인을 켜서 쓴다.
 프로젝트끼리는 role, repo, 이슈, Project가 모두 독립이다. 프로젝트의 기록(task, PRD, 결정, 인계)은 그 저장소의 GitHub 이슈와 Project에 두고, 저장소에는 "지금 기준" 문서만 둔다.
