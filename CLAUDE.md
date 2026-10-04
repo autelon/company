@@ -12,7 +12,7 @@ role 단위 멀티 에이전트 오케스트레이션을 Claude Code 플러그�
 | `.claude-plugin/marketplace.json`       | 이 리포를 로컬 마켓플레이스로 등록할 때 쓰는 목록                                                   |
 | `plugin/`                               | 플러그인 본체                                                                                       |
 | `plugin/skills/found-company/`          | 프로젝트 설립: role 설계, 기준 문서, GitHub 저장소, 이슈 라벨·Project·스프린트 이슈                 |
-| `plugin/skills/adopt-project/`          | 기존 프로젝트 도입: 기존 문서 유지, 도메인 전문가 role, 작업 방식 비교                              |
+| `plugin/skills/adopt-project/`          | 기존 프로젝트 도입: 기존 문서 유지, 도메인 전문가 role, director 운영으로 바뀌는 것 알리기          |
 | `plugin/skills/director/`               | director 운영 규칙 (프로젝트 CLAUDE.md가 세션 시작 시 부른다)                                       |
 | `plugin/agents/`                        | 모든 프로젝트가 같이 쓰는 공용 role: finance, security-reviewer(모든 PR·작업 단위별 이슈 보안 검토) |
 | `plugin/templates/roles/`               | 프로젝트 role의 기본 템플릿. 설립 때 프로젝트에 맞게 고쳐서 복사된다                                |
