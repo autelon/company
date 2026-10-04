@@ -32,7 +32,7 @@ tools: Read, Edit, Write, Glob, Grep, Bash
 frontmatter의 격리 설정에 기대지 않는다. 자기 작업 폴더를 직접 만들고, 그 안에서만 고친다. 메인 checkout은 건드리지 않는다.
 
 1. 프로젝트 루트에서 `git fetch origin`
-2. 모드에 맞춰 브랜치를 준비한다. 같은 경로에 worktree가 이미 있으면 어느 모드든 지우지 않고 멈추고 응답한다(앞 실행이 남긴 것일 수 있다). 로컬 브랜치와 `origin/<브랜치>`가 둘 다 있는데 가리키는 커밋이 다르면 어느 모드든 멈추고 응답한다.
+2. 모드에 맞춰 브랜치를 준비한다. 같은 경로에 worktree가 이미 있으면 어느 모드든 지우지 않고 멈추고 응답한다(앞 실행이 남긴 것일 수 있다). `새로`·`이어서`에서 로컬 브랜치와 `origin/<브랜치>`가 둘 다 있는데 가리키는 커밋이 다르면 멈추고 응답한다. `다시 만들기`는 이 검사를 하지 않는다(로컬 브랜치를 `-B`로 다시 놓으므로, 사람이 PR 화면의 "Update branch"로 origin만 바꾼 경우에도 다시 만들 수 있다). 대신 아래 예상 head sha 검사를 한다.
    - `새로`: 로컬 브랜치와 `origin/<브랜치>`가 둘 다 없어야 한다(있으면 멈추고 응답). `git worktree add -b <브랜치> .claude/worktrees/<이름> origin/main`
    - `이어서`: 로컬 브랜치가 있으면 `git worktree add .claude/worktrees/<이름> <브랜치>`, 로컬에는 없고 `origin/<브랜치>`만 있으면 `git worktree add --track -b <브랜치> .claude/worktrees/<이름> origin/<브랜치>`. 둘 다 없으면 멈추고 응답한다.
    - `다시 만들기`: `git rev-parse origin/<브랜치>`가 지시받은 예상 head sha와 같아야 한다(다르면 멈추고 응답). `git worktree add -B <브랜치> .claude/worktrees/<이름> origin/main`으로 브랜치를 `origin/main`에 다시 놓고, 옮길 행을 처음부터 모두 옮긴다.
