@@ -6,8 +6,10 @@
 //   node privacy-check.mjs scan [파일|-]       파일(기본: 표준 입력)을 검사한다. 걸리면 위치를 찍고 1로 끝난다.
 //   node privacy-check.mjs gh <gh 인자...>      제목·본문을 검사하고, 통과하면 그 gh 명령을 그대로 실행한다.
 //
-// gh 모드는 이슈·PR의 제목·본문·코멘트를 올리는 유일한 통로다. 이슈와 코멘트는 리뷰 없이 바로 공개되므로
-// 올리기 전에 막아야 한다. 받는 명령: issue create|edit|comment, pr create|edit|comment.
+// gh 모드는 이슈·PR의 제목·본문·코멘트와 그 밖의 공개 글을 올리는 유일한 통로다. 이슈와 코멘트는 리뷰 없이 바로
+// 공개되므로 올리기 전에 막아야 한다. 받는 명령: issue create|edit|comment, pr create|edit|comment,
+// label create|edit(이름·설명), api 의 마일스톤 만들기·고치기(repos/<o>/<r>/milestones[/<n>])와
+// 이슈 코멘트 고치기(-X PATCH repos/<o>/<r>/issues/comments/<id>). api 는 아래 플래그만 받는다(autelon/company#27).
 // 본문은 -F/--body-file 파일이나 -b/--body 문자열로만 받는다. 검사할 수 없는 곳에서 글을 가져오는 플래그
 // (표준 입력 -F -, 편집기, 브라우저, 템플릿, --fill, --recover), 코멘트 삭제(--delete-last), 묶어 쓴 짧은 플래그는 거절한다.
 // create·comment 는 본문이 없으면 대화형 입력으로 넘어가므로 본문을 꼭 받고, create 는 제목(-t)도 받는다.
@@ -15,18 +17,38 @@ import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
+// 널리 쓰는 예시 UUID. 세션 UUID 와 구별되지 않는 무작위 값은 그대로 막는다.
+// nil·max(RFC 9562), RFC 4122 본문의 예시, 문서·튜토리얼에 흔한 예시.
+const EXAMPLE_UUIDS = new Set([
+  '00000000-0000-0000-0000-000000000000',
+  'ffffffff-ffff-ffff-ffff-ffffffffffff',
+  'f81d4fae-7dec-11d0-a765-00a0c91e6bf6',
+  '123e4567-e89b-12d3-a456-426614174000',
+]);
+
+// [종류, 정규식, 허용(찾은 값 → true 면 넘김)]
 export const PATTERNS = [
   ['Notion 주소', /notion\.(com|so|site)/i],
   ['Notion 참조', /(collection|view):\/\//i],
   // macOS 홈은 대문자, Linux 홈은 소문자다. 대소문자를 가리지 않으면 API 경로(/users/{id})까지 막는다.
-  ['사용자 홈 경로', /\/Users\/|\/home\/[a-z]|[Cc]:\\[Uu]sers/],
+  // Linux 홈은 경로의 맨 앞에서만 시작한다. 앞에 호스트·경로 글자(example.com/home/...)나 HTTP 메서드(GET /home/...)가
+  // 있으면 웹 주소·라우트로 보고 넘긴다(autelon/company#28).
+  [
+    '사용자 홈 경로',
+    /\/Users\/|(?<![\w.~%-])(?<!\b(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS) )\/home\/[a-z]|[Cc]:\\[Uu]sers/,
+  ],
   ['홈 기준 경로', /(^|[^A-Za-z0-9_.])~\//],
   ['임시 폴더 경로', /-Users-|\/private\/tmp\/|\/var\/folders\/|claude-[0-9]+\/|scratchpad\//],
   ['개인 메일', /@(gmail|naver|kakao|daum|hotmail|outlook|icloud|yahoo)\./i],
   // git SHA(40자)는 앞뒤가 16진수라 걸리지 않는다. 하이픈 없는 Notion ID 꼴만 잡는다.
+  // md5 같은 32자 해시도 걸린다. Notion ID 와 모양이 같아 가를 수 없다(글에는 "해시"처럼 말로 쓴다).
   ['32자리 ID', /(^|[^0-9a-f])[0-9a-f]{32}([^0-9a-f]|$)/i],
   // 하이픈 있는 Notion ID, 세션 UUID
-  ['UUID', /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i],
+  [
+    'UUID',
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+    (v) => EXAMPLE_UUIDS.has(v.toLowerCase()),
+  ],
   ['GitHub 토큰', /\bgh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}/],
   [
     'API 키',
@@ -38,14 +60,17 @@ export const PATTERNS = [
 
 const mask = (s) => (s.length <= 4 ? '****' : `${s.slice(0, 4)}****`);
 
-// 걸린 것: [{ line, kind, masked }]. 찾은 값은 앞 4자만 남기고 가린다.
+// 걸린 것: [{ line, kind, masked }]. 찾은 값은 앞 4자만 남기고 가린다. 한 줄에서 종류마다 하나만 찍는다.
 export function scan(text) {
   const hits = [];
   text.split('\n').forEach((line, i) => {
-    for (const [kind, re] of PATTERNS) {
-      const m = line.match(re);
-      if (m)
+    for (const [kind, re, allow] of PATTERNS) {
+      const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
+      for (const m of line.matchAll(g)) {
+        if (allow?.(m[0])) continue;
         hits.push({ line: i + 1, kind, masked: mask(m[0].replace(/^[^0-9A-Za-z/@~:-]+/, '')) });
+        break;
+      }
     }
   });
   return hits;
@@ -78,13 +103,16 @@ const OTHER_VALUE_SHORT = new Set(['a', 'A', 'B', 'H', 'l', 'm', 'p', 'r', 'R'])
 // 본문 없이 실행하면 대화형 입력으로 넘어가는 명령
 const NEEDS_BODY = new Set(['create', 'comment']);
 
+const ACCEPTED =
+  'issue create|edit|comment, pr create|edit|comment, label create|edit, api(마일스톤, 이슈 코멘트 고치기)';
+
 // gh 인자에서 검사할 글을 뽑는다: [{ source, text }]. 검사를 거치지 않는 형태면 Error.
 export function textsFromGhArgs(args) {
   const [group, sub] = args;
+  if (group === 'label' && (sub === 'create' || sub === 'edit')) return labelTexts(args);
+  if (group === 'api') return apiTexts(args);
   if (!GH_ALLOWED[group]?.includes(sub)) {
-    throw new Error(
-      `받지 않는 명령: gh ${group ?? ''} ${sub ?? ''}. issue create|edit|comment, pr create|edit|comment 만 받는다`,
-    );
+    throw new Error(`받지 않는 명령: gh ${group ?? ''} ${sub ?? ''}. ${ACCEPTED} 만 받는다`);
   }
   const texts = [];
   const take = (flag, value) => {
@@ -132,6 +160,133 @@ export function textsFromGhArgs(args) {
     throw new Error(
       `gh ${group} ${sub} 는 -b 나 -F 로 본문을 넘겨야 한다(없으면 대화형 입력으로 넘어간다)`,
     );
+  }
+  return texts;
+}
+
+// label·api 처럼 받는 플래그가 정해진 명령의 인자를 나눈다. spec: { 긴 이름: { short, value } }.
+// 목록에 없는 플래그, --, 묶어 쓴 짧은 플래그는 거절한다. 돌려주는 것: { flags: [[긴 이름, 값]], positional: [] }
+function parseStrict(args, spec, label) {
+  const byShort = Object.fromEntries(
+    Object.entries(spec)
+      .filter(([, v]) => v.short)
+      .map(([k, v]) => [v.short, k]),
+  );
+  const flags = [];
+  const positional = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--') throw new Error('-- 뒤의 인자는 검사하지 않으므로 받지 않는다');
+    let name;
+    let attached;
+    if (arg.startsWith('--')) {
+      const eq = arg.indexOf('=');
+      name = eq > 0 ? arg.slice(0, eq) : arg;
+      attached = eq > 0 ? arg.slice(eq + 1) : undefined;
+      if (!spec[name]) throw new Error(`${label} 에서 ${name} 는 받지 않는다`);
+    } else if (arg.startsWith('-') && arg.length >= 2) {
+      name = byShort[arg[1]];
+      if (!name) throw new Error(`${label} 에서 -${arg[1]} 는 받지 않는다`);
+      if (arg.length > 2) {
+        if (!spec[name].value)
+          throw new Error(`묶어 쓴 짧은 플래그(${arg})는 받지 않는다. 하나씩 나눠 쓴다`);
+        attached = arg.slice(2).replace(/^=/, '');
+      }
+    } else {
+      positional.push(arg);
+      continue;
+    }
+    if (spec[name].value) {
+      const value = attached ?? args[++i];
+      if (value === undefined) throw new Error(`${name} 뒤에 값이 없다`);
+      flags.push([name, value]);
+    } else {
+      if (attached !== undefined) throw new Error(`${name} 는 값을 받지 않는다`);
+      flags.push([name, true]);
+    }
+  }
+  return { flags, positional };
+}
+
+const LABEL_SPEC = {
+  '--color': { short: 'c', value: true },
+  '--description': { short: 'd', value: true },
+  '--name': { short: 'n', value: true },
+  '--force': { short: 'f', value: false },
+  '--repo': { short: 'R', value: true },
+};
+
+// gh label create|edit <이름>: 라벨 이름, 새 이름(-n), 설명(-d)을 검사한다.
+function labelTexts(args) {
+  const sub = args[1];
+  const { flags, positional } = parseStrict(args.slice(2), LABEL_SPEC, `gh label ${sub}`);
+  if (positional.length !== 1) throw new Error(`gh label ${sub} 는 라벨 이름 하나를 받는다`);
+  if (sub === 'create' && flags.some(([f]) => f === '--name'))
+    throw new Error('gh label create 는 --name 을 받지 않는다');
+  if (sub === 'edit' && flags.some(([f]) => f === '--force'))
+    throw new Error('gh label edit 는 --force 를 받지 않는다');
+  const texts = [{ source: '라벨 이름', text: positional[0] }];
+  for (const [f, v] of flags) {
+    if (f === '--description' || f === '--name') texts.push({ source: f, text: v });
+  }
+  return texts;
+}
+
+const API_SPEC = {
+  '--method': { short: 'X', value: true },
+  '--raw-field': { short: 'f', value: true },
+  '--field': { short: 'F', value: true },
+  '--jq': { short: 'q', value: true },
+  '--silent': { value: false },
+};
+// 저장소 이름 자리에 ?·# 같은 글자가 들어가 다른 자원으로 가지 않게 GitHub 이름 글자만 받는다.
+const MILESTONE_PATH = /^\/?repos\/[\w.-]+\/[\w.-]+\/milestones(\/\d+)?$/;
+const COMMENT_PATH = /^\/?repos\/[\w.-]+\/[\w.-]+\/issues\/comments\/\d+$/;
+
+// gh api: 마일스톤 만들기·고치기와 이슈 코멘트 고치기만 받는다. 필드 값을 모두 검사한다.
+// -F key=@파일 은 파일 내용을 검사하고, 표준 입력(@-)과 --input 은 받지 않는다.
+function apiTexts(args) {
+  const { flags, positional } = parseStrict(args.slice(1), API_SPEC, 'gh api');
+  if (positional.length !== 1) throw new Error('gh api 는 엔드포인트 하나를 받는다');
+  const endpoint = positional[0];
+  const fields = flags.filter(([f]) => f === '--raw-field' || f === '--field');
+  // gh 는 -X 를 여러 번 주면 마지막 값을 쓴다. 검사한 메서드와 실제 메서드가 갈리지 않게 한 번만 받는다.
+  if (flags.filter(([f]) => f === '--method').length > 1)
+    throw new Error('gh api 의 -X/--method 는 한 번만 쓴다');
+  const method = (
+    flags.find(([f]) => f === '--method')?.[1] ?? (fields.length ? 'POST' : 'GET')
+  ).toUpperCase();
+  if (!fields.length)
+    throw new Error(
+      'gh api 는 글을 쓰는 호출(필드가 있는 호출)만 받는다. 읽기는 스크립트 없이 한다',
+    );
+  if (MILESTONE_PATH.test(endpoint)) {
+    const isItem = /\/\d+$/.test(endpoint);
+    if (method !== (isItem ? 'PATCH' : 'POST'))
+      throw new Error(
+        `마일스톤은 ${isItem ? 'PATCH .../milestones/<번호>' : 'POST .../milestones'} 만 받는다`,
+      );
+  } else if (COMMENT_PATH.test(endpoint)) {
+    if (method !== 'PATCH') throw new Error('이슈 코멘트는 -X PATCH 로 고치는 것만 받는다');
+  } else {
+    throw new Error(
+      `받지 않는 api 엔드포인트: ${endpoint}. 마일스톤과 이슈 코멘트 고치기만 받는다`,
+    );
+  }
+  const texts = [];
+  for (const [f, kv] of fields) {
+    const eq = kv.indexOf('=');
+    if (eq <= 0) throw new Error(`${f} 는 key=value 꼴이어야 한다`);
+    const key = kv.slice(0, eq);
+    const value = kv.slice(eq + 1);
+    if (f === '--field' && value.startsWith('@')) {
+      const file = value.slice(1);
+      if (file === '-' || file === '')
+        throw new Error('표준 입력 값(@-)은 검사할 수 없다. 파일로 넘긴다');
+      texts.push({ source: file, text: readFileSync(file, 'utf8') });
+    } else {
+      texts.push({ source: key, text: value });
+    }
   }
   return texts;
 }

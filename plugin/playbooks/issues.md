@@ -13,17 +13,23 @@ director 스킬, found-company, adopt-project가 가리키는 명령 모음이�
 
 ## 1. 쓰기는 모두 검사 스크립트를 거친다
 
-이슈·PR의 제목·본문·코멘트를 올리거나 고치는 명령은 `gh` 앞에 `node <S>`를 붙인다. 스크립트가 제목과 본문 파일을 검사하고 통과할 때만 그 `gh` 명령을 실행한다.
+공개되는 글을 쓰는 명령은 `gh` 앞에 `node <S>`를 붙인다. 스크립트가 글을 검사하고 통과할 때만 그 `gh` 명령을 그대로 실행한다. 받는 명령은 이슈·PR의 create·edit·comment, 라벨 만들기·고치기, 마일스톤 만들기·고치기, 이슈 코멘트 고치기다(autelon/company#27).
 
 ```
 node <S> gh issue comment <N> -R <o>/<r> -F local/comments/<N>-<role>.md
 node <S> gh issue create -R <o>/<r> --type Task --title "<제목>" -F local/issues/<이름>.md
 node <S> gh issue edit <N> -R <o>/<r> -F local/issues/<N>.md
+node <S> gh label create <이름> -R <o>/<r> --color <색> --description "<설명>"
+node <S> gh api repos/<o>/<r>/milestones -f title="<제목>" -f description="<설명>"
+node <S> gh api -X PATCH repos/<o>/<r>/issues/comments/<코멘트 id> -F body=@local/comments/<파일>.md
 ```
 
 - 본문은 파일로 넘긴다(`-F`). 표준 입력(`-F -`), `-e/--editor`, `-w/--web`, `-T/--template`, `-f/--fill*`, `--recover`, `--delete-last`, 묶어 쓴 짧은 플래그(`-dw`)는 거절된다. create·comment는 본문이, create는 제목(`-t`)도 없으면 거절된다(커밋 메시지나 대화형 입력에서 채워지지 않게). 파일은 커밋하지 않는 `local/` 아래에 쓴다(`local/comments/`, `local/issues/`).
 - 이슈에 라벨·마일스톤을 달거나 상태만 바꾸는 명령(`--add-label`, `close`)은 글이 없으니 스크립트 없이 실행해도 된다.
-- 스크립트가 받지 않는 글(라벨 설명, 마일스톤 제목·설명, Project·화면·선택지 이름)은 올리기 전에 `node <S> scan <파일>`(또는 표준 입력 `-`)에 넣어 통과를 확인한다. 라벨·Project·화면·선택지 이름은 이 playbook의 고정 문구만 쓴다.
+- 라벨(`gh label create|edit`)은 이름·새 이름·설명을 검사한다. 받는 플래그는 `-c/--color`, `-d/--description`, `-n/--name`(edit), `-f/--force`(create), `-R/--repo`뿐이다.
+- `gh api`는 두 가지만 받는다: 마일스톤 만들기(`POST repos/<o>/<r>/milestones`)·고치기(`-X PATCH .../milestones/<번호>`), 이슈 코멘트 고치기(`-X PATCH repos/<o>/<r>/issues/comments/<id>`). 받는 플래그는 `-X`, `-f/--raw-field`, `-F/--field`, `-q/--jq`, `--silent`이고 필드 값을 모두 검사한다. 본문은 `-F body=@<파일>`로 넘긴다(표준 입력 `@-`, `--input`은 거절된다). 그 밖의 `gh api` 쓰기(GraphQL 포함)는 받지 않는다.
+- 마지막이 아닌 코멘트를 고칠 때: `gh api repos/<o>/<r>/issues/<N>/comments --jq '.[] | {id, created_at}'`로 코멘트 id를 찾고, 고친 글을 `local/comments/`에 써서 위 `-X PATCH` 명령으로 올린다. 마지막 코멘트는 `gh issue comment --edit-last -F`로도 된다.
+- 스크립트가 받지 않는 글은 Project·화면·Status 선택지 이름뿐이다(`gh project`, GraphQL). 이 playbook의 고정 문구만 쓰고, 다른 이름이 필요하면 올리기 전에 `node <S> scan <파일>`(또는 표준 입력 `-`)에 넣어 통과를 확인한다.
 - 걸리면 위치와 종류만 찍고 올리지 않는다. 값을 고쳐 다시 실행한다. 패턴 설명이 필요한 글은 "사용자 홈 경로"처럼 말로 쓴다.
 - 이미 올라간 코멘트를 고쳐도 편집 이력에 이전 내용이 남고, 저장소 읽기 권한이 있는 누구나(public이면 모두) 그 이력을 볼 수 있다. 이력에서 지우는 것은 작성자와 write 권한자가 웹에서만 할 수 있다(GraphQL에 이력 삭제 mutation이 없다) **[확인]** GitHub 문서 "Tracking changes in a comment". 이슈 본문도 편집 이력이 남는다 **[확인]** autelon/poker#9 의 GraphQL `userContentEdits`. 본문 이력을 누가 볼 수 있는지는 문서가 따로 말하지 않는다. 코멘트와 같다고 본다 **[추정]**. 그래서 올리기 전에 막는다.
 
@@ -37,11 +43,11 @@ node <S> gh issue edit <N> -R <o>/<r> -F local/issues/<N>.md
 ### 라벨
 
 ```
-gh label create decision  -R <o>/<r> --color 5319E7 --description "어느 이슈에도 속하지 않는 결정"
-gh label create sprint    -R <o>/<r> --color 0E8A16 --description "현재 스프린트(director 인계)"
-gh label create first-run -R <o>/<r> --color FBCA04 --description "설립·도입 뒤 첫 점검"
-gh label create agent:ready      -R <o>/<r> --color 1D76DB --description "루틴이 처리할 이슈"
-gh label create agent:needs-user -R <o>/<r> --color D93F0B --description "사람의 결정이 필요함(루틴은 건너뜀)"
+node <S> gh label create decision  -R <o>/<r> --color 5319E7 --description "어느 이슈에도 속하지 않는 결정"
+node <S> gh label create sprint    -R <o>/<r> --color 0E8A16 --description "현재 스프린트(director 인계)"
+node <S> gh label create first-run -R <o>/<r> --color FBCA04 --description "설립·도입 뒤 첫 점검"
+node <S> gh label create agent:ready      -R <o>/<r> --color 1D76DB --description "루틴이 처리할 이슈"
+node <S> gh label create agent:needs-user -R <o>/<r> --color D93F0B --description "사람의 결정이 필요함(루틴은 건너뜀)"
 ```
 
 - `agent:ready`·`agent:needs-user`는 이슈 작업 루프의 라벨이다(director 스킬 "이슈 작업 루프", `playbooks/routine.md`). 라벨이 없는 이슈는 사람이 쓰는 중인 초안으로 본다. 사람이 `agent:needs-user` 이슈에 답하면 `agent:ready`로 바꾼다.
@@ -122,10 +128,11 @@ gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>)
 
 ### 마일스톤
 
-`gh`에 마일스톤 명령이 없어 API를 쓴다. 제목·설명은 검사 스크립트를 거치지 않으므로 올리기 전에 `node <S> scan`에 넣어 본다(1절).
+`gh`에 마일스톤 명령이 없어 API를 쓴다. 제목·설명이 공개되므로 검사 스크립트로 올린다(1절).
 
 ```
-gh api repos/<o>/<r>/milestones -f title="M-01 <이름>" -f due_on="2026-11-01T00:00:00Z" -f description="<한 줄>"
+node <S> gh api repos/<o>/<r>/milestones -f title="M-01 <이름>" -f due_on="2026-11-01T00:00:00Z" -f description="<한 줄>"
+node <S> gh api -X PATCH repos/<o>/<r>/milestones/<번호> -f state=closed
 ```
 
 ### 고정 이슈
