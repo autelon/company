@@ -10,7 +10,7 @@ director 스킬, found-company, adopt-project가 가리키는 명령 모음이�
 - 이슈·라벨·마일스톤은 지금 토큰의 `repo` 권한으로 된다.
 - `gh project`는 토큰에 `project` 권한이 필요하다. `gh auth status`의 Token scopes에 `project`가 없으면 멈추고 사람에게 알린다. 사람이 허락하면 에이전트가 `gh auth refresh -h github.com -s project`를 실행하고, 사람은 브라우저에서 승인만 한다. 사용자는 CLI를 직접 입력하지 않는다.
 - `gh issue create --project`는 `project` 권한이 있는 토큰으로 된다 **[확인]** poker. `project` 권한 없이 되는지는 **[미확인]**(poker·logistics-hub 모두 권한이 먼저 있었다).
-- GraphQL 한도는 시간당 5,000 포인트다(GitHub 문서). 한 기기의 세션들은 같은 gh 토큰을 쓰므로 이 한도를 같이 쓴다. **`gh project` 하위 명령(`item-edit`, `item-list`, `field-list` 등)은 호출 한 번에 약 100 포인트를 쓴다.** 같은 일을 GraphQL로 직접 부르면(3절 "Project 필드 고치기"의 id 방식) 1 포인트 안팎이다.
+- GraphQL 한도는 시간당 5,000 포인트다(GitHub 문서). 한도가 토큰 단위인지 계정 단위인지는 **[미확인]**이다. 적어도 한 기기의 세션들은 같은 gh 토큰을 쓰므로 이 한도를 같이 쓴다. **`gh project` 하위 명령(`item-edit`, `item-list`, `field-list` 등)은 호출 한 번에 약 100 포인트를 쓴다.** 같은 일을 GraphQL로 직접 부르면(3절 "Project 필드 고치기"의 id 방식) 1 포인트 안팎이다.
   - 근거: logistics-hub 이전(2026-10-04, autelon/company#43)에서 `gh project` 하위 명령 호출 앞뒤의 `rateLimit { used }` 차이가 약 100~103이었고, `item-edit --url` 40번 남짓에 한 시간 한도가 바닥났다. 그 측정에는 같은 계정의 다른 세션 사용이 섞였을 수 있다. 같은 날 poker Project를 읽기만 해서 다시 쟀다: `gh project field-list` 약 100(앞뒤 차이), 필드·선택지 id를 읽는 GraphQL과 이슈의 Project 항목 id를 읽는 GraphQL은 각각 `rateLimit { cost }` 1. id 방식 mutation도 거의 들지 않았다(logistics-hub).
   - 가늠: GraphQL 포인트 ≈ 100 × (`gh project` 하위 명령 호출 수) + 1 × (직접 부른 GraphQL 수). 예: 이슈 40개에 필드 두 개씩을 `item-edit`로 고치면 약 8,000 포인트로 한 시간 한도를 넘고, id 방식이면 항목 id 조회를 더해도 120 안팎이다. `gh issue`·`gh pr` 명령이 GraphQL을 얼마나 쓰는지는 **[미확인]**이다.
   - 지금 남은 양: `gh api graphql -f query='{ rateLimit { used remaining resetAt } }'`. GraphQL 질의에 `rateLimit { cost }`를 넣으면 그 질의의 비용만 나온다(다른 세션 사용이 섞이지 않는다).
@@ -118,7 +118,7 @@ gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>)
 
 워크플로는 API로 켜거나 고칠 수 없다. 조회는 되지만 mutation은 `deleteProjectV2Workflow`뿐이다 **[확인]** poker. 새 Project가 어떤 워크플로를 켠 채로 시작하는지는 일정하지 않다: poker는 Auto-add sub-issues 하나, logistics-hub는 여섯 개(Auto-add sub-issues, Auto-close issue, Item added, Item closed, Pull request linked, Pull request merged)가 켜진 채로 시작했다 **[확인]** 2026-10-04. 그래서 **Project를 만든 직후 아래 GraphQL로 `enabled`를 읽고**, 기준표와 다른 것을 director가 브라우저 도구로 끄거나 켠다. 바꾼 뒤 같은 GraphQL로 다시 확인한다 **[확인]** 2026-10-04 poker·logistics-hub Project(대상 값은 나오지 않는다).
 
-- Status 선택지를 바꾸기 전에 워크플로 화면에서 켜진 워크플로의 대상 값을 봐 두면, 바꾼 뒤 같은 화면에서 대상이 그대로인지 바로 비교할 수 있다(logistics-hub에서 이렇게 확인했다).
+- 순서: Project를 만든 직후 `enabled`를 읽고 웹 워크플로 화면에서 켜진 워크플로의 대상 값을 봐 둔다 → Status 선택지를 바꾼다(위) → 웹 설정에서 기준표대로 끄고 켜고 대상 값을 고른다(기준값 `backlog` 등은 선택지를 바꾼 뒤에야 있다). 봐 둔 대상과 비교하면 id 유지 이름 변경 뒤 대상이 그대로인지 바로 알 수 있다(logistics-hub에서 이렇게 확인했다).
 
 ```
 gh api graphql -f query='{ organization(login:"<조직>"){ projectV2(number:<P>){ workflows(first:20){ nodes{ name enabled } } } } }'
@@ -229,7 +229,13 @@ gh api graphql -f query='mutation($p:ID!,$i:ID!,$f:ID!,$d:Date!){ updateProjectV
 ```
 
 - `updateProjectV2ItemFieldValue`로 고치면 비용이 거의 들지 않는다 **[확인]** logistics-hub(autelon/company#43). 입력 필드 이름은 GraphQL 스키마 조회로 확인했고, 위 명령 꼴은 훅이 통과시킨다(글을 쓰는 mutation이 아니다. 1절). 위 명령을 이 꼴 그대로 실행한 것은 **[미확인]**.
-- id는 개인 정보가 아니지만 커밋하지 않는 `local/`에만 둔다(`local/status-options.json`과 같다). 고친 뒤에는 item-list 한 번(약 100 포인트)이나 위 항목 조회로 값을 확인한다.
+- id는 개인 정보가 아니지만 커밋하지 않는 `local/`에만 둔다(`local/status-options.json`과 같다).
+- 고친 뒤 값은 아래 조회(이슈 하나, `rateLimit { cost }` 1)나 item-list 한 번(약 100 포인트)으로 확인한다. 아래 조회는 단일 선택 필드 값이 나오는 것을 확인했다 **[확인]** 2026-10-04 poker 이슈 읽기 전용 조회. 날짜 값이 있는 항목에서 `date`가 나오는지는 **[미확인]**(조회한 항목에 날짜 값이 없었다).
+
+```
+gh api graphql -f query='{ repository(owner:"<o>", name:"<r>"){ issue(number:<N>){ projectItems(first:10){ nodes{ project{ number } fieldValues(first:20){ nodes{ ... on ProjectV2ItemFieldSingleSelectValue { name field{ ... on ProjectV2FieldCommon { name } } } ... on ProjectV2ItemFieldDateValue { date field{ ... on ProjectV2FieldCommon { name } } } } } } } } } }'
+```
+
 - Project에 들어 있지 않은 이슈는 항목 조회가 비어 나온다. 먼저 `gh project item-add <P> --owner <조직> --url <이슈 URL>`로 넣는다(이슈를 만들 때는 `--project`).
 
 ### 닫기

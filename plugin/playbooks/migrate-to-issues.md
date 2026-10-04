@@ -8,7 +8,7 @@
 - **사람의 승인을 받는다.** 이슈는 한 번 만들면 지우기 어렵고(삭제는 되돌릴 수 없다), 코멘트는 바로 공개된다. 아래 "원래 파일 처리"의 선택지도 이때 함께 묻는다.
 - 공개 범위: 옮기는 기록은 이미 저장소에 커밋돼 공개돼 있으므로, public 저장소의 이슈로 옮겨도 공개 범위는 같다(사용자 판단 2026-10-04). private 저장소면 이슈도 private이다.
 - 권한: `gh auth status`에 `project` 권한이 있어야 한다(playbook 0절).
-- 진행 중인 일을 마무리한다: 열린 PR, `in_progress` task, 승인 대기 handoff. 이전 중에 role을 부르지 않는다.
+- 진행 중인 일을 마무리한다: 열린 PR, `in_progress` task, 승인 대기 handoff. 이전 중에 role을 부르지 않는다. 그래서 이전 중에 만드는 이슈에는 `agent:ready`를 붙이지 않는다(루틴이 등록돼 있으면 role을 부른다. 10단계).
 - API 한도: REST·GraphQL 각각 시간당 5,000. task·handoff·결정 행 수를 먼저 세고 playbook 0절의 가늠식으로 GraphQL 포인트를 셈한다. `gh project` 하위 명령은 호출당 약 100 포인트라, 이름 방식(`item-edit --url`)으로 이슈 40개 남짓에 필드 두세 개씩 고치면 한 시간 한도를 넘는다(logistics-hub 사례, autelon/company#43. 같은 계정의 다른 세션 사용이 섞였을 수 있다). 그래서 이전의 Project 필드는 id 방식(playbook 3절 "Project 필드 고치기")으로 고치고, `gh project` 하위 명령은 확인용으로만 몇 번 쓴다. 그래도 많으면 나눠서 한다.
 - 대응표: 예전 ID(T-0001, PRD-001, M-01)와 새 이슈 번호의 대응을 `local/migration/ids.json`(커밋하지 않음)에 쌓는다. 본문·코멘트 속의 예전 ID를 이슈 번호로 바꿀 때 쓴다.
 
@@ -27,13 +27,16 @@
      - 문서를 "지금 기준" 문서로 저장소에 남기고 이슈로 옮기지 않는다. 항목을 시작할 때 task 이슈를 만든다. 계획은 문서, 진행은 이슈로 나뉜다.
 8. **first-run**: `docs/first-run.md`를 first-run 이슈 본문 표로 옮긴다. 모두 확인된 항목이면 닫는다.
 9. **인계**: `state/sprint.md`를 현재 스프린트 이슈 본문으로 옮기고 고정한다.
-10. **인계 후속**: 예전 인계(`state/sprint.md`, 마지막 handoff들)에 남은 "다음 후보"와 "답 대기"를 이슈로 만든다. 옮긴 인계 본문에만 두면 할 일 목록에서 빠진다. 본문에 출처(`예전 인계: state/sprint.md`)를 적는다. 라벨은 director 스킬 "후속 이슈"를 따른다: 사람이나 외부(거래처 등)의 답을 기다리는 것은 `agent:needs-user`, 바로 할 수 있는 것은 `agent:ready`. 한꺼번에 만든 `agent:ready` 이슈는 다음 루틴 실행부터 처리되므로, 만들기 전에 목록과 라벨을 사람에게 보여 준다. logistics-hub는 후속 12개를 만들고 거래처 답 대기를 `agent:needs-user`로 두었다.
+10. **인계 후속**: 예전 인계(`state/sprint.md`, 마지막 handoff들)에 남은 "다음 후보"와 "답 대기"를 이슈로 만든다. 옮긴 인계 본문에만 두면 할 일 목록에서 빠진다. 본문은 `templates/issues/task.md` 형식(배경·목표·완료 기준)으로 쓰고 출처(`예전 인계: state/sprint.md`)를 적는다. 한 줄짜리 후보를 그대로 옮기면 루틴이 작업할 수 없어 `agent:needs-user`로 되돌린다. 7단계에서 `[로드맵]` 이슈로 옮긴 항목과 겹치면 새로 만들지 않고 그 이슈에 코멘트로 붙인다.
+    - 라벨은 director 스킬 "후속 이슈"를 따른다: 사람이나 외부(거래처 등)의 답을 기다리는 것은 `agent:needs-user`로 만들고 누구의 어떤 답을 기다리는지 본문에 적는다. 바로 할 수 있는 것은 이때 라벨 없이 만들고, **`agent:ready`는 13단계 정리 PR(role 출력 규칙)이 머지된 뒤에 붙인다.** 그 전에 붙이면 루틴이 등록된 프로젝트에서 예전 출력 규칙의 role이 불린다. 만들기 전에 목록과 라벨을 사람에게 보여 준다.
+    - logistics-hub는 후속 12개를 만들고 거래처 답 대기를 `agent:needs-user`로 두었다.
 11. **Notion**: notion-sync는 없어졌다. Notion 페이지·DB는 그대로 두고, 보관하거나 지울지는 사람이 정한다. 로컬 `notion/`은 gitignore된 채로 둔다.
 12. **확인**: 개수를 맞춘다(task 수 = Task 이슈 수, handoff 파일 수 = 옮긴 코멘트 수, 결정 행 수 = 결정 코멘트 + 결정 이슈 수, `depends_on`·PRD 소속 수 = 백업 `relations.json`의 `blockedBy`·`parent` 수). 차이가 있으면 목록으로 보고한다. security-reviewer에게 이전 시작 시각부터의 이슈·코멘트 검토를 맡기고, 백업한다(playbook 4절, 관계 목록 `relations.json` 포함).
 13. **저장소 정리 PR**: 아래 선택지대로 원래 파일을 처리하고, `CLAUDE.md`를 `templates/project/CLAUDE.template.md`의 "기록 (GitHub)" 표 형식으로 고친다. 같은 PR에서 role 파일도 고친다. PR 절차와 보안 검토는 평소와 같다.
     - **role 출력 규칙**: `.claude/agents/*.md`의 "출력" 절을 플러그인 `templates/roles/<role>.md`와 줄 단위로 맞춘다("결과는 자기 task 이슈에 코멘트로만 올린다", "Bash는 검사 스크립트로 코멘트를 올릴 때와 지시받은 작업에만 쓴다" 등). 예전 role 파일에는 handoff 파일에 쓰라는 규칙이 남아 있다. 템플릿에 없는 프로젝트 role(도메인 전문가 등)은 가장 가까운 템플릿의 출력 절을 쓴다. poker는 문장 하나(designer의 PRD 디자인 변경안 초안)를 빠뜨려 리뷰에서 되돌아왔다.
     - **role `tools:`**: 결과 코멘트를 올리는 모든 role의 `tools:`에 `Bash`가 있어야 한다. 없으면 검사 스크립트를 실행할 수 없다(poker는 role 4개에 없었다).
     - **예전 기록을 가리키는 줄**: `git grep -n -E 'decisions/log\.md|board/|handoffs/|prds/|state/sprint\.md|docs/first-run\.md'`로 모두 찾는다. role 파일의 전제 문서 줄, 작업 방식 문서(`.claude/agents/*.md`, 프로젝트 `docs/`의 agent 작업 방식)가 대상이다. 결정 기록은 결정 이슈(`--label decision`)로, 나머지는 해당 이슈·라벨로 바꾼다.
+    - **머지 뒤**: 10단계에서 라벨 없이 만든 바로 할 수 있는 후속 이슈에 `agent:ready`를 붙인다. 이때부터 루틴이 고친 role로 처리한다.
 
 예전 저장소·PR 번호를 옮길 때 `#N`은 지금 저장소의 이슈·PR로 자동 링크된다. 지금 저장소의 것이 아니면 `#` 없이 쓰거나("PR 1번(지운 저장소)") 다른 저장소면 `autelon/<저장소>#N`으로 쓴다.
 
