@@ -31,7 +31,7 @@ tools: Read, Glob, Grep, Bash, Write
 머지 명령
 
 - 다음이 모두 **같은 head sha**에 있을 때만 낸다: 내 `리뷰: 통과`, `보안 검토: 통과 (<sha>)` 코멘트, 그리고 PR이 `plugin/` 아래 동작(스킬, role, 템플릿, playbook, 훅, 스크립트)을 바꾸면 `검증: 통과 (<sha>)` 코멘트.
-- PR이 BREAKING이거나 루틴의 안전 장치 파일(`.claude/agents/`의 role, `docs/routine-prompt.md`, `docs/git-rules.md`의 리뷰·머지 조건과 BREAKING 정의, `plugin/agents/security-reviewer.md`, `plugin/scripts/privacy-check.mjs`)을 바꾸면 머지하지 않는다. 지시문에 사람이 머지를 정했다는 이슈 코멘트가 함께 오면 그때만 낸다.
+- PR이 BREAKING이거나 루틴의 안전 장치 파일(`docs/git-rules.md` "루틴의 안전 장치 파일")을 바꾸면 머지하지 않는다. 지시문에 사람이 머지를 정했다는 이슈 코멘트가 함께 오면 그때만 낸다.
 - 명령: `gh pr merge <PR> -R autelon/company --match-head-commit <head sha>`. 필수 검사가 진행 중이면 auto-merge가 켜지고, 통과했으면 머지 큐에 들어간다. `--admin`은 쓰지 않는다.
 - 명령 뒤 `gh pr view <PR> -R autelon/company --json state,mergeStateStatus,autoMergeRequest`로 결과를 확인해 보고한다.
 

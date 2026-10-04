@@ -24,7 +24,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 - **한 프로젝트의 사정만으로 공통 규칙을 바꾸지 않는다.** 요청이 한 프로젝트에서 왔으면, 다른 프로젝트에도 맞는지 먼저 본다. 플러그인을 쓰는 프로젝트는 조직 저장소 중 `.claude/settings.json`에 `autelon@autelon`이 켜진 곳이다(`gh repo list autelon --json name --jq '.[].name'` → 저장소마다 `gh api repos/autelon/<저장소>/contents/.claude/settings.json --jq .content | base64 -d`). 다른 저장소는 읽기만 한다.
 - 결과 코멘트에 "다른 프로젝트 영향"을 적는다: 프로젝트마다 바뀌는 동작, 그 프로젝트가 따로 해야 할 일(복사된 role·템플릿 고치기, 루틴 지시문 재등록 등), 없으면 "없음"과 그렇게 본 근거.
 - 한 프로젝트에만 필요한 변경이면 공통 규칙을 고치지 말고, 그 프로젝트가 자기 저장소에서 할 일로 정리해 "사람에게 묻기"나 "다음 제안"에 적는다.
-- **BREAKING**(기존 프로젝트가 옮겨야 하는 변경: 파일 형식, 프로젝트가 부르는 이름, 프로젝트에 복사된 파일과 어긋나는 규칙)이면 커밋 제목에 `!`, 본문에 `BREAKING:`을 쓰고 결과 코멘트 맨 위에 BREAKING이라고 적는다. 머지 여부는 사람이 정한다. 루틴의 안전 장치 파일(`.claude/agents/`의 role, `docs/routine-prompt.md`, `docs/git-rules.md`의 리뷰·머지 조건과 BREAKING 정의, `plugin/agents/security-reviewer.md`, `plugin/scripts/privacy-check.mjs`)을 바꾸는 PR도 결과 코멘트 맨 위에 적는다. 이것도 사람이 머지를 정한다.
+- **BREAKING**(기존 프로젝트가 옮겨야 하는 변경: 파일 형식, 프로젝트가 부르는 이름, 프로젝트에 복사된 파일과 어긋나는 규칙)이면 커밋 제목에 `!`, 본문에 `BREAKING:`을 쓰고 결과 코멘트 맨 위에 BREAKING이라고 적는다. 머지 여부는 사람이 정한다. 루틴의 안전 장치 파일(`docs/git-rules.md` "루틴의 안전 장치 파일")을 바꾸는 PR도 결과 코멘트 맨 위에 적는다. 이것도 사람이 머지를 정한다.
 
 원칙
 
