@@ -59,7 +59,43 @@ test('gh 인자: 본문 파일과 제목을 뽑는다', () => {
   );
 });
 
-test('gh 인자: 받지 않는 명령과 표준 입력 본문은 거절한다', () => {
-  assert.throws(() => textsFromGhArgs(['api', 'repos/x/y']));
-  assert.throws(() => textsFromGhArgs(['issue', 'comment', '1', '-F', '-']));
+test('gh 인자: 붙여 쓴 짧은 플래그의 값도 검사한다', () => {
+  const texts = textsFromGhArgs([
+    'issue',
+    'comment',
+    '1',
+    '-Rautelon/company',
+    '-b=본문',
+    '-t제목',
+  ]);
+  assert.deepEqual(
+    texts.map((t) => t.text),
+    ['본문', '제목'],
+  );
+});
+
+test('gh 인자: 검사할 수 없는 글과 코멘트 삭제는 거절한다', () => {
+  const body = ['-b', '본문'];
+  for (const bad of [
+    ['api', 'repos/x/y'],
+    ['issue', 'comment', '1', '-F', '-'],
+    ['issue', 'comment', '1', '-F-'],
+    ['pr', 'create', '--fill'],
+    ['pr', 'create', '--fill-first', ...body],
+    ['issue', 'create', '-e', ...body],
+    ['issue', 'create', '--web', ...body],
+    ['issue', 'create', '-T', 'bug', ...body],
+    ['issue', 'create', '--recover', 'x', ...body],
+    ['issue', 'comment', '1', '--delete-last'],
+    ['issue', 'create', '-dw', ...body],
+    ['issue', 'comment', '1', '--', '-b', 'x'],
+  ]) {
+    assert.throws(() => textsFromGhArgs(bad), undefined, bad.join(' '));
+  }
+});
+
+test('gh 인자: create·comment 는 본문이 있어야 한다, edit 는 없어도 된다', () => {
+  assert.throws(() => textsFromGhArgs(['issue', 'create', '-t', '제목']));
+  assert.throws(() => textsFromGhArgs(['issue', 'comment', '1']));
+  assert.deepEqual(textsFromGhArgs(['issue', 'edit', '1', '--add-label', 'decision']), []);
 });

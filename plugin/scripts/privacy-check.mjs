@@ -8,7 +8,9 @@
 //
 // gh 모드는 이슈·PR의 제목·본문·코멘트를 올리는 유일한 통로다. 이슈와 코멘트는 리뷰 없이 바로 공개되므로
 // 올리기 전에 막아야 한다. 받는 명령: issue create|edit|comment, pr create|edit|comment.
-// 본문은 -F/--body-file 파일이나 -b/--body 문자열로만 받는다. 표준 입력(-F -)은 검사할 수 없어 거절한다.
+// 본문은 -F/--body-file 파일이나 -b/--body 문자열로만 받는다. 검사할 수 없는 곳에서 글을 가져오는 플래그
+// (표준 입력 -F -, 편집기, 브라우저, 템플릿, --fill, --recover), 코멘트 삭제(--delete-last), 묶어 쓴 짧은 플래그는 거절한다.
+// create·comment 는 본문이 없으면 대화형 입력으로 넘어가므로 본문을 꼭 받는다.
 import { readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
@@ -53,10 +55,29 @@ const GH_ALLOWED = {
   issue: ['create', 'edit', 'comment'],
   pr: ['create', 'edit', 'comment'],
 };
-const TEXT_FLAGS = ['-t', '--title', '-b', '--body'];
-const FILE_FLAGS = ['-F', '--body-file'];
+// 글을 받는 플래그. 짧은 이름 → 긴 이름.
+const TEXT_FLAGS = { t: '--title', b: '--body' };
+const FILE_FLAGS = { F: '--body-file' };
+// 글을 검사할 수 없는 곳(편집기, 브라우저, 템플릿, 커밋 내용, 실패한 실행)에서 가져오거나 코멘트를 지우는 플래그.
+const REJECTED = new Set([
+  '-e',
+  '--editor',
+  '-w',
+  '--web',
+  '-T',
+  '--template',
+  '--recover',
+  '--fill',
+  '--fill-first',
+  '--fill-verbose',
+  '--delete-last',
+]);
+// 값을 받는 다른 짧은 플래그(issue/pr create·edit·comment). 값이 붙어 있어도(-Rorg/repo) 검사할 글이 아니다.
+const OTHER_VALUE_SHORT = new Set(['a', 'A', 'B', 'H', 'l', 'm', 'p', 'r', 'R']);
+// 본문 없이 실행하면 대화형 입력으로 넘어가는 명령
+const NEEDS_BODY = new Set(['create', 'comment']);
 
-// gh 인자에서 검사할 글을 뽑는다: [{ source, text }]. 받지 않는 형태면 Error.
+// gh 인자에서 검사할 글을 뽑는다: [{ source, text }]. 검사를 거치지 않는 형태면 Error.
 export function textsFromGhArgs(args) {
   const [group, sub] = args;
   if (!GH_ALLOWED[group]?.includes(sub)) {
@@ -65,20 +86,47 @@ export function textsFromGhArgs(args) {
     );
   }
   const texts = [];
-  for (let i = 2; i < args.length; i++) {
-    const arg = args[i];
-    const eq = arg.indexOf('=');
-    const flag = arg.startsWith('--') && eq > 0 ? arg.slice(0, eq) : arg;
-    const inline = flag !== arg ? arg.slice(eq + 1) : undefined;
-    if (!TEXT_FLAGS.includes(flag) && !FILE_FLAGS.includes(flag)) continue;
-    const value = inline ?? args[++i];
+  const take = (flag, value) => {
     if (value === undefined) throw new Error(`${flag} 뒤에 값이 없다`);
-    if (FILE_FLAGS.includes(flag)) {
+    if (flag === '--body-file') {
       if (value === '-') throw new Error('표준 입력 본문(-F -)은 검사할 수 없다. 파일로 넘긴다');
       texts.push({ source: value, text: readFileSync(value, 'utf8') });
     } else {
       texts.push({ source: flag, text: value });
     }
+  };
+  for (let i = 2; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '--') throw new Error('-- 뒤의 인자는 검사하지 않으므로 받지 않는다');
+    if (arg.startsWith('--')) {
+      const eq = arg.indexOf('=');
+      const flag = eq > 0 ? arg.slice(0, eq) : arg;
+      if (REJECTED.has(flag))
+        throw new Error(`${flag} 는 검사할 수 없는 글을 쓰거나 코멘트를 지우므로 받지 않는다`);
+      if (flag === '--title' || flag === '--body' || flag === '--body-file') {
+        take(flag, eq > 0 ? arg.slice(eq + 1) : args[++i]);
+      }
+      continue;
+    }
+    if (!arg.startsWith('-') || arg.length < 2) continue;
+    const letter = arg[1];
+    const attached = arg.length > 2 ? arg.slice(2).replace(/^=/, '') : undefined;
+    const long = TEXT_FLAGS[letter] ?? FILE_FLAGS[letter];
+    if (long) {
+      take(long, attached ?? args[++i]);
+    } else if (REJECTED.has(`-${letter}`)) {
+      throw new Error(`-${letter} 는 검사할 수 없는 글을 쓰므로 받지 않는다`);
+    } else if (OTHER_VALUE_SHORT.has(letter)) {
+      if (attached === undefined) i++;
+    } else if (attached !== undefined) {
+      // -dw 같은 묶음은 어떤 플래그가 들어 있는지 확실히 가를 수 없다
+      throw new Error(`묶어 쓴 짧은 플래그(${arg})는 받지 않는다. 하나씩 나눠 쓴다`);
+    }
+  }
+  if (NEEDS_BODY.has(sub) && !texts.some((t) => t.source !== '--title')) {
+    throw new Error(
+      `gh ${group} ${sub} 는 -b 나 -F 로 본문을 넘겨야 한다(없으면 대화형 입력으로 넘어간다)`,
+    );
   }
   return texts;
 }
