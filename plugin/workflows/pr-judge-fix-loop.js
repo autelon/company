@@ -337,7 +337,7 @@ ${fixer.instruction}
 ${findings}
 
 PR 코멘트 원문은 \`gh pr view ${pr} -R ${R} --comments\` 로 읽는다. 이 브랜치는 다른 worktree 에 체크아웃돼 있을 수 있으니 브랜치를 체크아웃하지 않는다. 네 worktree 에서 \`git fetch origin && git switch --detach origin/${branch}\` 로 시작해 고친 뒤 새 커밋을 만들고 \`git push origin HEAD:${branch}\` 로 올린다. fast-forward 여야 한다. 실패하면 force push 하지 말고 멈춰서 needs_user=true 로 돌려준다.
-커밋 전에 저장소 \`docs/git-rules.md\` 의 커밋 전 검사를 통과시키고, \`git diff --cached | node ${S} scan -\` 결과를 먼저 확인한 뒤 커밋한다(한 명령에 묶지 않는다. 표준 입력이 막히면 diff 를 파일로 써서 \`node ${S} scan <파일>\`). 작성자·공동 작성자 이메일은 GitHub noreply 나 noreply@anthropic.com 만 쓴다.` +
+커밋 전에 저장소 \`docs/git-rules.md\` 의 커밋 전 검사를 통과시키고, 개인 정보 검사를 \`mkdir -p local\` → \`git diff --cached --output=local/staged.diff\` → \`node ${S} scan local/staged.diff\` 세 명령을 하나씩 따로 실행해 확인한 뒤 커밋한다(파이프·리디렉션·&& 로 잇지 않는다. 격리된 worktree 에서는 표준 입력 형태가 거절된다. 앞 명령이 거절되거나 실패하면 검사 명령을 돌리지 않는다. 검사와 커밋도 한 명령에 묶지 않는다). 작성자·공동 작성자 이메일은 GitHub noreply 나 noreply@anthropic.com 만 쓴다.` +
       (args.coAuthor ? ` 커밋 메시지 끝에 \`${args.coAuthor}\` 를 붙인다.` : '') +
       `
 이슈 #${issue} 의 목표 밖의 파일은 고치지 않는다. 안전 장치·관문 파일(검사·차단·판정·머지 조건을 정하는 파일: CI, 훅, git 규칙, role 파일, 권한 설정, 보안 검토 기준, 루틴 지시문, Workflow 스크립트, 저장소 \`docs/git-rules.md\` 가 관문·안전 장치로 적은 파일)을 고치게 되면 그 경로를 touched_gate_files 에 적는다(없으면 빈 배열). 지적이 사람의 결정을 요구하면 고치지 말고 needs_user=true 로 돌려주고, unresolved 에 무엇을 정해야 하는지 적는다.
