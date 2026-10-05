@@ -247,7 +247,11 @@ description: autelon으로 운영하는 프로젝트에서 director(메인 세�
 - 의심스러운 것은 push 전에 막는다. 한 번 push하면 브랜치를 다시 써도 지워지지 않는다. PR 타임라인이 이전 head의 SHA를 붙잡고 있어 SHA로 계속 조회된다.
 - **패턴의 원본은 `${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs` 하나다.** 이 절, found-company·adopt-project·security-reviewer는 이 스크립트를 부르고 패턴을 따로 복사하지 않는다. 패턴을 바꿀 때는 스크립트와 그 테스트만 고친다.
 - 커밋 전에 다음 둘이 비어 있어야 한다.
-  1. 내용: `git diff --cached | node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan -` (걸리면 줄 번호·종류·앞 4자를 찍고 1로 끝난다)
+  1. 내용: 아래 세 명령을 하나씩 따로 실행한다. 파이프(`|`), 리디렉션(`>`), `&&`로 잇지 않는다. worktree에 격리된 agent(`isolation: worktree`, Workflow의 `isolation: 'worktree'`)에서는 Claude Code가 표준 입력으로 node에 넘기는 명령과 여러 명령을 이은 명령을 실행 전에 거절하기 때문이다(autelon/company#78). 앞 명령이 거절되거나 실패하면 검사 명령을 돌리지 않는다(예전 `local/staged.diff`를 검사하게 된다). 세 명령을 모두 돌리지 못하면 커밋하지 않는다.
+     1. `mkdir -p local` (`local/`은 커밋되지 않아 새 worktree에는 없다)
+     2. `git diff --cached --output=local/staged.diff`
+     3. `node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan local/staged.diff` (걸리면 줄 번호·종류·앞 4자를 찍고 1로 끝난다)
+     - 격리되지 않은 곳(사람이 연 세션, 판정·보안 검토 agent)에서는 표준 입력 형태 `git diff --cached | node "${CLAUDE_PLUGIN_ROOT}/scripts/privacy-check.mjs" scan -`도 된다. 결과는 같다.
   2. 작성자와 공동 작성자(push할 범위 `<base>..HEAD`, 첫 push면 `HEAD`): `git log --format='%ae%n%ce%n%B' <범위> | grep -o -i -E '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' | sort -u | grep -v -i -E '@users\.noreply\.github\.com$|^noreply@github\.com$|^noreply@anthropic\.com$'` (주소를 하나씩 뽑은 뒤 허용 주소만 지운다. 출력이 남으면 위반. author와 committer를 한 줄에 찍으면 허용 주소가 섞인 줄이 통째로 지워져 committer의 개인 주소를 놓친다)
 - 스크립트는 개인 도메인이 아닌 이메일과 패턴에 없는 형식의 비밀 값을 잡지 못하므로 diff를 눈으로도 확인한다. 이 규칙 문서처럼 패턴을 설명하는 글이 diff에서 걸리는 것은 위반이 아니다(걸린 줄을 하나씩 본다). 이슈·코멘트는 설명 글이어도 막히므로 "사용자 홈 경로"처럼 말로 쓴다.
 
