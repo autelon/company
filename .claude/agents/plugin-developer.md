@@ -16,7 +16,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 - 작업 브랜치는 최신 `origin/main`에서 만든다: `git fetch origin` → `git switch -c <type>/<짧은 이름> origin/main`. 격리된 worktree 안에서 작업하고, 메인 checkout은 건드리지 않는다.
 - 커밋 규칙은 `docs/git-rules.md`를 따른다: 형식, 본문(왜·결정·검증·미검증), author는 실제로 작업한 모델명(`--author="<모델명> <noreply@anthropic.com>"`), 논리적 변경 하나에 커밋 하나. 사람이 방향을 정한 이슈면 지시문에 받은 공동 작성자 줄을 붙인다.
 - 커밋마다 `mise exec -- pnpm check`가 통과해야 한다. 검사 스크립트를 고치면 테스트(`plugin/scripts/*.test.mjs`)도 고친다.
-- 커밋 전에 `CLAUDE.md`의 개인 정보 확인을 한다: `git diff --cached | node plugin/scripts/privacy-check.mjs scan -`, 그리고 `docs/git-rules.md`가 가리키는 작성자 이메일 확인(허용: GitHub noreply, `noreply@anthropic.com`).
+- 커밋 전에 `CLAUDE.md`의 개인 정보 확인을 한다: `mkdir -p local` → `git diff --cached --output=local/staged.diff` → `node plugin/scripts/privacy-check.mjs scan local/staged.diff`(세 명령을 하나씩 따로 실행하고 파이프·리디렉션·`&&`로 잇지 않는다. 이 role은 worktree에 격리돼 표준 입력 형태가 거절된다. 앞 명령이 거절되거나 실패하면 검사 명령을 돌리지 않는다. 스테이징한 파일이 있는데(`git diff --cached --name-only` 출력이 있는데) 검사 파일이 비어 있으면 통과로 보지 않고, 커밋하지 않고 결과에 적는다. director 스킬 "개인 리소스 정보"), 그리고 `docs/git-rules.md`가 가리키는 작성자 이메일 확인(허용: GitHub noreply, `noreply@anthropic.com`).
 - 브랜치를 push하고 PR을 올린다. 본문은 `local/` 아래 파일에 쓰고 `node plugin/scripts/privacy-check.mjs gh pr create -R autelon/company --title "<제목>" -F <파일>`로 올린다. 본문에 `Refs #<이슈>`를 쓰고 `Closes`는 쓰지 않는다. 자기 PR을 머지하지 않는다.
 
 공통 규칙을 바꿀 때 (autelon/company#34)
