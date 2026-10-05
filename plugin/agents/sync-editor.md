@@ -36,7 +36,7 @@ frontmatter의 격리 설정에 기대지 않는다. 자기 작업 폴더를 직
    - `새로`: 로컬 브랜치와 `origin/<브랜치>`가 둘 다 없어야 한다(있으면 멈추고 응답). `git worktree add -b <브랜치> .claude/worktrees/<이름> origin/main`
    - `이어서`: 로컬 브랜치가 있으면 `git worktree add .claude/worktrees/<이름> <브랜치>`, 로컬에는 없고 `origin/<브랜치>`만 있으면 `git worktree add --track -b <브랜치> .claude/worktrees/<이름> origin/<브랜치>`. 둘 다 없으면 멈추고 응답한다.
    - `다시 만들기`: `git rev-parse origin/<브랜치>`가 지시받은 예상 head sha와 같아야 한다(다르면 멈추고 응답). `git worktree add -B <브랜치> .claude/worktrees/<이름> origin/main`으로 브랜치를 `origin/main`에 다시 놓고, 옮길 행을 처음부터 모두 옮긴다.
-3. 이후 모든 읽기·고치기·커밋은 `.claude/worktrees/<이름>` 안에서 한다.
+3. 이후 모든 읽기·고치기·커밋은 `.claude/worktrees/<이름>` 안의 파일과 index에 한다. git 명령은 프로젝트 루트에서 `git -C .claude/worktrees/<이름>`으로 쓴다.
 
 ## 옮기기
 
@@ -49,11 +49,13 @@ frontmatter의 격리 설정에 기대지 않는다. 자기 작업 폴더를 직
 ## 커밋과 push
 
 - 커밋은 지시받은 커밋 묶음대로 나눈다. 건너뛴 행이 있는 묶음도 나머지 행으로 커밋하되, 응답에 건너뛴 행을 적는다.
-- 커밋·push 전에 worktree 안에서 할 것. 하나라도 걸리면 커밋(작성자 확인은 push)하지 않고 응답한다.
-  - `git diff --cached`에 `{{`가 없는지 grep
-  - 개인 정보 검사: 프로젝트 루트에서 worktree 경로를 가리켜 `mkdir -p .claude/worktrees/<이름>/local` → `git -C .claude/worktrees/<이름> diff --cached --output=local/staged.diff` → `node <검사 스크립트> scan .claude/worktrees/<이름>/local/staged.diff`. `git -C` 뒤의 `--output` 상대 경로는 `-C`로 옮긴 폴더 기준이라 파일은 worktree의 `local/staged.diff`에 생긴다. 경로 없이 `git diff --cached`를 프로젝트 루트에서 돌리면 메인 checkout의 index를 검사하므로 쓰지 않는다. 세 명령을 하나씩 따로 실행하고 파이프(`|`), 리디렉션(`>`), `&&`로 잇지 않는다(director 스킬 "개인 리소스 정보"). 앞 명령이 거절되거나 실패하면 검사 명령을 돌리지 않는다. 스테이징한 파일이 있는데(`git -C .claude/worktrees/<이름> diff --cached --name-only` 출력이 있는데) 검사 파일이 비어 있으면 통과로 보지 않는다.
-  - 작성자 확인: 지시받은 작성자 확인 명령을 push할 범위(`origin/main..HEAD`)에 돌린다(커밋 뒤, push 전). 출력이 남으면 push하지 않는다
-  - 지시받은 검증 명령
+- 커밋·push 전에 할 것. 기준 폴더는 프로젝트 루트 하나다. git 명령은 모두 `git -C .claude/worktrees/<이름>`으로 worktree를 가리키고, 파일 경로는 `.claude/worktrees/<이름>/`부터 쓴다. 경로 없이 `git diff --cached`나 `HEAD`를 프로젝트 루트에서 쓰면 메인 checkout을 보게 되어 빈 결과로 통과하므로 쓰지 않는다. 하나라도 걸리면 커밋(작성자 확인은 push)하지 않고 응답한다.
+  - 검사 파일 만들기: `mkdir -p .claude/worktrees/<이름>/local` → `git -C .claude/worktrees/<이름> diff --cached --output=local/staged.diff`. `--output`의 상대 경로는 `-C`로 옮긴 폴더 기준이라 파일은 worktree의 `local/staged.diff`에 생긴다. 스테이징한 파일이 있는데(`git -C .claude/worktrees/<이름> diff --cached --name-only` 출력이 있는데) 검사 파일이 비어 있으면 통과로 보지 않고 커밋하지 않는다(다른 index를 봤을 수 있다).
+  - 자리표시자: `grep -n '{{' .claude/worktrees/<이름>/local/staged.diff`에 출력이 없어야 한다
+  - 개인 정보 검사: `node <검사 스크립트> scan .claude/worktrees/<이름>/local/staged.diff`
+  - 위 명령은 하나씩 따로 실행하고 파이프(`|`), 리디렉션(`>`), `&&`로 잇지 않는다(director 스킬 "개인 리소스 정보"). 앞 명령이 거절되거나 실패하면 뒤 검사를 돌리지 않는다(예전 검사 파일을 보게 된다).
+  - 작성자 확인: 지시받은 작성자 확인 명령을 push할 범위 `origin/main..<브랜치>`에 돌린다(커밋 뒤, push 전). 범위를 `HEAD`가 아니라 브랜치 이름으로 적어 프로젝트 루트에서도 이 worktree의 커밋을 본다. 출력이 남으면 push하지 않는다
+  - 지시받은 검증 명령: worktree 폴더(`.claude/worktrees/<이름>`)를 작업 폴더로 해서 돌린다(그 폴더로 옮겨 돌리거나 명령의 폴더 지정 옵션을 쓴다). 프로젝트 루트에서 돌린 결과는 메인 checkout의 결과라 통과로 보지 않는다
 - 커밋 author는 지시받은 모델명과 `noreply@anthropic.com`, 공동 작성자 줄은 지시받은 그대로 붙인다.
 - `새로`·`이어서`: `git push -u origin <브랜치>`. force push하지 않는다.
 - `다시 만들기`: `git push -u --force-with-lease=<브랜치>:<예상 head sha> origin <브랜치>`. 예상 head sha를 꼭 붙인다. 그사이 누가 브랜치를 바꿨으면 거절된다. `--force`는 쓰지 않는다.
