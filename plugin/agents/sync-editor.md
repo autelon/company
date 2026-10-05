@@ -51,7 +51,7 @@ frontmatter의 격리 설정에 기대지 않는다. 자기 작업 폴더를 직
 - 커밋은 지시받은 커밋 묶음대로 나눈다. 건너뛴 행이 있는 묶음도 나머지 행으로 커밋하되, 응답에 건너뛴 행을 적는다.
 - 커밋·push 전에 worktree 안에서 할 것. 하나라도 걸리면 커밋(작성자 확인은 push)하지 않고 응답한다.
   - `git diff --cached`에 `{{`가 없는지 grep
-  - 개인 정보 검사: `mkdir -p local` → `git diff --cached --output=local/staged.diff` → `node <검사 스크립트> scan local/staged.diff`. 세 명령을 하나씩 따로 실행하고 파이프(`|`), 리디렉션(`>`), `&&`로 잇지 않는다(worktree에 격리된 agent에서도 거절되지 않는 형태, director 스킬 "개인 리소스 정보"). 앞 명령이 거절되거나 실패하면 검사 명령을 돌리지 않는다.
+  - 개인 정보 검사: 프로젝트 루트에서 worktree 경로를 가리켜 `mkdir -p .claude/worktrees/<이름>/local` → `git -C .claude/worktrees/<이름> diff --cached --output=local/staged.diff` → `node <검사 스크립트> scan .claude/worktrees/<이름>/local/staged.diff`. `git -C` 뒤의 `--output` 상대 경로는 `-C`로 옮긴 폴더 기준이라 파일은 worktree의 `local/staged.diff`에 생긴다. 경로 없이 `git diff --cached`를 프로젝트 루트에서 돌리면 메인 checkout의 index를 검사하므로 쓰지 않는다. 세 명령을 하나씩 따로 실행하고 파이프(`|`), 리디렉션(`>`), `&&`로 잇지 않는다(director 스킬 "개인 리소스 정보"). 앞 명령이 거절되거나 실패하면 검사 명령을 돌리지 않는다. 스테이징한 파일이 있는데(`git -C .claude/worktrees/<이름> diff --cached --name-only` 출력이 있는데) 검사 파일이 비어 있으면 통과로 보지 않는다.
   - 작성자 확인: 지시받은 작성자 확인 명령을 push할 범위(`origin/main..HEAD`)에 돌린다(커밋 뒤, push 전). 출력이 남으면 push하지 않는다
   - 지시받은 검증 명령
 - 커밋 author는 지시받은 모델명과 `noreply@anthropic.com`, 공동 작성자 줄은 지시받은 그대로 붙인다.
